@@ -246,7 +246,9 @@ src/PostAgent.Functions/
 src/TgLogin/               одноразовий вхід у Telegram
 tests/PostAgent.Tests/     xUnit (логіка, моделі з підробленим IChatClient, валідація налаштувань)
 Directory.Packages.props   версії всіх NuGet-пакетів в одному місці
-infra/                     Terraform
+infra/                     Terraform, по файлах за змістом:
+                             storage, keyvault, function, monitoring, roles, budget
+                             (main.tf: resource group й імена; variables, outputs, providers)
 prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
 .github/workflows/         build, test, deploy
 ```
