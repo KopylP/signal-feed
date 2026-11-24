@@ -6,7 +6,7 @@
 
 ## Rules
 
-- Sign in to Azure only through OIDC (`azure/login`), no passwords or keys in GitHub. Settings are passed as GitHub Variables (`vars.*`).
+- Sign in to Azure only through OIDC (`azure/login`), no passwords or keys in GitHub. Settings are passed as GitHub Variables (`vars.*`). Personal data (phone, email, chat id) goes through Secrets (`secrets.*`): the repository is public and Variables are not masked in logs.
 - Pin actions to a major version (`@v4`) and Terraform to an exact version (`.terraform-version` at the repo root, read by `deploy.yml` and `infra.yml`).
 - The Azure OIDC credential accepts only `refs/heads/main`: `infra` apply and deploy cannot run from a branch, so infra changes merge first and are applied from `main`.
 - `deploy.yml` never changes infrastructure and `infra.yml` never deploys code. Do not mix them.

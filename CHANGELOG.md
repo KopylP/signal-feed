@@ -8,6 +8,20 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [heron] - 2026-11-24
+
+### Setup required
+- **`TF_BUDGET_ALERT_EMAIL`, `TF_TELEGRAM_PHONE`, `TF_TELEGRAM_CHAT_ID`**: moved from GitHub Variables to GitHub Secrets (`TF_TELEGRAM_CHAT_ID` is optional)
+  - Where: GitHub Secrets (Settings → Secrets and variables → Actions → Secrets)
+  - Value: the same values as before
+  - Apply: create the secrets, delete the old variables, then run the `infra` workflow. Without the secrets the workflow fails because the two required Terraform variables are empty
+
+### Security
+- Email, phone and chat id are no longer read from GitHub Variables, whose values are not masked in the logs of a public repository, and the matching Terraform variables are `sensitive`, so the plan summary hides them.
+
+### Dependencies
+- Terraform 1.9.8 → 1.17.2 (`.terraform-version`, used by `deploy.yml` and `infra.yml`).
+
 ## [pine] - 2026-11-24
 
 ### Setup required

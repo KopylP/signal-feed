@@ -86,15 +86,22 @@ Settings → Secrets and variables → Actions → Variables, all non-secret:
 |---|---|
 | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | sign-in to Azure (OIDC) |
 | `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | state storage (`TFSTATE_CONTAINER`, default `tfstate`) |
-| `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
+| `TF_DEPLOYER_OBJECT_ID` | `deployer_object_id` |
 | `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
-| `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | the matching Terraform variables |
-| `TF_TELEGRAM_CHAT_ID` (optional) | override of the paired chat; leave unset to bind the chat with `/start` |
+| `TF_TELEGRAM_API_ID` | the matching Terraform variable |
 | `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_ALERT_SCHEDULE`, `TF_CLEANUP_SCHEDULE` (optional) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
 | `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
 
-The secrets (OpenAI, Telegram) are not needed in GitHub: as before, they go into Key Vault with `az keyvault secret set`.
+Personal data goes into **Secrets** (same page, Secrets tab), not Variables: this repository is public, and the values of Variables are not masked in the run logs. Terraform also marks these inputs `sensitive`, so the plan summary hides them.
+
+| Secret | Value |
+|---|---|
+| `TF_BUDGET_ALERT_EMAIL` | `budget_alert_email` |
+| `TF_TELEGRAM_PHONE` | `telegram_phone` |
+| `TF_TELEGRAM_CHAT_ID` (optional) | override of the paired chat; leave unset to bind the chat with `/start` |
+
+The API keys (OpenAI, Telegram) are not needed in GitHub: as before, they go into Key Vault with `az keyvault secret set`.
 After the first `apply`, copy `function_app_name` from the run summary into `AZURE_FUNCTIONAPP_NAME` for the code deploy.
 
 ## Releases and rollback

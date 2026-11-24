@@ -31,6 +31,7 @@ variable "deployer_object_id" {
 variable "budget_alert_email" {
   description = "Email for budget alerts."
   type        = string
+  sensitive   = true # personal data: keep it out of plan output
 }
 
 variable "monthly_budget_usd" {
@@ -57,6 +58,7 @@ variable "telegram_chat_id" {
   description = "Optional override: numeric id of the chat for the digest and alerts. Leave empty to bind the chat by sending /start <TelegramPairingKey> to the bot."
   type        = string
   default     = ""
+  sensitive   = true # personal data: keep it out of plan output
 }
 
 variable "telegram_api_id" {
@@ -67,6 +69,7 @@ variable "telegram_api_id" {
 variable "telegram_phone" {
   description = "Phone number of the reader account, format +380..."
   type        = string
+  sensitive   = true # personal data: keep it out of plan output
 }
 
 variable "alert_sources" {

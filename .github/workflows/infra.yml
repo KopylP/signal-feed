@@ -27,14 +27,15 @@ env:
   ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-  # Terraform variables (infra/variables.tf). Non-secret, so they live in GitHub Variables.
+  # Terraform variables (infra/variables.tf). Non-secret ones live in GitHub Variables. Personal data (email, phone, chat id)
+  # lives in GitHub Secrets, because this repository is public and variable values are not masked in the logs.
   TF_VAR_location: ${{ vars.TF_LOCATION || 'westeurope' }}
   TF_VAR_name_prefix: ${{ vars.TF_NAME_PREFIX || 'signalfeed' }}
   TF_VAR_deployer_object_id: ${{ vars.TF_DEPLOYER_OBJECT_ID }}
-  TF_VAR_budget_alert_email: ${{ vars.TF_BUDGET_ALERT_EMAIL }}
+  TF_VAR_budget_alert_email: ${{ secrets.TF_BUDGET_ALERT_EMAIL }}
   TF_VAR_alert_sources: ${{ vars.TF_ALERT_SOURCES }}
   TF_VAR_telegram_api_id: ${{ vars.TF_TELEGRAM_API_ID }}
-  TF_VAR_telegram_phone: ${{ vars.TF_TELEGRAM_PHONE }}
+  TF_VAR_telegram_phone: ${{ secrets.TF_TELEGRAM_PHONE }}
   # JSON object, e.g. {"DigestSize":"6","AlertQuietHours":"23:00-07:00"}. Empty: everything uses the defaults from code.
   TF_VAR_app_settings: ${{ vars.TF_APP_SETTINGS || '{}' }}
 
@@ -51,7 +52,7 @@ jobs:
       - name: Optional variables
         env:
           TF_SOURCES: ${{ vars.TF_SOURCES }}
-          TF_TELEGRAM_CHAT_ID: ${{ vars.TF_TELEGRAM_CHAT_ID }}
+          TF_TELEGRAM_CHAT_ID: ${{ secrets.TF_TELEGRAM_CHAT_ID }}
           TF_COLLECTOR_SCHEDULE: ${{ vars.TF_COLLECTOR_SCHEDULE }}
           TF_DIGEST_SCHEDULE: ${{ vars.TF_DIGEST_SCHEDULE }}
           TF_ALERT_SCHEDULE: ${{ vars.TF_ALERT_SCHEDULE }}

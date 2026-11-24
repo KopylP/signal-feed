@@ -7,7 +7,7 @@ Resource names and variables are described in `docs/user-guide/installation.md`.
 - Terraform never creates secret values (OpenAI, Telegram) and never stores them in state: App Settings only carry Key Vault references.
 - Access between resources goes through managed identity and RBAC (`roles.tf`), without keys or connection strings.
 - Names: `<abbreviation>-${var.name_prefix}` (`rg-`, `plan-`, `log-`, `appi-`, `budget-`). Globally unique ones (`st`, `kv-`, `func-`) get `local.suffix`.
-- A new variable has a `description`, a type, and a `default` when the value is non-secret and the same for everyone. Personal data (phone, email, chat id) gets no `default`.
+- A new variable has a `description`, a type, and a `default` when the value is non-secret and the same for everyone. Personal data (phone, email, chat id) gets no `default` (the chat id: an empty one) and is `sensitive = true`; the workflow reads it from GitHub Secrets.
 - Do not add a separate variable for a new agent parameter: its default lives in `AgentOptions.cs` and it is set through `app_settings`.
   Separate variables only for required values, infrastructure values and schedules (timer attributes read them).
   Schedule precedence: key in `app_settings` > `*_schedule` variable > default. Any other key managed in `function.tf` wins over `app_settings`.
