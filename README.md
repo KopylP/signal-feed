@@ -192,9 +192,9 @@ func azure functionapp publish $(terraform -chdir=../infra output -raw function_
 Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time) and then creates a release. It can also be started by hand (`workflow_dispatch`).
 
 Pushes that only change `docs/**`, `README.md`, `CLAUDE.md` files, `.claude/**` or `infra/**` do not run it (the `prompts/*.md` files do, because they ship with the build).
-Formatting follows [`.editorconfig`](.editorconfig). The build job of `deploy.yml` runs `dotnet format` first: on a pull request from this repository it commits any fix to the PR branch as `github-actions[bot]` and builds the fixed code; on `main`, forks and Dependabot it only verifies. Run `dotnet format` locally to fix it before you push.
+Formatting follows [`.editorconfig`](.editorconfig). The build job of `deploy.yml` runs `dotnet format` first: on a pull request from this repository it (and `terraform fmt`) commits any fix to the PR branch as `github-actions[bot]` and builds the fixed code; on `main`, forks and Dependabot it only verifies. Run `dotnet format` locally to fix it before you push.
 
-The same build job runs `terraform fmt -check` and `terraform validate` on `infra/` (no backend, no Azure sign-in), so a broken Terraform change blocks the deploy too. Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
+The same build job runs `terraform validate` on `infra/` (no backend, no Azure sign-in), so a broken Terraform change blocks the deploy too. Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
 
 One-time OIDC setup (no passwords):
 

@@ -27,7 +27,6 @@ permissions:
 
 env:
   DOTNET_VERSION: 10.0.x
-  TERRAFORM_VERSION: 1.9.8
   PACKAGE_PATH: ./publish
 
 jobs:
@@ -70,36 +69,44 @@ jobs:
 
       - run: dotnet restore
 
-      # Formatting follows .editorconfig. A pull request from this repository gets the fix committed to its branch
-      # by github-actions[bot] and the build continues on the fixed code. Everything else (main, forks, Dependabot)
-      # only verifies. A manual run rebuilds an older tag that predates the check, so it skips both.
+      # The version lives in .terraform-version, shared with infra.yml and with local tools (tfenv, asdf).
+      # Skipped on a manual run, which rebuilds an older tag that predates the Terraform checks.
+      - name: Read the Terraform version
+        id: terraform-version
+        if: github.event_name != 'workflow_dispatch'
+        run: echo "version=$(cat .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: hashicorp/setup-terraform@v3
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+
+      # Formatting follows .editorconfig (C#) and terraform fmt. A pull request from this repository gets the fix
+      # committed to its branch by github-actions[bot] and the build continues on the fixed code. Everything else
+      # (main, forks, Dependabot) only verifies. A manual run rebuilds an older tag that predates the check, so it skips both.
       - name: Fix formatting
         if: env.CAN_PUSH_FIX == 'true'
         run: |
           dotnet format --no-restore
+          terraform -chdir=infra fmt -recursive
           if git diff --quiet; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit --all --message "Apply dotnet format"
+          git commit --all --message "Apply dotnet format and terraform fmt"
           git push
 
       - name: Check formatting
         if: env.CAN_PUSH_FIX != 'true' && github.event_name != 'workflow_dispatch'
-        run: dotnet format --verify-no-changes --no-restore
+        run: |
+          dotnet format --verify-no-changes --no-restore
+          terraform -chdir=infra fmt -check -recursive
 
       # Static checks only: no backend, no Azure sign-in, nothing here can change the infrastructure.
-      # Skipped on a manual run, which rebuilds an older tag whose infra/ predates the check.
-      - uses: hashicorp/setup-terraform@v3
-        if: github.event_name != 'workflow_dispatch'
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Check Terraform
+      - name: Validate Terraform
         if: github.event_name != 'workflow_dispatch'
         run: |
-          terraform -chdir=infra fmt -check -recursive
           terraform -chdir=infra init -backend=false
           terraform -chdir=infra validate
 
