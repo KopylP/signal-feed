@@ -13,6 +13,44 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Fixed
 - Fixed `tools/run-now.cs` failing to build with `NU1903` (a vulnerable build-only compiler package): the tool no longer pulls in Native AOT, so `dotnet run tools/run-now.cs -- digest --storage <account>` works as documented.
 
+## [ibis] - 2026-11-24
+
+### Contract changes
+- **Telegram digest: sections instead of one list** (breaking for anyone who parses the message)
+  - Before: one message «📰 Дайджест» with an overview and up to five entries «🔥 Цікаве» / «📌 Найкраще за день», each with one 200-character sentence and a link
+  - After: sections «🔥 Головне за день», «💼 Корисно для Collaborator», «👀 Варто звернути увагу», «📖 Рекомендую прочитати», «⚠️ Потребує перевірки» and «📌 Можна пропустити». Each entry shows the channel, the date, the text and a link. A long digest is split into several messages, and a continued section repeats its header
+  - Affects: the reader of the digest; the digest can now arrive as 2–3 messages
+  - Migration: none
+- **Model response schema of the digest** (breaking for `prompts/digest.md` only)
+  - Before: `overview` and `items` with `id` and `insight`
+  - After: `overview`, `headlines`, `for_marketplace`, `notable`, `recommended` and `needs_verification`
+  - Affects: `prompts/digest.md` and `DigestSummary` change together; a custom prompt written for the old schema stops working
+  - Migration: none for the default prompt
+
+### Added
+- **«Можна пропустити» line**: the digest says how many posts were left out and why (near-duplicates and less important ones).
+  - Enable: always on
+  - Settings: none
+  - Limits: it counts candidates from the last 26 hours that did not make it into the digest
+
+### Logic
+- **Digest size**
+  - Before: `DigestSize` defaulted to 5 and could not exceed 8, the limit of one Telegram message
+  - After: it defaults to 7 and can be 1–12, because the digest is split into several messages
+  - Effect: more posts in the digest by default; the model may leave weak ones out, and they are counted in «Можна пропустити»
+
+## [crane] - 2026-11-24
+
+### Logic
+- **Scoring: what counts as valuable**
+  - Before: posts were scored against three short topics (SEO, link building, Collaborator)
+  - After: the prompt describes the owner's work on the Collaborator site catalog and eight areas of interest (Google updates, link building, SEO market, AI and SEO, publishers and media, competitors, tools and analytics, practical cases). Facts and numbers raise the score, an opinion without data is capped at 6, and a connection to the owner's work counts only when the text contains it
+  - Effect: the digest and alerts favor news that affects a link marketplace; more posts about the general SEO market may score lower than before
+- **Digest text: why it matters**
+  - Before: the overview and each insight only said what was interesting
+  - After: insights keep specific numbers and names, show opinions and forecasts as the author's, and say why a post matters for the marketplace only when the connection is real; the overview is cut to 350 characters and says plainly when nothing important happened
+  - Effect: shorter, more specific digest text. The message layout does not change
+
 ## [v2026.11.24.39-finch] - 2026-11-24
 
 ### Fixed

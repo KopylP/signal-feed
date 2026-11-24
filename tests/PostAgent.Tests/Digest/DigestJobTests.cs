@@ -9,13 +9,16 @@ namespace PostAgent.Tests.Digest;
 
 public class DigestJobTests
 {
-    private readonly RecordingNotifier _notifier = new();
+    private RecordingNotifier _notifier = new();
 
     private DigestJob CreateJob(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
         new(repo, summarizer, _notifier, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
 
-    private static IDigestSummarizer WithOverview(string overview) =>
-        new FakeDigestSummarizer(items => new DigestReport(overview, items.Select(i => i with { Insight = "Пояснення" }).ToList()));
+    private static IDigestSummarizer WithOverview(string overview, string text = "Пояснення") =>
+        new FakeDigestSummarizer(items => new DigestReport(
+            overview,
+            items.Select(i => new DigestEntry(i.Post, "Заголовок", text, "Чому важливо")).ToList(),
+            [], [], [], [], DigestSkipped.None));
 
     private static IDigestSummarizer Failing() =>
         new FakeDigestSummarizer(_ => throw new InvalidOperationException("model is down"));
@@ -32,7 +35,7 @@ public class DigestJobTests
     }
 
     [Fact]
-    public async Task Sends_the_overview_with_insights_and_marks_the_posts_as_sent()
+    public async Task Sends_the_overview_with_the_entries_and_marks_the_posts_as_sent()
     {
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2), Post("b", score: 4, hoursAgo: 3));
 
@@ -47,6 +50,20 @@ public class DigestJobTests
     }
 
     [Fact]
+    public async Task Tells_how_many_posts_were_left_out_of_the_digest()
+    {
+        var repo = new InMemoryPostRepository(
+            Post("a", score: 9, hoursAgo: 2),
+            Post("copy", score: 4, hoursAgo: 3, duplicateOf: "a"));
+
+        await CreateJob(repo, WithOverview("Огляд")).RunAsync(CancellationToken.None);
+
+        var message = Assert.Single(_notifier.Sent);
+        Assert.Contains("Можна пропустити", message);
+        Assert.Contains("повторів — 1", message);
+    }
+
+    [Fact]
     public async Task Still_sends_the_digest_without_the_overview_when_the_model_fails()
     {
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
@@ -54,8 +71,33 @@ public class DigestJobTests
         await CreateJob(repo, Failing()).RunAsync(CancellationToken.None);
 
         var message = Assert.Single(_notifier.Sent);
-        Assert.Contains("Причина", message); // коротка причина оцінки замість пояснення
+        Assert.Contains("Причина", message); // the short scoring reason instead of the model's text
         Assert.Single(repo.SentMarks);
+    }
+
+    [Fact]
+    public async Task Sends_a_long_digest_as_several_messages_and_marks_the_posts_once_at_the_end()
+    {
+        var posts = Enumerable.Range(0, 7).Select(i => Post($"p{i}", score: 9, hoursAgo: 2 + i)).ToArray();
+        var repo = new InMemoryPostRepository(posts);
+
+        await CreateJob(repo, WithOverview("Огляд", text: new string('с', 700))).RunAsync(CancellationToken.None);
+
+        Assert.True(_notifier.Sent.Count > 1);
+        Assert.Single(repo.SentMarks);
+    }
+
+    [Fact]
+    public async Task Does_not_mark_the_posts_as_sent_when_a_later_message_fails()
+    {
+        _notifier = new RecordingNotifier { FailOnCall = 2 };
+        var posts = Enumerable.Range(0, 7).Select(i => Post($"p{i}", score: 9, hoursAgo: 2 + i)).ToArray();
+        var repo = new InMemoryPostRepository(posts);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateJob(repo, WithOverview("Огляд", text: new string('с', 700))).RunAsync(CancellationToken.None));
+
+        Assert.Empty(repo.SentMarks); // the next run repeats the digest: a duplicate is better than a lost one
     }
 
     [Fact]

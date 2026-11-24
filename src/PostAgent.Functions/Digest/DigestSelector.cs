@@ -14,22 +14,29 @@ public static class DigestSelector
     // З якого моменту читати пости для дайджесту.
     public static DateTimeOffset QueryStart(DateTimeOffset now) => now - FallbackWindow;
 
-    public static IReadOnlyList<DigestItem> Build(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now)
-    {
-        var scored = posts.Where(p => p.Status == PostStatus.Scored && p.Score is not null).ToList();
-        var candidates = PublishedWithin(scored, Window, now);
-        if (candidates.Count == 0)
-        {
-            candidates = PublishedWithin(scored, FallbackWindow, now);
-        }
-
-        return candidates
+    public static IReadOnlyList<DigestItem> Build(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now) =>
+        Candidates(posts, now)
             .Where(p => p.DuplicateOf is null)
             .OrderByDescending(p => p.Score)
             .ThenByDescending(p => p.PublishedAt)
             .Take(options.DigestSize)
             .Select(p => new DigestItem(p, p.Score >= options.InterestingThreshold))
             .ToList();
+
+    // The candidates that are not in the digest, counted by reason: the "can be skipped" line.
+    public static DigestSkipped CountSkipped(IEnumerable<PostEntity> posts, IReadOnlyList<DigestItem> selected, DateTimeOffset now)
+    {
+        var chosen = selected.Select(i => i.Post.RowKey).ToHashSet();
+        var left = Candidates(posts, now).Where(p => !chosen.Contains(p.RowKey)).ToList();
+        var duplicates = left.Count(p => p.DuplicateOf is not null);
+        return new DigestSkipped(duplicates, left.Count - duplicates);
+    }
+
+    private static List<PostEntity> Candidates(IEnumerable<PostEntity> posts, DateTimeOffset now)
+    {
+        var scored = posts.Where(p => p.Status == PostStatus.Scored && p.Score is not null).ToList();
+        var candidates = PublishedWithin(scored, Window, now);
+        return candidates.Count == 0 ? PublishedWithin(scored, FallbackWindow, now) : candidates;
     }
 
     private static List<PostEntity> PublishedWithin(IEnumerable<PostEntity> posts, TimeSpan window, DateTimeOffset now) =>

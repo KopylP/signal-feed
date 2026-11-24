@@ -11,7 +11,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `CollectorSchedule` | `0 0 * * * *` | collection CRON |
 | `DigestSchedule` | `0 0 8 * * *` | digest CRON |
 | `AlertSchedule` | `0 30 * * * *` | alert check CRON |
-| `DigestSize` | 5 | posts in the digest (at most 8, otherwise the message exceeds the Telegram limit) |
+| `DigestSize` | 7 | posts the model sees for the digest (1-12); a long digest is split into several Telegram messages |
 | `InterestingThreshold` | 7 | score from which a post is marked "🔥 Цікаве" (interesting) |
 | `ScoringBatchSize` | 10 | posts per queue message |
 | `MaxPostChars` / `MinPostChars` | 1500 / 80 | truncation and minimum length |
@@ -44,7 +44,7 @@ If a parameter is not set, the value from code applies. A typo in a key name is 
 ### Validation
 
 Settings are validated on startup: required values (sources, OpenAI key, bot token, pairing key, webhook secret, Telegram data), ranges
-(for example `DigestSize` and `AlertMaxPerRun` from 1 to 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
+(for example `DigestSize` from 1 to 12, `AlertMaxPerRun` from 1 to 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
 the `AlertQuietHours` format with a time zone, and that `AlertWindowHours + AlertCooldownHours` does not exceed `RetentionDays * 24`.
 If something is wrong, the app does not start and the log names the parameter.
 

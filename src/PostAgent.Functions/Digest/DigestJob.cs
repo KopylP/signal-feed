@@ -28,7 +28,14 @@ public sealed class DigestJob(
             return;
         }
 
-        await notifier.SendAsync(DigestMessage.Format(await SummarizeAsync(items, ct)), ct);
+        var report = (await SummarizeAsync(items, ct)).WithSkipped(DigestSelector.CountSkipped(recent, items, now));
+
+        // Posts are marked only after every message went out: if one fails, the next run repeats the digest
+        // (a duplicate is better than a lost digest).
+        foreach (var message in DigestMessage.Format(report))
+        {
+            await notifier.SendAsync(message, ct);
+        }
 
         await posts.MarkSentAsync(items.Select(i => i.Post), alertedAt: null, ct);
         log.LogInformation("Digest sent: {Count} posts", items.Count);

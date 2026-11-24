@@ -61,10 +61,10 @@ public class AgentOptionsTests
     }
 
     [Fact]
-    public void Digest_size_above_what_fits_into_one_telegram_message_is_rejected()
+    public void Digest_size_above_the_maximum_is_rejected()
     {
         var options = Complete();
-        options.DigestSize = AgentOptions.MaxItemsPerMessage + 1;
+        options.DigestSize = AgentOptions.MaxDigestItems + 1;
 
         Assert.Contains(nameof(AgentOptions.DigestSize), Validate(options).SelectMany(r => r.MemberNames));
     }

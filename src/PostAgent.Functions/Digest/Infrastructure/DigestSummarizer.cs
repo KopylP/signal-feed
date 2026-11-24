@@ -6,7 +6,7 @@ namespace PostAgent.Digest.Infrastructure;
 
 public sealed class DigestSummarizer(IChatClient chat) : IDigestSummarizer
 {
-    private const int MaxTextChars = 1000;
+    private const int MaxTextChars = 1500;
 
     private readonly string _systemPrompt = Prompts.Load("digest.md");
 
@@ -21,8 +21,10 @@ public sealed class DigestSummarizer(IChatClient chat) : IDigestSummarizer
         {
             id = i.Post.RowKey,
             source = i.Post.Source,
+            published = i.Post.PublishedAt.UtcDateTime.ToString("yyyy-MM-dd"),
             topic = i.Post.Topic,
             score = i.Post.Score,
+            interesting = i.IsInteresting,
             text = i.Post.Text.Truncate(MaxTextChars),
         }));
 }

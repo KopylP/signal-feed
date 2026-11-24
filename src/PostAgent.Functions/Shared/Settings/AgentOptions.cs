@@ -8,15 +8,19 @@ namespace PostAgent.Shared.Settings;
 // їх читають атрибути [TimerTrigger("%...%")] безпосередньо з App Settings.
 public sealed class AgentOptions
 {
-    // Скільки записів вміщує одне повідомлення Telegram (ліміт 4096 символів). Запис не перевищує ~450
-    // символів (тема 60, пояснення 200, джерело й посилання), підсумок до 400, тож 8 записів вкладаються.
+    // Скільки записів вміщує одне повідомлення алерта (ліміт Telegram 4096 символів). Запис не перевищує ~450
+    // символів (тема 60, пояснення 200, джерело й посилання), тож 8 записів вкладаються.
     public const int MaxItemsPerMessage = 8;
+
+    // Дайджест ділиться на кілька повідомлень, тож його розмір не обмежений одним повідомленням,
+    // а лише тим, скільки постів модель встигає осмислено підсумувати (ADR-0009).
+    public const int MaxDigestItems = 12;
 
     // Джерела
     public string Sources { get; set; } = string.Empty;
 
     // Дайджест
-    [Range(1, MaxItemsPerMessage)] public int DigestSize { get; set; } = 5;
+    [Range(1, MaxDigestItems)] public int DigestSize { get; set; } = 7;
     [Range(0, 10)] public int InterestingThreshold { get; set; } = 7;
 
     // Збір і оцінювання

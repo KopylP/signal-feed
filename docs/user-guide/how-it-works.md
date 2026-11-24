@@ -43,10 +43,20 @@ A daily cleanup removes old posts, so storage stays small.
 
 ## The digest
 
-After the best posts are chosen (`DigestSize`, 5 by default), one more AI call writes a short overview of the day and an explanation for every post,
-using [`prompts/digest.md`](../../prompts/digest.md). The model never writes links: the agent adds them from the post data, so they cannot be invented.
+After the best posts are chosen (`DigestSize`, 7 by default), one more AI call writes the digest, using [`prompts/digest.md`](../../prompts/digest.md).
+It arrives in sections (a section with nothing in it is left out):
 
-If OpenAI is unavailable or its answer is invalid, the digest still arrives, without the summary and with the short scoring reasons.
+- **🔥 Головне за день**: the most important news with the point and why it matters.
+- **💼 Корисно для Collaborator**: what can affect the catalog, demand or the marketplace.
+- **👀 Варто звернути увагу**: less obvious cases, tools, studies and opinions.
+- **📖 Рекомендую прочитати**: up to three posts worth reading in full.
+- **⚠️ Потребує перевірки**: claims to check before relying on them.
+- **📌 Можна пропустити**: how many posts were left out (near-duplicates and less important ones).
+
+The model never writes links, channels or dates: the agent adds them from the post data, so they cannot be invented. A long digest is split into several Telegram messages,
+and a section that continues in the next message repeats its header.
+
+If OpenAI is unavailable or its answer is invalid, the digest still arrives, as a plain list of the posts with the short scoring reasons.
 The digest is always sent, even when nothing stood out.
 
 ## Data retention
