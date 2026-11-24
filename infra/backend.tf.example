@@ -1,6 +1,6 @@
-# За замовчуванням state локальний. Щоб зберігати його в Azure:
-#   1. скопіюйте файл у backend.tf
-#   2. створіть storage account і контейнер для state
+# State is local by default. To keep it in Azure:
+#   1. copy this file to backend.tf
+#   2. create a storage account and a container for the state
 #   3. terraform init -migrate-state
 terraform {
   backend "azurerm" {

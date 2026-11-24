@@ -1,159 +1,159 @@
 # Signal Feed
 
-Агент відбору постів із Telegram на Azure Functions. Щогодини читає публічні канали й групи,
-оцінює пости через OpenAI за вашими правилами, раз на день надсилає дайджест найкращих,
-а для вибраних груп ще й сповіщає одразу, коли в обговоренні щось відбувається.
+A Telegram post-selection agent on Azure Functions. Every hour it reads public channels and groups,
+scores the posts with OpenAI against your rules, sends a digest of the best ones once a day,
+and for selected groups also alerts you right away when something is going on in the discussion.
 
-## Як це працює
+## How it works
 
 ```
-Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) ──► Scorer (OpenAI)
-                                                                     │
-                       AlertFunction (щогодини, лише групи) ◄───────────┤
-                       Digest (раз на день) ◄────────────────────────┘
+Collector (hourly) ──► Posts (Table) ──► to-score (Queue) ──► Scorer (OpenAI)
+                                                                   │
+                       AlertFunction (hourly, groups only) ◄───────┤
+                       Digest (once a day) ◄───────────────────────┘
 ```
 
-| Функція | Тригер | Що робить |
+| Function | Trigger | What it does |
 |---|---|---|
-| `CollectorFunction` | `%CollectorSchedule%` | Читає нові повідомлення джерел через MTProto, зберігає пости, ставить їх у чергу пачками по `ScoringBatchSize` |
-| `ScorerFunction` | черга `to-score` | Оцінює пости через OpenAI (Structured Outputs), пише Score, Topic, Reason, DuplicateOf |
-| `AlertFunction` | `%AlertSchedule%` | Надсилає алерт про сплеск або дуже важливе повідомлення в групах зі списку `AlertSources` |
-| `DigestFunction` | `%DigestSchedule%` | Вибирає найкращі пости, просить модель написати підсумок і надсилає дайджест (завжди) |
-| `CleanupFunction` | `%CleanupSchedule%` | Виконує всі `ICleanupTask`. Зараз це видалення з `Posts` днів старших за `RetentionDays` |
+| `CollectorFunction` | `%CollectorSchedule%` | Reads new messages from the sources over MTProto, stores the posts, queues them in batches of `ScoringBatchSize` |
+| `ScorerFunction` | queue `to-score` | Scores posts with OpenAI (Structured Outputs), writes Score, Topic, Reason, DuplicateOf |
+| `AlertFunction` | `%AlertSchedule%` | Sends an alert about a burst or a very important message in the groups listed in `AlertSources` |
+| `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
+| `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`. Today that deletes days older than `RetentionDays` from `Posts` |
 
-**Канали й групи.** Канали: кожен пост оцінюється окремо. Групи: якщо за запуск прийшло не більше
-`MaxItemsPerGroup` (5) повідомлень, вони теж окремі пости. Якщо більше, повідомлення за часом ділиться на
-`MaxItemsPerGroup` пачок приблизно рівного розміру, і кожну пачку оцінюють одним викликом. Чим швидший потік,
-тим більша пачка, а вартість оцінювання не росте. У тексті пачки першими йдуть повідомлення з найбільшою кількістю
-реакцій, пересилань і відповідей, тому ключове не губиться. Мінімальна довжина `MinPostChars` застосовується до окремих
-повідомлень, а в пачці короткі репліки лишаються: саме їхня кількість показує сплеск.
+**Channels and groups.** Channels: every post is scored on its own. Groups: if no more than
+`MaxItemsPerGroup` (5) messages arrived during a run, they are separate posts too. If there are more, the messages are split by time into
+`MaxItemsPerGroup` bundles of roughly equal size, and each bundle is scored with one call. The faster the flow,
+the bigger the bundle, while the scoring cost does not grow. In the bundle text, the messages with the most
+reactions, forwards and replies come first, so the key ones are not lost. The `MinPostChars` minimum length applies to single
+messages, while short replies stay in a bundle: their number is exactly what shows a burst.
 
-**Алерти.** Лише для груп зі списку `AlertSources`, канали алертів не викликають. Алерт приходить, якщо оцінка
-повідомлення чи пачки ≥ `AlertThreshold` (9) або в пачці ≥ `BurstMinPosts` (8) повідомлень. Про одну групу
-сповіщаємо не частіше ніж раз на `AlertCooldownHours`, за один запуск не більше `AlertMaxPerRun` записів.
-У `AlertQuietHours` (наприклад, `23:00-07:00`) алерти не надсилаються, такі пости потрапляють у дайджест.
-Пост, про який вже сповістили, у дайджесті не повторюється.
+**Alerts.** Only for the groups in `AlertSources`; channels never trigger alerts. An alert is sent if the score of a
+message or bundle is ≥ `AlertThreshold` (9) or a bundle has ≥ `BurstMinPosts` (8) messages. We notify about one group
+at most once per `AlertCooldownHours`, and at most `AlertMaxPerRun` entries per run.
+During `AlertQuietHours` (for example `23:00-07:00`) no alerts are sent, and those posts go into the digest.
+A post that has already been alerted is not repeated in the digest.
 
-**Підсумок у дайджесті.** Після вибору постів `DigestSummarizer` робить один додатковий виклик OpenAI за промптом
-[`prompts/digest.md`](prompts/digest.md). Модель повертає короткий огляд дня (що головне й які теми повторюються) і для кожного поста
-пояснення, що саме в ньому цікаве. Посилання модель не пише: їх додає система з даних постів, тож вигадати їх вона не може.
-Якщо OpenAI недоступний або відповідь некоректна, дайджест усе одно приходить без підсумку, з короткими причинами оцінки.
+**Digest summary.** After the posts are chosen, `DigestSummarizer` makes one extra OpenAI call using the prompt
+[`prompts/digest.md`](prompts/digest.md). The model returns a short overview of the day (what matters and which topics repeat) and, for every post,
+an explanation of what is interesting about it. The model does not write links: the system adds them from the post data, so it cannot invent them.
+If OpenAI is unavailable or the answer is invalid, the digest still arrives without a summary, with the short scoring reasons.
 
-**Очищення даних.** Таблиця `Posts` розбита на дні, тому `CleanupFunction` видаляє цілі дні старші за `RetentionDays`.
-`ChannelState` (курсори читання) не чіпається. Щоб очищати щось нове (іншу таблицю, чергу чи blob), додайте клас, що реалізує
-`ICleanupTask`, і зареєструйте його в `Cleanup/CleanupServices.cs`: функція виконає його разом з іншими.
-Резервне вікно дайджесту в 48 годин працює лише в межах даних, що лишилися, тобто з `RetentionDays = 1` це вчорашній і сьогоднішній день.
+**Data cleanup.** The `Posts` table is partitioned by day, so `CleanupFunction` deletes whole days older than `RetentionDays`.
+`ChannelState` (read cursors) is not touched. To clean up something new (another table, queue or blob), add a class that implements
+`ICleanupTask` and register it in `Cleanup/CleanupServices.cs`: the function runs it together with the others.
+The 48-hour fallback window of the digest only works within the data that remains, so with `RetentionDays = 1` it is yesterday and today.
 
-## Налаштування (App Settings)
+## Settings (App Settings)
 
-| Параметр | За замовчуванням | Опис |
+| Parameter | Default | Description |
 |---|---|---|
-| `Sources` | шість SEO-каналів (`infra/variables.tf`) | username каналів і груп через кому |
-| `CollectorSchedule` | `0 0 * * * *` | CRON збору |
-| `DigestSchedule` | `0 0 8 * * *` | CRON дайджесту |
-| `AlertSchedule` | `0 30 * * * *` | CRON перевірки алертів |
-| `DigestSize` | 5 | скільки постів у дайджесті (не більше 8, інакше повідомлення не вміститься в ліміт Telegram) |
-| `InterestingThreshold` | 7 | від якої оцінки пост «🔥 Цікаве» |
-| `ScoringBatchSize` | 10 | постів в одному повідомленні черги |
-| `MaxPostChars` / `MinPostChars` | 1500 / 80 | обрізання й мінімальна довжина |
-| `MaxItemsPerGroup` | 5 | постів на групу за запуск |
-| `MaxBundleChars` | 3000 | розмір тексту пачки |
-| `AlertSources` | | групи, які можуть викликати алерт |
-| `AlertThreshold` / `BurstMinPosts` | 9 / 8 | пороги алерту |
-| `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | вікно оцінених постів і пауза між алертами однієї групи |
-| `AlertMaxPerRun` | 3 | записів в одному алерті (не більше 8) |
-| `AlertQuietHours` / `AlertTimeZone` | порожньо / `Europe/Kyiv` | тихі години |
-| `OpenAIModel` | `gpt-5.4-nano` | модель оцінювання |
-| `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **секрети**, лише в Key Vault |
-| `TelegramChatId`, `TelegramApiId`, `TelegramPhone` | | куди слати; дані акаунта для читання |
-| `SessionBlobContainer` | `tg-session` | контейнер із сесією Telegram |
-| `CleanupSchedule` | `0 0 3 * * *` | CRON очищення (UTC) |
-| `RetentionDays` | 1 | скільки днів назад зберігати пости: 1 означає вчорашню й сьогоднішню партиції |
-| `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
+| `Sources` | six SEO channels (`infra/variables.tf`) | comma-separated usernames of channels and groups |
+| `CollectorSchedule` | `0 0 * * * *` | collection CRON |
+| `DigestSchedule` | `0 0 8 * * *` | digest CRON |
+| `AlertSchedule` | `0 30 * * * *` | alert check CRON |
+| `DigestSize` | 5 | posts in the digest (at most 8, otherwise the message exceeds the Telegram limit) |
+| `InterestingThreshold` | 7 | score from which a post is marked "🔥 Цікаве" (interesting) |
+| `ScoringBatchSize` | 10 | posts per queue message |
+| `MaxPostChars` / `MinPostChars` | 1500 / 80 | truncation and minimum length |
+| `MaxItemsPerGroup` | 5 | posts per group per run |
+| `MaxBundleChars` | 3000 | bundle text size |
+| `AlertSources` | | groups that can trigger an alert |
+| `AlertThreshold` / `BurstMinPosts` | 9 / 8 | alert thresholds |
+| `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | window of scored posts and pause between alerts for one group |
+| `AlertMaxPerRun` | 3 | entries in one alert (at most 8) |
+| `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours |
+| `OpenAIModel` | `gpt-5.4-nano` | scoring model |
+| `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
+| `TelegramChatId`, `TelegramApiId`, `TelegramPhone` | | where to send; account data for reading |
+| `SessionBlobContainer` | `tg-session` | container with the Telegram session |
+| `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
+| `RetentionDays` | 1 | how many days back to keep posts: 1 means yesterday's and today's partitions |
+| `FirstRunLookbackHours` | 24 | how many hours of history to read on the first run for a new source |
 
-**Де значення за замовчуванням.** Єдине джерело: `Shared/Settings/AgentOptions.cs`. Виняток `Sources`: його значення за замовчуванням задано
-в `infra/variables.tf` (перевизначається в `terraform.tfvars` або змінною `TF_SOURCES` у GitHub). У Terraform окремими змінними є лише
-обов'язкові й інфраструктурні значення (джерела, дані Telegram, розклади, контейнер сесії). Усе інше задається через змінну `app_settings`
-з іменами з таблиці вище, наприклад `app_settings = { DigestSize = "6", AlertQuietHours = "23:00-07:00" }`.
-Якщо параметр не задано, діє значення з коду. Помилка в імені ключа не дає помилки, параметр просто ігнорується.
+**Where the defaults live.** The single source is `Shared/Settings/AgentOptions.cs`. The exception is `Sources`: its default is set
+in `infra/variables.tf` (override it in `terraform.tfvars` or with the `TF_SOURCES` variable in GitHub). In Terraform, only the
+required and infrastructure values get their own variables (sources, Telegram data, schedules, session container). Everything else is set through the `app_settings` variable
+using the names from the table above, for example `app_settings = { DigestSize = "6", AlertQuietHours = "23:00-07:00" }`.
+If a parameter is not set, the value from code applies. A typo in a key name is not an error, the parameter is simply ignored.
 
-Налаштування перевіряються під час старту: обов'язкові значення (джерела, ключ OpenAI, токен бота, дані Telegram), діапазони
-(наприклад, `DigestSize` і `AlertMaxPerRun` від 1 до 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
-формат `AlertQuietHours` із часовим поясом, а також що `AlertWindowHours + AlertCooldownHours` не більше за `RetentionDays * 24`.
-Якщо щось не так, застосунок не запуститься, а в логу буде назва параметра.
+Settings are validated on startup: required values (sources, OpenAI key, bot token, Telegram data), ranges
+(for example `DigestSize` and `AlertMaxPerRun` from 1 to 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
+the `AlertQuietHours` format with a time zone, and that `AlertWindowHours + AlertCooldownHours` does not exceed `RetentionDays * 24`.
+If something is wrong, the app does not start and the log names the parameter.
 
-### Як змінити розклад, джерела й промпт
+### How to change the schedule, sources and prompt
 
-**Розклад.** CRON має шість полів (`секунди хвилини години день місяць день-тижня`) і задається **в UTC**.
-`0 0 8 * * *` це 08:00 UTC, тобто 10:00 за Києвом взимку (UTC+2) і 11:00 влітку (UTC+3), тож літній і зимовий час доведеться враховувати самостійно.
-Розклади читаються через `%CollectorSchedule%` та інші, тому змінити їх можна без перезбірки коду. Достатньо оновити
-App Setting (або змінну Terraform і `terraform apply`), і застосунок перезапуститься з новим розкладом:
+**Schedule.** CRON has six fields (`second minute hour day month weekday`) and is set **in UTC**.
+`0 0 8 * * *` is 08:00 UTC, which is 10:00 in Kyiv in winter (UTC+2) and 11:00 in summer (UTC+3), so you have to account for daylight saving time yourself.
+Schedules are read through `%CollectorSchedule%` and the like, so you can change them without rebuilding the code. Just update the
+App Setting (or the Terraform variable and run `terraform apply`), and the app restarts with the new schedule:
 
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> \
   --settings DigestSchedule="0 0 6 * * *" CollectorSchedule="0 0 */2 * * *"
 ```
 
-**Джерела.** `Sources` (і `AlertSources`) це username через кому, `@` і `t.me/` можна не прибирати:
+**Sources.** `Sources` (and `AlertSources`) are comma-separated usernames; you do not have to strip `@` and `t.me/`:
 
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> \
   --settings Sources="channel_one,channel_two,some_group" AlertSources="some_group"
 ```
 
-**Промпти.** Файли [`prompts/scoring.md`](prompts/scoring.md) (оцінювання) і [`prompts/digest.md`](prompts/digest.md) (підсумок дайджесту) копіюються у збірку, тому після зміни
-потрібен новий деплой (достатньо push у `main`, коли ввімкнено `DEPLOY_ENABLED`). **До першого деплою** заповніть у `scoring.md` свої теми замість `{тема 1}`
-і приклади замість `{реальний пост...}`: інакше модель оцінюватиме за буквальними заглушками.
+**Prompts.** The files [`prompts/scoring.md`](prompts/scoring.md) (scoring) and [`prompts/digest.md`](prompts/digest.md) (digest summary) are copied into the build, so a change
+needs a new deploy (a push to `main` is enough when `DEPLOY_ENABLED` is on). **Before the first deploy**, fill in your own topics in `scoring.md` in place of `{тема 1}`
+and examples in place of `{реальний пост...}`: otherwise the model will score against the literal placeholders.
 
-## Локальний запуск з Azurite
+## Running locally with Azurite
 
-Потрібні: [.NET 10 SDK](https://dotnet.microsoft.com/download), [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local),
+You need: [.NET 10 SDK](https://dotnet.microsoft.com/download), [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local),
 [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (`npm i -g azurite`).
 
 ```bash
 azurite --silent --location .azurite &
 cp src/PostAgent.Functions/local.settings.json.example src/PostAgent.Functions/local.settings.json
-# заповніть заглушки: ключ OpenAI, токен бота, дані Telegram
+# fill in the placeholders: OpenAI key, bot token, Telegram data
 
-# одноразовий вхід у Telegram (сесія піде в Azurite)
+# one-off Telegram sign-in (the session goes to Azurite)
 export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380...
 dotnet run --project src/TgLogin -- "UseDevelopmentStorage=true"
 
 cd src/PostAgent.Functions && func start
 ```
 
-Локально таблиці, черга й контейнер створюються автоматично. Щоб одразу побачити результат, запустіть таймер вручну:
+Locally, the tables, queue and container are created automatically. To see a result right away, trigger a timer by hand:
 `curl -X POST http://localhost:7071/admin/functions/CollectorFunction -H "Content-Type: application/json" -d "{}"`.
 
-Тести: `dotnet test`.
+Tests: `dotnet test`.
 
-## Розгортання
+## Deployment
 
-Потрібні Azure CLI (`az login`), Terraform ≥ 1.5, підписка Azure.
+You need the Azure CLI (`az login`), Terraform ≥ 1.5 and an Azure subscription.
 
-**Перед стартом.** Перевірте, що Flex Consumption доступний у вашому регіоні:
-`az functionapp list-flexconsumption-locations -o table`, і за потреби змініть `location`.
+**Before you start.** Check that Flex Consumption is available in your region:
+`az functionapp list-flexconsumption-locations -o table`, and change `location` if needed.
 
 ### 1. terraform apply
 
 ```bash
 export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 cd infra
-cp terraform.tfvars.example terraform.tfvars   # заповніть, зокрема deployer_object_id і budget_alert_email
+cp terraform.tfvars.example terraform.tfvars   # fill in, notably deployer_object_id and budget_alert_email
 terraform init
 terraform apply
 ```
 
-`deployer_object_id`: `az ad signed-in-user show --query id -o tsv`. State за замовчуванням локальний,
-для віддаленого дивіться `backend.tf.example`.
+`deployer_object_id`: `az ad signed-in-user show --query id -o tsv`. State is local by default,
+see `backend.tf.example` for remote state.
 
-Terraform створює: resource group, storage (контейнери `deployment-package` і `tg-session`, таблиці `ChannelState` і `Posts`,
-чергу `to-score`), Key Vault (RBAC), Log Analytics (30 днів, 0.1 ГБ на добу), Application Insights, план FC1 і function app
-із managed identity та ролями, бюджет $5 на місяць (сповіщення при 80% і 100%).
+Terraform creates: a resource group, storage (containers `deployment-package` and `tg-session`, tables `ChannelState` and `Posts`,
+queue `to-score`), a Key Vault (RBAC), Log Analytics (30 days, 0.1 GB a day), Application Insights, an FC1 plan and a function app
+with a managed identity and roles, and a $5 monthly budget (alerts at 80% and 100%).
 
-### 2. Секрети в Key Vault
+### 2. Secrets in Key Vault
 
-Значення секретів Terraform не створює, щоб вони не потрапили в state:
+Terraform does not create the secret values, so they never end up in the state:
 
 ```bash
 KV=$(terraform output -raw key_vault_name)
@@ -162,24 +162,24 @@ read -rsp "Telegram bot token: " V && az keyvault secret set --vault-name $KV --
 read -rsp "Telegram api_hash: " V && az keyvault secret set --vault-name $KV --name TelegramApiHash --value "$V" >/dev/null; echo
 ```
 
-Застосунок читає їх через Key Vault references. Якщо посилання не підхопилося, перевірте роль `Key Vault Secrets User`
-у identity функції й перезапустіть застосунок (`az functionapp restart`). Нерозв'язане посилання застосунок помітить сам:
-під час старту буде помилка з назвою секрету.
+The app reads them through Key Vault references. If a reference is not picked up, check that the function's identity has the `Key Vault Secrets User` role
+and restart the app (`az functionapp restart`). The app notices an unresolved reference by itself:
+startup fails with an error that names the secret.
 
-### 3. TgLogin (вхід у Telegram)
+### 3. TgLogin (Telegram sign-in)
 
-Використовуйте окремий акаунт. `api_id` та `api_hash` беруться на [my.telegram.org](https://my.telegram.org). Якщо групу не вдається
-прочитати, вступіть у неї цим акаунтом.
+Use a separate account. `api_id` and `api_hash` come from [my.telegram.org](https://my.telegram.org). If a group cannot be
+read, join it with this account.
 
 ```bash
 export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380...
 dotnet run --project src/TgLogin -- $(terraform -chdir=infra output -raw storage_account_name)
 ```
 
-Програма запитає код із Telegram і пароль 2FA, а сесію завантажить у контейнер `tg-session` через `DefaultAzureCredential`
-(ваш `az login`, роль Storage Blob Data Contributor уже видана Terraform). Якщо сесія застаріє, повторіть цей крок.
+The program asks for the Telegram code and the 2FA password, then uploads the session to the `tg-session` container through `DefaultAzureCredential`
+(your `az login`; the Storage Blob Data Contributor role has already been granted by Terraform). If the session expires, repeat this step.
 
-### 4. Деплой коду
+### 4. Deploying the code
 
 ```bash
 dotnet publish src/PostAgent.Functions -c Release -o publish
@@ -187,11 +187,11 @@ cd publish
 func azure functionapp publish $(terraform -chdir=../infra output -raw function_app_name)
 ```
 
-## GitHub Actions: build, test, deploy через OIDC
+## GitHub Actions: build, test, deploy through OIDC
 
-Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Збирає й тестує на push у `main` і на кожен PR, а з `main` ще й деплоїть (деплої не виконуються одночасно). Запускається й вручну (`workflow_dispatch`).
+Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time). It can also be started by hand (`workflow_dispatch`).
 
-Одноразове налаштування OIDC (без паролів):
+One-time OIDC setup (no passwords):
 
 ```bash
 APP_ID=$(az ad app create --display-name signal-feed-deploy --query appId -o tsv)
@@ -206,26 +206,26 @@ az role assignment create --assignee $APP_ID --role Contributor \
   --scope $(az functionapp show -g <rg> -n <function-app> --query id -o tsv)
 ```
 
-У репозиторії GitHub (Settings → Secrets and variables → Actions → Variables) задайте:
-`AZURE_CLIENT_ID` (це `$APP_ID`), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_FUNCTIONAPP_NAME`.
+In the GitHub repository (Settings → Secrets and variables → Actions → Variables) set:
+`AZURE_CLIENT_ID` (this is `$APP_ID`), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_FUNCTIONAPP_NAME`.
 
-### Інфраструктура з GitHub Actions (ручний запуск)
+### Infrastructure from GitHub Actions (manual run)
 
-Workflow [`.github/workflows/infra.yml`](.github/workflows/infra.yml) запускається лише вручну (Actions → infra → Run workflow).
-Без галочки `apply` виконується лише `terraform plan` (його видно в підсумку запуску), із галочкою ще й `terraform apply`.
-Якщо інфраструктури нема, вона створюється, якщо код у `infra/` змінився, оновлюється. Код застосунку деплоїть окремий workflow
-`build-test-deploy` після push у `main`.
+The workflow [`.github/workflows/infra.yml`](.github/workflows/infra.yml) runs only by hand (Actions → infra → Run workflow).
+Without the `apply` checkbox it only runs `terraform plan` (visible in the run summary); with the checkbox it also runs `terraform apply`.
+If the infrastructure does not exist, it is created; if the code in `infra/` changed, it is updated. The application code is deployed by the separate workflow
+`build-test-deploy` after a push to `main`. See [ADR-0004](docs/adr/0004-run-terraform-from-a-manual-workflow.md) for why.
 
-Pipeline сам створює ресурси, тому його ідентичність (App Registration) і сховище state створюються **вручну один раз**:
-їх не можна описати в тому ж Terraform, який вони запускають.
+The pipeline creates the resources itself, so its identity (App Registration) and the state storage are created **by hand once**:
+they cannot be described in the same Terraform that they run.
 
 ```bash
-# 1. Сховище для state
+# 1. State storage
 az group create -n rg-tfstate -l westeurope
-az storage account create -g rg-tfstate -n <унікальне-ім'я-sttfstate> --sku Standard_LRS --allow-blob-public-access false
-az storage container create --account-name <те-саме-ім'я> -n tfstate --auth-mode login
+az storage account create -g rg-tfstate -n <unique-sttfstate-name> --sku Standard_LRS --allow-blob-public-access false
+az storage container create --account-name <same-name> -n tfstate --auth-mode login
 
-# 2. Ідентичність pipeline (замість варіанта з розділу вище, ролі ширші)
+# 2. Pipeline identity (instead of the variant in the section above, with broader roles)
 SUB=$(az account show --query id -o tsv)
 APP_ID=$(az ad app create --display-name signal-feed-deploy --query appId -o tsv)
 az ad sp create --id $APP_ID
@@ -233,109 +233,119 @@ az ad app federated-credential create --id $APP_ID --parameters '{
   "name": "github-main", "issuer": "https://token.actions.githubusercontent.com",
   "subject": "repo:<github-owner>/<repo>:ref:refs/heads/main", "audiences": ["api://AzureADTokenExchange"]
 }'
-# створювати ресурси
+# create resources
 az role assignment create --assignee $APP_ID --role Contributor --scope /subscriptions/$SUB
-# видавати ролі функції й вам (roles.tf); Contributor цього не вміє
+# grant roles to the function and to you (roles.tf); Contributor cannot do this
 az role assignment create --assignee $APP_ID --role "Role Based Access Control Administrator" --scope /subscriptions/$SUB
-# читати й писати state
+# read and write the state
 az role assignment create --assignee $APP_ID --role "Storage Blob Data Contributor" \
-  --scope $(az storage account show -n <ім'я-sttfstate> --query id -o tsv)
+  --scope $(az storage account show -n <sttfstate-name> --query id -o tsv)
 ```
 
-GitHub Variables (Settings → Secrets and variables → Actions → Variables), усі несекретні:
+GitHub Variables (Settings → Secrets and variables → Actions → Variables), all non-secret:
 
-| Змінна | Значення |
+| Variable | Value |
 |---|---|
-| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | вхід в Azure (OIDC) |
-| `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | сховище state (`TFSTATE_CONTAINER`, за замовчуванням `tfstate`) |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | sign-in to Azure (OIDC) |
+| `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | state storage (`TFSTATE_CONTAINER`, default `tfstate`) |
 | `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
-| `TF_SOURCES` (необов'язково), `TF_ALERT_SOURCES` | `sources` (за замовчуванням шість SEO-каналів із `variables.tf`), `alert_sources` |
-| `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | відповідні змінні Terraform |
-| `TF_LOCATION`, `TF_NAME_PREFIX` (необов'язково) | за замовчуванням `westeurope` і `signalfeed` |
-| `TF_APP_SETTINGS` (необов'язково) | JSON, наприклад `{"DigestSize":"6"}`; відповідає `app_settings` |
+| `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
+| `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | the matching Terraform variables |
+| `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
+| `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
 
-Секрети (OpenAI, Telegram) у GitHub не потрібні: їх, як і раніше, кладуть у Key Vault командами `az keyvault secret set`.
-Після першого `apply` скопіюйте `function_app_name` з підсумку запуску в `AZURE_FUNCTIONAPP_NAME` для деплою коду.
+The secrets (OpenAI, Telegram) are not needed in GitHub: as before, they go into Key Vault with `az keyvault secret set`.
+After the first `apply`, copy `function_app_name` from the run summary into `AZURE_FUNCTIONAPP_NAME` for the code deploy.
 
-**Деплой вимкнений за замовчуванням.** Без змінної `DEPLOY_ENABLED` зі значенням `true` workflow лише збирає й тестує, а крок деплою
-пропускається. Коли будете готові розгортати, задайте цю змінну там же, де й решту.
+**Deploy is off by default.** Without the `DEPLOY_ENABLED` variable set to `true`, the workflow only builds and tests, and the deploy step
+is skipped. When you are ready to deploy, set this variable in the same place as the rest.
 
-## Розробка з Claude Code
+## Working with Claude Code
 
-У корені й у кожній частині проєкту (`infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`)
-лежить `CLAUDE.md` із правилами коду й команд. Вкладені файли підвантажуються, коли Claude працює з файлами в цій папці.
-Після змін, що впливають на правила, команди чи налаштування, оновлюйте відповідний `CLAUDE.md` разом із цим README.
+The root and every part of the project (`infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`)
+have a `CLAUDE.md` with code rules and commands, written in English. Nested files are loaded when Claude works on files in that folder.
+After a change that affects rules, commands or settings, update the matching `CLAUDE.md` together with this README.
 
-## Безпека й вартість
+Project skills live in `.claude/skills/`. Today there is one: `write-adr`, which writes architecture decision records.
 
-- У коді й репозиторії немає секретів. `local.settings.json` у `.gitignore`, у `local.settings.json.example` лише заглушки.
-- Доступ до storage через managed identity. Токен бота не потрапляє в логи й телеметрію: HTTP-логування клієнта вимкнено, а
-  `TelegramTokenRedactor` замінює токен у записах залежностей Application Insights.
-- До OpenAI йдуть тексти постів і, для груп, імена авторів та username учасників. Це персональні дані третіх осіб, хоча джерела публічні.
-- Орієнтовно: функції в межах безкоштовної квоти Flex Consumption, storage копійки, основна стаття витрат OpenAI.
-  Бюджет $5 на resource group дає сповіщення на email при 80% і 100%.
+## Architecture decisions
 
-## Готові рішення замість власного коду
+Significant decisions are recorded as ADRs in [`docs/adr/`](docs/adr/README.md) (one file per decision, with an index and a template).
+Write a new ADR for decisions that are hard to reverse; an accepted ADR is never rewritten, it is superseded by a new one.
+The `write-adr` skill walks through it.
 
-| Задача | Що використано |
+## Security and cost
+
+- There are no secrets in the code or the repository. `local.settings.json` is in `.gitignore`, and `local.settings.json.example` has placeholders only.
+- Storage access uses managed identity. The bot token does not reach logs or telemetry: HTTP logging of the client is off, and
+  `TelegramTokenRedactor` replaces the token in Application Insights dependency records.
+- OpenAI receives post texts and, for groups, author names and participant usernames. This is personal data of third parties, even though the sources are public.
+- Roughly: the functions stay within the free grant of Flex Consumption, storage costs pennies, and the main expense is OpenAI.
+  The $5 budget on the resource group sends an email alert at 80% and 100%.
+
+## Ready-made solutions instead of custom code
+
+| Task | What is used |
 |---|---|
-| Виклики моделі, відповідь за строгою схемою | `Microsoft.Extensions.AI` (`IChatClient`) з адаптером OpenAI; схема будується з C#-типів, `strict: true` вмикає `ChatClientExtensions.AskAsync` |
-| Bot API Telegram | `Telegram.Bot` |
-| Читання каналів і груп (MTProto) | `WTelegramClient` |
-| Table, Queue, Blob, автентифікація | `Azure.Data.Tables`, `Azure.Storage.Queues`, `Azure.Storage.Blobs`, `Azure.Identity` |
-| Повтори й таймаути HTTP | `Microsoft.Extensions.Http.Resilience` |
-| Перевірка налаштувань | `Options` з DataAnnotations і `ValidateOnStart` |
+| Model calls, answers in a strict schema | `Microsoft.Extensions.AI` (`IChatClient`) with the OpenAI adapter; the schema is built from C# types, `strict: true` is enabled by `ChatClientExtensions.AskAsync` |
+| Telegram Bot API | `Telegram.Bot` |
+| Reading channels and groups (MTProto) | `WTelegramClient` |
+| Table, Queue, Blob, authentication | `Azure.Data.Tables`, `Azure.Storage.Queues`, `Azure.Storage.Blobs`, `Azure.Identity` |
+| HTTP retries and timeouts | `Microsoft.Extensions.Http.Resilience` |
+| Settings validation | `Options` with DataAnnotations and `ValidateOnStart` |
 
-Щоб замінити модель чи провайдера, достатньо інакше зареєструвати `IChatClient` у `Program.cs`: код оцінювання й підсумку про провайдера не знає.
+To replace the model or the provider, it is enough to register `IChatClient` differently in `Program.cs`: the scoring and summary code does not know about the provider.
 
-## Структура
+## Structure
 
-Код організований по фічах: кожна папка містить усе для однієї можливості (функцію, логіку, інтерфейси, реєстрацію сервісів).
-Технічні деталі фічі (Telegram, Azure, модель) лежать у її підпапках, а спільне для кількох фіч у `Shared/`. Namespace збігається
-з шляхом папки, а залежності між фічами видно з `using`.
+The code is organized by feature: each folder holds everything for one capability (function, logic, interfaces, service registration).
+The technical details of a feature (Telegram, Azure, model) live in its subfolders, and whatever several features share lives in `Shared/`. The namespace matches
+the folder path, and dependencies between features are visible from `using`.
 
 ```
 src/PostAgent.Functions/
-├── Collecting/            збір постів з Telegram
-│   ├── Telegram/          читач каналів і груп (WTelegramClient), сесія в Blob
-│   └── Storage/           курсори читання джерел
-├── Scoring/               оцінювання постів
-│   ├── Ai/                виклик моделі
-│   └── Storage/           черга to-score
-├── Digest/                денний дайджест
-│   └── Ai/                підсумок від ШІ
-├── Alerts/                алерти про сплески в групах
-├── Cleanup/               очищення старих даних
-├── Shared/                спільне для фіч
-│   ├── Posts/             модель посту, IPostRepository (Storage/: таблиця Posts)
-│   ├── Notifications/     відправка в Telegram (Telegram/: Telegram.Bot)
-│   ├── Ai/                IChatClient, промпти
-│   ├── Settings/          AgentOptions і валідатор
-│   ├── Infrastructure/    клієнти Table, Queue, Blob
-│   └── Common/            дрібні розширення
+├── Collecting/            collecting posts from Telegram
+│   ├── Telegram/          channel and group reader (WTelegramClient), session in Blob
+│   └── Storage/           source read cursors
+├── Scoring/               scoring posts
+│   ├── Ai/                model call
+│   └── Storage/           to-score queue
+├── Digest/                daily digest
+│   └── Ai/                AI summary
+├── Alerts/                alerts about bursts in groups
+├── Cleanup/               cleanup of old data
+├── Shared/                shared by features
+│   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
+│   ├── Notifications/     sending to Telegram (Telegram/: Telegram.Bot)
+│   ├── Ai/                IChatClient, prompts
+│   ├── Settings/          AgentOptions and validator
+│   ├── Infrastructure/    Table, Queue and Blob clients
+│   └── Common/            small extensions
 ├── Program.cs
-└── ServiceCollectionExtensions.cs   складання застосунку з усіх фіч
-src/TgLogin/               одноразовий вхід у Telegram
-tests/PostAgent.Tests/     xUnit, ті самі папки; Fakes/ — підроблені залежності для тестів функцій
-Directory.Packages.props   версії всіх NuGet-пакетів в одному місці
+└── ServiceCollectionExtensions.cs   composes the app from all features
+src/TgLogin/               one-off Telegram sign-in
+tests/PostAgent.Tests/     xUnit, same folders; Fakes/ holds the fake dependencies for function tests
+Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
-                           (main.tf: resource group й імена; variables, outputs, providers)
-prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
-.github/workflows/         deploy.yml (build, test, deploy коду), infra.yml (ручний terraform plan/apply)
-CLAUDE.md                  правила для Claude Code; свій файл є й у infra/, src/*, tests/, prompts/, .github/
+                           (main.tf: resource group and names; variables, outputs, providers)
+prompts/                   scoring.md (scoring) and digest.md (digest summary)
+docs/adr/                  architecture decision records, template and index
+.claude/skills/            project skills for Claude Code (write-adr)
+.github/workflows/         deploy.yml (build, test, code deploy), infra.yml (manual terraform plan/apply)
+CLAUDE.md                  rules for Claude Code; there is also one in infra/, src/*, tests/, prompts/, .github/
 ```
 
-**Нова фіча.** Створіть папку з функцією, логікою й інтерфейсами, адаптери покладіть у її підпапки, додайте `AddXxx()` для її
-сервісів і викличте його в `ServiceCollectionExtensions.AddPostAgent`. Нове очищення це один клас `ICleanupTask` у `Cleanup/`.
+**A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add `AddXxx()` for its
+services and call it in `ServiceCollectionExtensions.AddPostAgent`. A new cleanup is one `ICleanupTask` class in `Cleanup/`.
 
-## Відомі обмеження
+## Known limitations
 
-- **Повтори повідомлень.** Якщо Telegram відповів на `sendMessage` із затримкою, повтор може дати дубль дайджесту чи алерта. Це свідомий вибір на користь того, щоб не втратити повідомлення.
-- **Повідомлення, яке не вдалося оцінити.** Після 5 невдалих спроб воно потрапляє в чергу `to-score-poison`, а пости лишаються `New`
-  до очищення. Сповіщення про це немає, тож за чергою варто стежити в Azure.
-- **Збій збору.** Повідомлення «Збір не вдався» приходить щогодини, поки причину не усунуто.
-- **Пачки після збою.** Якщо запуск Collector обірвався між записом постів і оновленням курсору, а за цей час прийшли нові повідомлення, ті самі повідомлення групи можуть потрапити у дві різні пачки.
-- **Перший запуск.** Для зайнятої групи читання історії за добу це багато запитів поспіль, тому можливий FLOOD_WAIT. Джерело тоді пропускається до наступного запуску.
-- **Свіжі повідомлення** ще не набрали реакцій, тому порядок у пачці за помітністю спершу приблизний.
-- **Позначка «надіслано».** Якщо повідомлення пішло, а запис статусу в таблицю не вдався, наступний запуск може повторити алерт.
-- **Тести сховища** не входять до `dotnet test`: `PostRepository` перевіряється вручну на Azurite.
+- **Message retries.** If Telegram answered `sendMessage` with a delay, a retry can produce a duplicate digest or alert. This is a deliberate choice in favor of not losing a message.
+- **A message that could not be scored.** After 5 failed attempts it lands in the `to-score-poison` queue, and the posts stay `New`
+  until cleanup. There is no notification about this, so keep an eye on the queue in Azure.
+- **Collection failure.** The message «Збір не вдався» ("Collection failed") arrives every hour until the cause is fixed.
+- **Bundles after a failure.** If a Collector run broke off between writing the posts and updating the cursor, and new messages arrived in the meantime, the same group messages can end up in two different bundles.
+- **First run.** For a busy group, reading a day of history means many requests in a row, so FLOOD_WAIT is possible. The source is then skipped until the next run.
+- **Fresh messages** have not collected reactions yet, so the prominence order in a bundle is approximate at first.
+- **The "sent" mark.** If the message went out but writing the status to the table failed, the next run can repeat the alert.
+- **Storage tests** are not part of `dotnet test`: `PostRepository` is checked by hand on Azurite.

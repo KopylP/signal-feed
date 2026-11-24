@@ -1,39 +1,50 @@
 # Signal Feed
 
-Агент відбору постів із Telegram на Azure Functions (.NET 10, isolated worker). Опис роботи, налаштувань і розгортання: `README.md`.
-Правила для окремих частин лежать у `CLAUDE.md` своєї папки: `infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`.
+Telegram post-selection agent on Azure Functions (.NET 10, isolated worker). How it works, settings and deployment: `README.md`.
+Rules for each part live in the `CLAUDE.md` of its folder: `infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`.
 
-## Підтримуй документацію актуальною
+## Language
 
-Після виконання завдання, якщо щось змінилось, онови в тому ж коміті `README.md` і потрібні `CLAUDE.md`
-(налаштування, команди, змінні, структура папок, правила, які ми змінили). Нові правила додавай у `CLAUDE.md` тієї папки, якої вони стосуються.
-Не дублюй те, що вже є в README, і тримай кожен `CLAUDE.md` коротким (до ~60 рядків).
+- English only for everything we write about the project: `CLAUDE.md` files, `README.md`, ADRs, skills, Terraform (descriptions and comments), workflows, commit messages, identifiers, logs and error messages.
+- Ukrainian only where the end user reads it: the prompts in `prompts/` and the Telegram messages sent by the agent.
+- Comments in C# files that are still in Ukrainian stay as they are until you touch that code; new and edited comments are English.
 
-## Команди
+## Keep the docs current
+
+After finishing a task, if anything changed, update `README.md` and the relevant `CLAUDE.md` in the same commit
+(settings, commands, variables, folder structure, rules we changed). Put a new rule in the `CLAUDE.md` of the folder it applies to.
+Do not duplicate what the README already says, and keep every `CLAUDE.md` short (about 60 lines at most).
+
+## Record architecture decisions
+
+Record a significant or hard-to-reverse decision (hosting, storage model, identity and access, testing approach, the shape of a pipeline) as an ADR
+in `docs/adr/`, using the `write-adr` skill. Never edit an accepted ADR to change its decision: write a new one that supersedes it.
+Skip ADRs for small, local or easily reversible choices.
+
+## Commands
 
 ```bash
-dotnet restore && dotnet build -c Release --no-restore   # збірка; попередження вважаються помилками
-dotnet test -c Release                                    # усі тести
-terraform -chdir=infra fmt -check && terraform -chdir=infra validate   # після init -backend=false
+dotnet restore && dotnet build -c Release --no-restore   # build; warnings are errors
+dotnet test -c Release                                    # all tests
+terraform -chdir=infra fmt -check && terraform -chdir=infra validate   # after init -backend=false
 ```
 
-Перед завершенням завдання збірка й тести мають проходити.
+Build and tests must pass before you finish a task.
 
-## Загальні правила коду (C#)
+## General C# rules
 
-- Мова: ідентифікатори, логи й повідомлення про помилки англійською; коментарі, README, промпти й тексти для користувача українською.
-- `Nullable` увімкнено, `TreatWarningsAsErrors = true`. Не гаси попередження через `#pragma` чи `!`, виправляй причину.
-- File-scoped namespace, що збігається зі шляхом папки (корінь `PostAgent`). Ім'я файлу збігається з головним типом; невеликі пов'язані типи (enum, record) можуть лежати разом.
-- Усі класи `sealed` (або `static`), якщо тільки не задумані для успадкування. DI через primary constructor.
-- Код організований по фічах (див. «Структура» в README). Не клади логіку фічі в `Shared/`, а в `Shared/` не додавай залежностей від фіч.
-- Метод, що робить I/O, асинхронний, приймає `CancellationToken ct` останнім параметром і передає його далі.
-  Ловиш `Exception`: виключай `OperationCanceledException` (`when (ex is not OperationCanceledException)`).
-- Час береться з `TimeProvider`, ніколи з `DateTime.Now` чи `DateTimeOffset.UtcNow`.
-- Логи: шаблони з іменованими параметрами (`log.LogInformation("Digest sent: {Count} posts", n)`), без інтерполяції рядків.
-  Секрети й токени в лог не потрапляють.
-- Коментарі пояснюють, чому так, а не що робить код. Не коментуй очевидне.
-- Версії NuGet-пакетів лише в `Directory.Packages.props`; у `.csproj` вказуй пакет без версії.
+- `Nullable` is on and `TreatWarningsAsErrors = true`. Do not silence warnings with `#pragma` or `!`, fix the cause.
+- File-scoped namespace matching the folder path (root `PostAgent`). The file name matches the main type; small related types (enum, record) may share a file.
+- Every class is `sealed` (or `static`) unless it is designed for inheritance. Use primary constructors for DI.
+- Code is organized by feature (see "Structure" in the README). Do not put feature logic in `Shared/`, and do not make `Shared/` depend on a feature.
+- A method that does I/O is async and takes `CancellationToken ct` as its last parameter and passes it on.
+  When catching `Exception`, exclude `OperationCanceledException` (`when (ex is not OperationCanceledException)`).
+- Take time from `TimeProvider`, never from `DateTime.Now` or `DateTimeOffset.UtcNow`.
+- Logging uses message templates with named parameters (`log.LogInformation("Digest sent: {Count} posts", n)`), no string interpolation.
+  Secrets and tokens never reach the logs.
+- Comments explain why, not what. Do not comment the obvious.
+- NuGet versions live only in `Directory.Packages.props`; reference packages in `.csproj` without a version.
 
-## Не комітити
+## Never commit
 
-Секрети, `local.settings.json`, `terraform.tfvars`, `backend.tf`, state. Дані особи (телефон, email, chat id) не додавай у коміт як значення за замовчуванням.
+Secrets, `local.settings.json`, `terraform.tfvars`, `backend.tf`, state. Do not commit personal data (phone, email, chat id) as default values.

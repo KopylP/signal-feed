@@ -1,9 +1,9 @@
 locals {
-  # Порядок злиття: спершу додаткові налаштування з var.app_settings, далі явні значення, останні секрети.
+  # Merge order: extra settings from var.app_settings first, then explicit values, secrets last (last wins).
   app_settings = merge(
     var.app_settings,
     {
-      # Identity-based підключення до storage: без ключів і рядків підключення.
+      # Identity-based storage connection: no keys or connection strings.
       AzureWebJobsStorage__accountName = azurerm_storage_account.main.name
 
       Sources              = var.sources
@@ -13,13 +13,13 @@ locals {
       TelegramPhone        = var.telegram_phone
       SessionBlobContainer = var.session_blob_container
 
-      # Розклади читають атрибути таймерів, тому значення за замовчуванням живуть тут, а не в коді.
+      # Timer attributes read the schedules, so their defaults live here, not in code.
       CollectorSchedule = var.collector_schedule
       DigestSchedule    = var.digest_schedule
       AlertSchedule     = var.alert_schedule
       CleanupSchedule   = var.cleanup_schedule
     },
-    # Секрети: лише посилання на Key Vault, значення в state не потрапляють.
+    # Secrets: Key Vault references only, the values never reach the state.
     local.secret_reference,
   )
 }

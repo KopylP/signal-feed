@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write # потрібно для входу в Azure через OIDC
+  id-token: write # required to sign in to Azure via OIDC
   contents: read
 
 env:
@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     needs: build-test
-    # Деплой вимкнений, доки в репозиторії не задано змінну DEPLOY_ENABLED=true (Settings → Variables).
+    # Deploy is off until the repository variable DEPLOY_ENABLED=true is set (Settings → Variables).
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     concurrency:
       group: deploy
@@ -49,7 +49,7 @@ jobs:
           name: functions-package
           path: ${{ env.PACKAGE_PATH }}
 
-      # OIDC: жодних паролів у GitHub, лише ідентифікатори (див. README).
+      # OIDC: no passwords in GitHub, only identifiers (see README).
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}

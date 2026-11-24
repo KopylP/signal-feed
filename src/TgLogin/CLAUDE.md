@@ -1,7 +1,7 @@
 # src/TgLogin
 
-Одноразова консольна утиліта: інтерактивний вхід у Telegram і завантаження сесії в Blob Storage (використання описано в `README.md`).
+One-off console tool: interactive Telegram sign-in and upload of the session to Blob Storage (usage is in `README.md`).
 
-- Використовує `SessionBlob` з `PostAgent.Functions`, щоб формат і назва контейнера збігалися з тим, що читає функція. Не дублюй їх тут.
-- У Azure автентифікація через `DefaultAzureCredential`, для Azurite рядок підключення. Ключі storage не використовуй.
-- Дані акаунта (api id/hash, телефон) беруться зі змінних середовища або запитуються в консолі. Не зберігай їх у файлах і не друкуй сесію чи коди.
+- It uses `SessionBlob` from `PostAgent.Functions`, so the format and container name match what the function reads. Do not duplicate them here.
+- In Azure it authenticates with `DefaultAzureCredential`; for Azurite it takes a connection string. Do not use storage keys.
+- Account data (api id/hash, phone) comes from environment variables or is asked for in the console. Never store it in files, and never print the session or login codes.

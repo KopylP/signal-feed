@@ -1,33 +1,33 @@
 name: infra
 
-# Ручний запуск: створює або оновлює інфраструктуру за кодом у infra/.
-# Без галочки apply виконується лише plan (показує, що зміниться, нічого не чіпає).
+# Manual run: creates or updates the infrastructure defined in infra/.
+# Without the apply checkbox only plan runs (shows what would change, touches nothing).
 on:
   workflow_dispatch:
     inputs:
       apply:
-        description: "Застосувати зміни (terraform apply). Вимкнено: лише plan."
+        description: "Apply the changes (terraform apply). Off: plan only."
         type: boolean
         default: false
 
 permissions:
-  id-token: write # вхід в Azure через OIDC
+  id-token: write # sign in to Azure via OIDC
   contents: read
 
 concurrency:
-  group: infra # state не можна змінювати одночасно
+  group: infra # the state must not be changed concurrently
   cancel-in-progress: false
 
 env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
-  # Провайдер azurerm і backend заходять в Azure через OIDC, без паролів.
+  # The azurerm provider and the backend sign in to Azure via OIDC, no passwords.
   ARM_USE_OIDC: "true"
   ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
   ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-  # Змінні Terraform (infra/variables.tf). Несекретні, тому живуть у GitHub Variables.
+  # Terraform variables (infra/variables.tf). Non-secret, so they live in GitHub Variables.
   TF_VAR_location: ${{ vars.TF_LOCATION || 'westeurope' }}
   TF_VAR_name_prefix: ${{ vars.TF_NAME_PREFIX || 'signalfeed' }}
   TF_VAR_deployer_object_id: ${{ vars.TF_DEPLOYER_OBJECT_ID }}
@@ -36,7 +36,7 @@ env:
   TF_VAR_telegram_chat_id: ${{ vars.TF_TELEGRAM_CHAT_ID }}
   TF_VAR_telegram_api_id: ${{ vars.TF_TELEGRAM_API_ID }}
   TF_VAR_telegram_phone: ${{ vars.TF_TELEGRAM_PHONE }}
-  # JSON-об'єкт, наприклад {"DigestSize":"6","AlertQuietHours":"23:00-07:00"}. Порожньо: усе за замовчуванням із коду.
+  # JSON object, e.g. {"DigestSize":"6","AlertQuietHours":"23:00-07:00"}. Empty: everything uses the defaults from code.
   TF_VAR_app_settings: ${{ vars.TF_APP_SETTINGS || '{}' }}
 
 jobs:
@@ -48,8 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Порожня TF_VAR_* перекрила б default у variables.tf, тому передаємо лише задане.
-      - name: Необов'язкові змінні
+      # An empty TF_VAR_* would override the default in variables.tf, so pass only what is set.
+      - name: Optional variables
         env:
           TF_SOURCES: ${{ vars.TF_SOURCES }}
         run: |
@@ -65,8 +65,8 @@ jobs:
         with:
           terraform_version: 1.9.8
 
-      # Віддалений state у Azure Storage (створюється один раз, див. README). Локально backend.tf не потрібен.
-      - name: Налаштувати backend
+      # Remote state in Azure Storage (created once, see README). Locally backend.tf is not needed.
+      - name: Configure backend
         run: |
           cat > backend.tf <<'EOF'
           terraform {
@@ -90,7 +90,7 @@ jobs:
       - name: terraform plan
         run: terraform plan -out=tfplan -detailed-exitcode || [ $? -eq 2 ]
 
-      - name: Показати план у підсумку
+      - name: Show the plan in the summary
         run: |
           {
             echo '### terraform plan'
@@ -103,7 +103,7 @@ jobs:
         if: inputs.apply
         run: terraform apply tfplan
 
-      - name: Результат (значення для GitHub Variables і секретів)
+      - name: Outputs (values for GitHub Variables)
         if: inputs.apply
         run: |
           {

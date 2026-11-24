@@ -1,12 +1,12 @@
 # .github/workflows
 
-- `deploy.yml`: збірка, тести й деплой коду (після push у `main` за `DEPLOY_ENABLED=true`).
-- `infra.yml`: ручний `terraform plan` / `apply` (галочка `apply`).
+- `deploy.yml`: build, tests and code deploy (after a push to `main` when `DEPLOY_ENABLED=true`).
+- `infra.yml`: manual `terraform plan` / `apply` (the `apply` checkbox).
 
-## Правила
+## Rules
 
-- Вхід в Azure лише через OIDC (`azure/login`), жодних паролів чи ключів у GitHub. Налаштування передаються як GitHub Variables (`vars.*`).
-- Версії actions фіксуй мажорною (`@v4`), версію Terraform точною.
-- Деплой коду (`deploy.yml`) не змінює інфраструктуру, а `infra.yml` не деплоїть код. Не змішуй їх.
-- Додаєш змінну в `infra.yml`: онови таблицю GitHub Variables у README й `infra/CLAUDE.md`, якщо змінилось правило.
-- Нові workflow мають `permissions` з мінімально потрібним і `concurrency` там, де два запуски одночасно небезпечні.
+- Sign in to Azure only through OIDC (`azure/login`), no passwords or keys in GitHub. Settings are passed as GitHub Variables (`vars.*`).
+- Pin actions to a major version (`@v4`) and Terraform to an exact version.
+- `deploy.yml` never changes infrastructure and `infra.yml` never deploys code. Do not mix them.
+- When you add a variable to `infra.yml`, update the GitHub Variables table in the README, and `infra/CLAUDE.md` if the rule changed.
+- A new workflow declares the minimum `permissions` it needs and uses `concurrency` where two simultaneous runs are unsafe.

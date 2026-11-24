@@ -1,12 +1,12 @@
 # tests/PostAgent.Tests
 
-xUnit. Папки дзеркалять фічі з `src/PostAgent.Functions`. Запуск: `dotnet test -c Release`.
+xUnit. Folders mirror the features in `src/PostAgent.Functions`. Run: `dotnet test -c Release`.
 
-## Правила
+## Rules
 
-- Без mock-бібліотек: залежності замінюють ручні підробки в `Fakes/` (`InMemoryPostRepository`, `RecordingNotifier`, `FakeChatClient` тощо). Нова залежність це нова підробка там.
-- Час через `FakeTimeProvider` (`Microsoft.Extensions.TimeProvider.Testing`) і спільні дані з `TestData`, без `DateTime.Now`.
-- Ім'я тесту описує поведінку реченням у `Snake_case` (`Sends_the_no_posts_message_when_there_is_nothing_to_send`). Один `[Fact]` перевіряє одну поведінку; `[Theory]` для набору входів.
-- Тестуй чисту логіку напряму, а функції через їхній `Run` із підробками, без мережі й Azure.
-- `CompositionTests` перевіряє, що застосунок збирається з валідних налаштувань. Новий обов'язковий параметр додай у `ValidSettings`, інакше цей тест упаде.
-- Помилку виправляй із тестом, який без виправлення падає.
+- No mocking libraries: dependencies are replaced by hand-written fakes in `Fakes/` (`InMemoryPostRepository`, `RecordingNotifier`, `FakeChatClient`, etc.). A new dependency means a new fake there.
+- Time comes from `FakeTimeProvider` (`Microsoft.Extensions.TimeProvider.Testing`) and shared data from `TestData`, never from `DateTime.Now`.
+- A test name describes the behavior as a sentence in `Snake_case` (`Sends_the_no_posts_message_when_there_is_nothing_to_send`). One `[Fact]` checks one behavior; use `[Theory]` for a set of inputs.
+- Test pure logic directly, and test functions through their `Run` method with fakes, with no network or Azure.
+- `CompositionTests` checks that the app builds from valid settings. Add a new required parameter to `ValidSettings`, otherwise that test fails.
+- Fix a bug together with a test that fails without the fix.

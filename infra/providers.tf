@@ -9,7 +9,7 @@ terraform {
   }
 }
 
-# Підписка береться зі змінної середовища ARM_SUBSCRIPTION_ID.
+# The subscription comes from the ARM_SUBSCRIPTION_ID environment variable.
 provider "azurerm" {
   features {}
 }
