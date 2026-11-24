@@ -65,12 +65,13 @@ Use the separate account, not your main one. The `api_id` and `api_hash` come fr
 If a group cannot be read, join it with this account.
 
 ```bash
-export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380...
+export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380...   # a mobile number registered in Telegram, no spaces
+export AZURE_TOKEN_CREDENTIALS=AzureCliCredential                         # use only your az login (see Troubleshooting if the tool hangs)
 dotnet run --project src/TgLogin -- $(terraform -chdir=infra output -raw storage_account_name)
 ```
 
 The tool asks for the Telegram code and the two-factor password, then uploads the session to the `tg-session` container using your `az login`
-(Terraform already granted you the Storage Blob Data Contributor role). When the session expires, repeat this step.
+(Terraform already granted you the Storage Blob Data Contributor role). It ends with `Session uploaded`. When the session expires, repeat this step.
 
 ## Step 5. Deploy the code
 

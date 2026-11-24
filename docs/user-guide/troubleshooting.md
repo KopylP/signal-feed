@@ -17,6 +17,8 @@
 | No alerts arrive | The group is not in `AlertSources`, quiet hours are on, or the cooldown is active | Check `AlertSources`, `AlertQuietHours` and `AlertCooldownHours`. Posts held back by quiet hours go into the digest |
 | Posts seem scored against the wrong topics | The topics under `My interests` in `scoring.md` do not match what you follow | Fix the list ([installation, step 1](installation.md#step-1-write-your-rules)) and deploy again |
 | A setting seems ignored | A typo in the key name: unknown keys are silently ignored | Compare the name with the [settings reference](configuration.md#settings-reference) |
+| The Telegram sign-in stops with `PHONE_NUMBER_INVALID` | Telegram rejected the number: it is a landline or not registered in Telegram, or it has a typo | Use a mobile number that can receive Telegram codes, in the form `+48123456789`. Update the `TF_TELEGRAM_PHONE` secret and run `infra` with apply, then sign in again |
+| The Telegram sign-in prints `Logged in as ...` and then hangs, with no `Session uploaded` | The tool picks an Azure credential that never answers on this machine | Set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` (it uses only your `az login`) and run it again |
 | Posts stay unscored | Scoring failed 5 times and the message went to the `to-score-poison` queue | Open the queue in the Azure portal and find the cause in Application Insights. There is no automatic notification |
 
 ## Known limitations
