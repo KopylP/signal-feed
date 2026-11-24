@@ -8,6 +8,17 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [wren] - 2026-11-24
+
+### Setup required
+- **`TF_TELEGRAM_API_ID`**: moved from GitHub Variables to GitHub Secrets
+  - Where: GitHub Secrets (Settings → Secrets and variables → Actions → Secrets)
+  - Value: the `api_id` from my.telegram.org, the same as before
+  - Apply: create the secret and delete the old variable before you run the `infra` workflow; with an empty secret the plan fails
+
+### Security
+- The Telegram `api_id` is no longer read from GitHub Variables (not masked in the logs of a public repository), and `telegram_api_id` is a `sensitive` Terraform variable.
+
 ## [heron] - 2026-11-24
 
 ### Setup required

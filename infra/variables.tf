@@ -64,6 +64,7 @@ variable "telegram_chat_id" {
 variable "telegram_api_id" {
   description = "api_id of the app from my.telegram.org."
   type        = string
+  sensitive   = true # tied to the owner's Telegram account: keep it out of plan output
 }
 
 variable "telegram_phone" {

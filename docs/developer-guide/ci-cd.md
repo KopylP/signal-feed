@@ -88,7 +88,6 @@ Settings → Secrets and variables → Actions → Variables, all non-secret:
 | `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | state storage (`TFSTATE_CONTAINER`, default `tfstate`) |
 | `TF_DEPLOYER_OBJECT_ID` | `deployer_object_id` |
 | `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
-| `TF_TELEGRAM_API_ID` | the matching Terraform variable |
 | `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_ALERT_SCHEDULE`, `TF_CLEANUP_SCHEDULE` (optional) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
 | `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
@@ -99,6 +98,7 @@ Personal data goes into **Secrets** (same page, Secrets tab), not Variables: thi
 |---|---|
 | `TF_BUDGET_ALERT_EMAIL` | `budget_alert_email` |
 | `TF_TELEGRAM_PHONE` | `telegram_phone` |
+| `TF_TELEGRAM_API_ID` | `telegram_api_id` |
 | `TF_TELEGRAM_CHAT_ID` (optional) | override of the paired chat; leave unset to bind the chat with `/start` |
 
 The API keys (OpenAI, Telegram) are not needed in GitHub: as before, they go into Key Vault with `az keyvault secret set`.
