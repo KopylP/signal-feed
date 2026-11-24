@@ -1,6 +1,6 @@
 # .github/workflows
 
-- `deploy.yml`: build, tests, code deploy and release (after a push to `main` when `DEPLOY_ENABLED=true`). A manual run with a `tag` redeploys that release and creates no release.
+- `deploy.yml`: formatting check (`dotnet format --verify-no-changes`, not on a rollback), build, tests, code deploy and release (after a push to `main` when `DEPLOY_ENABLED=true`). A manual run with a `tag` redeploys that release and creates no release.
 - `infra.yml`: manual `terraform plan` / `apply` (the `apply` checkbox).
 - `terraform-check.yml`: `fmt`/`validate` on pull requests that touch `infra/`. `dependabot.yml`: weekly grouped updates.
 

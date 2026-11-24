@@ -61,6 +61,12 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - run: dotnet restore
+
+      # Skipped on a rollback: that tag was built before the check existed and must stay deployable.
+      - name: Check formatting
+        if: inputs.tag == ''
+        run: dotnet format --verify-no-changes --no-restore
+
       - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
       - run: dotnet test --configuration Release --no-build
 
