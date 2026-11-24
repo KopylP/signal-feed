@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
-using PostAgent.Posts;
-using PostAgent.Settings;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Cleanup;
 

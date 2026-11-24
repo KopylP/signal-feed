@@ -1,11 +1,11 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
-using static PostAgent.Tests.TestData;
 using PostAgent.Alerts;
-using PostAgent.Posts;
-using PostAgent.Settings;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
+using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Alerts;
 

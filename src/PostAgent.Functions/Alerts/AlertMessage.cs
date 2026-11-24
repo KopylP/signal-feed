@@ -1,6 +1,6 @@
 using System.Text;
-using PostAgent.Notifications;
-using PostAgent.Posts;
+using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Posts;
 
 namespace PostAgent.Alerts;
 

@@ -1,8 +1,8 @@
 using System.Text.Json;
-using static PostAgent.Tests.TestData;
-using PostAgent.Posts;
 using PostAgent.Scoring;
+using PostAgent.Shared.Posts;
 using PostAgent.Tests.Fakes;
+using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Scoring;
 

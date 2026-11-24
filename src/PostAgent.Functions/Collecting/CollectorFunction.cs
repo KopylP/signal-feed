@@ -1,10 +1,10 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Common;
-using PostAgent.Notifications;
-using PostAgent.Posts;
 using PostAgent.Scoring;
-using PostAgent.Settings;
+using PostAgent.Shared.Common;
+using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Collecting;
 

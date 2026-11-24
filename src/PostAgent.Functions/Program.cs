@@ -2,7 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Hosting;
 using PostAgent;
-using PostAgent.Infrastructure;
+using PostAgent.Shared.Infrastructure;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 

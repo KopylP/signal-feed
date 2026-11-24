@@ -1,7 +1,7 @@
 using Microsoft.Extensions.AI;
-using static PostAgent.Tests.TestData;
-using PostAgent.Scoring;
+using PostAgent.Scoring.Ai;
 using PostAgent.Tests.Fakes;
+using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Scoring;
 

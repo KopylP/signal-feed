@@ -1,7 +1,7 @@
 using static PostAgent.Tests.TestData;
 using PostAgent.Alerts;
-using PostAgent.Posts;
-using PostAgent.Settings;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Tests.Alerts;
 

@@ -1,3 +1,6 @@
+using PostAgent.Collecting.Storage;
+using PostAgent.Collecting.Telegram;
+
 namespace PostAgent.Collecting;
 
 public static class CollectingServices

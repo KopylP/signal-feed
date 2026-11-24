@@ -1,6 +1,6 @@
 using static PostAgent.Tests.TestData;
 using PostAgent.Digest;
-using PostAgent.Posts;
+using PostAgent.Shared.Posts;
 
 namespace PostAgent.Tests.Digest;
 

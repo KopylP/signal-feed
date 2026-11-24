@@ -1,8 +1,8 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Notifications;
-using PostAgent.Posts;
-using PostAgent.Settings;
+using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Alerts;
 

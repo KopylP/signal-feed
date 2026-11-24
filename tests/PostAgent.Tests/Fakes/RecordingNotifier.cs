@@ -1,4 +1,4 @@
-using PostAgent.Notifications;
+using PostAgent.Shared.Notifications;
 
 namespace PostAgent.Tests.Fakes;
 

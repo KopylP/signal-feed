@@ -1,6 +1,6 @@
 using static PostAgent.Tests.TestData;
-using PostAgent.Posts;
 using PostAgent.Scoring;
+using PostAgent.Shared.Posts;
 
 namespace PostAgent.Tests.Scoring;
 

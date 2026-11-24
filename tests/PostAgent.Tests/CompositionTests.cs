@@ -7,7 +7,7 @@ using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
 using PostAgent.Scoring;
-using PostAgent.Settings;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Tests;
 

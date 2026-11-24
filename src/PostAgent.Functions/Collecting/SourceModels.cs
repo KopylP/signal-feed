@@ -1,4 +1,4 @@
-using PostAgent.Posts;
+using PostAgent.Shared.Posts;
 
 namespace PostAgent.Collecting;
 

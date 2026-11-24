@@ -1,6 +1,6 @@
-using PostAgent.Common;
-using PostAgent.Posts;
-using PostAgent.Settings;
+using PostAgent.Shared.Common;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Collecting;
 

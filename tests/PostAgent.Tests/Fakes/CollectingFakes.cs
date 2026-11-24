@@ -1,6 +1,6 @@
 using PostAgent.Collecting;
-using PostAgent.Posts;
 using PostAgent.Scoring;
+using PostAgent.Shared.Posts;
 
 namespace PostAgent.Tests.Fakes;
 

@@ -1,7 +1,8 @@
 using System.Text.Json;
-using static PostAgent.Tests.TestData;
+using PostAgent.Digest.Ai;
 using PostAgent.Digest;
 using PostAgent.Tests.Fakes;
+using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Digest;
 

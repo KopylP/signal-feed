@@ -1,6 +1,6 @@
 using System.Text;
-using PostAgent.Common;
-using PostAgent.Notifications;
+using PostAgent.Shared.Common;
+using PostAgent.Shared.Notifications;
 
 namespace PostAgent.Digest;
 

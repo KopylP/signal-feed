@@ -1,3 +1,5 @@
+using PostAgent.Digest.Ai;
+
 namespace PostAgent.Digest;
 
 public static class DigestServices

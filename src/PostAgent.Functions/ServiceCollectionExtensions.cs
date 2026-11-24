@@ -1,13 +1,13 @@
 using Microsoft.Extensions.Options;
-using PostAgent.Ai;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
-using PostAgent.Infrastructure;
-using PostAgent.Notifications;
-using PostAgent.Posts;
 using PostAgent.Scoring;
-using PostAgent.Settings;
+using PostAgent.Shared.Ai;
+using PostAgent.Shared.Infrastructure;
+using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent;
 
