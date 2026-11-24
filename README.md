@@ -219,6 +219,8 @@ Without the `apply` checkbox it only runs `terraform plan` (visible in the run s
 If the infrastructure does not exist, it is created; if the code in `infra/` changed, it is updated. The application code is deployed by the separate workflow
 `build-test-deploy` after a push to `main`.
 
+Because the federated credential accepts only `refs/heads/main`, the workflow can sign in to Azure only when run from `main`: merge an infrastructure change first (it deploys no code), then run `infra` from `main`.
+
 The pipeline creates the resources itself, so its identity (App Registration) and the state storage are created **by hand once**:
 they cannot be described in the same Terraform that they run.
 

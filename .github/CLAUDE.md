@@ -8,6 +8,7 @@
 
 - Sign in to Azure only through OIDC (`azure/login`), no passwords or keys in GitHub. Settings are passed as GitHub Variables (`vars.*`).
 - Pin actions to a major version (`@v4`) and Terraform to an exact version.
+- The Azure OIDC credential accepts only `refs/heads/main`: `infra` apply and deploy cannot run from a branch, so infra changes merge first and are applied from `main`.
 - `deploy.yml` never changes infrastructure and `infra.yml` never deploys code. Do not mix them.
 - The version is `YYYY.MM.DD.<run_number>`, calculated once in the build job and reused for the tag (ADR-0005). Only the release job gets `contents: write`; keep its explicit `if` (it drops the implicit `success()`).
 - Do not list `*.md` in `paths-ignore`: `prompts/*.md` ship with the build.
