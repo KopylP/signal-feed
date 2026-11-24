@@ -78,7 +78,7 @@ jobs:
         with:
           terraform_version: ${{ steps.terraform-version.outputs.version }}
 
-      # Remote state in Azure Storage (created once, see docs/deployment.md). Locally backend.tf is not needed.
+      # Remote state in Azure Storage (created once, see docs/developer-guide/ci-cd.md). Locally backend.tf is not needed.
       - name: Configure backend
         run: |
           cat > backend.tf <<'EOF'

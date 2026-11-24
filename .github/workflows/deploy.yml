@@ -134,7 +134,7 @@ jobs:
           name: functions-package
           path: ${{ env.PACKAGE_PATH }}
 
-      # OIDC: no passwords in GitHub, only identifiers (see docs/deployment.md).
+      # OIDC: no passwords in GitHub, only identifiers (see docs/developer-guide/ci-cd.md).
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}

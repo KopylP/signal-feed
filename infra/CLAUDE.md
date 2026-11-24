@@ -1,6 +1,6 @@
 # infra: Terraform (Azure)
 
-Resource names and variables are described in `docs/deployment.md`. Run it locally (`terraform apply`) or manually through the `infra` workflow.
+Resource names and variables are described in `docs/user-guide/installation.md`. Run it locally (`terraform apply`) or manually through the `infra` workflow.
 
 ## Rules
 
@@ -12,6 +12,6 @@ Resource names and variables are described in `docs/deployment.md`. Run it local
   Separate variables only for required values, infrastructure values and schedules (timer attributes read them).
   Schedule precedence: key in `app_settings` > `*_schedule` variable > default. Any other key managed in `function.tf` wins over `app_settings`.
 - Adding a variable touches several places: `variables.tf`, `terraform.tfvars.example`, `function.tf` (if it is an App Setting), `.github/workflows/infra.yml`
-  (`TF_VAR_*` from GitHub Variables) and the GitHub Variables table in `docs/deployment.md`. If the variable has a `default`, pass it in the workflow only when it is set, because an empty `TF_VAR_*` overrides the `default`.
+  (`TF_VAR_*` from GitHub Variables) and the GitHub Variables table in `docs/developer-guide/ci-cd.md`. If the variable has a `default`, pass it in the workflow only when it is set, because an empty `TF_VAR_*` overrides the `default`.
 - Before finishing: `terraform fmt` and `terraform validate`.
 - Do not add resources with a standing cost (Premium plan, VNet, private endpoint, etc.) without an explicit request: the budget is $5 a month.
