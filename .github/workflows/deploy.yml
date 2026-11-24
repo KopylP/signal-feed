@@ -27,6 +27,7 @@ permissions:
 
 env:
   DOTNET_VERSION: 10.0.x
+  TERRAFORM_VERSION: 1.9.8
   PACKAGE_PATH: ./publish
 
 jobs:
@@ -87,6 +88,20 @@ jobs:
       - name: Check formatting
         if: env.CAN_PUSH_FIX != 'true' && github.event_name != 'workflow_dispatch'
         run: dotnet format --verify-no-changes --no-restore
+
+      # Static checks only: no backend, no Azure sign-in, nothing here can change the infrastructure.
+      # Skipped on a manual run, which rebuilds an older tag whose infra/ predates the check.
+      - uses: hashicorp/setup-terraform@v3
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Check Terraform
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          terraform -chdir=infra fmt -check -recursive
+          terraform -chdir=infra init -backend=false
+          terraform -chdir=infra validate
 
       - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
       - run: dotnet test --configuration Release --no-build
