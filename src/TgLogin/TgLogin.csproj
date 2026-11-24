@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\PostAgent.Functions\Collecting\Telegram\SessionBlob.cs" Link="SessionBlob.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WTelegramClient" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Azure.Identity" />
+  </ItemGroup>
+</Project>

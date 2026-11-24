@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PostAgent.Functions/PostAgent.Functions.csproj" />
+    <Project Path="src/TgLogin/TgLogin.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PostAgent.Tests/PostAgent.Tests.csproj" />
+  </Folder>
+</Solution>

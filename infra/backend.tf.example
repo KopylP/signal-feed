@@ -1,0 +1,12 @@
+# За замовчуванням state локальний. Щоб зберігати його в Azure:
+#   1. скопіюйте файл у backend.tf
+#   2. створіть storage account і контейнер для state
+#   3. terraform init -migrate-state
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = "sttfstate0000"
+    container_name       = "tfstate"
+    key                  = "signal-feed.tfstate"
+  }
+}
