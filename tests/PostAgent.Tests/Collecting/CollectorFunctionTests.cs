@@ -14,10 +14,12 @@ public class CollectorFunctionTests
     private readonly FakeScoringQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
 
-    private CollectorFunction CreateFunction(string sources, FakeSourceReader reader, FakeSourceCursors cursors) =>
-        new(reader, _repo, cursors, _queue, _notifier,
-            Microsoft.Extensions.Options.Options.Create(new AgentOptions { Sources = sources, ScoringBatchSize = 2 }),
-            NullLogger<CollectorFunction>.Instance);
+    private CollectorFunction CreateFunction(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
+    {
+        var options = Microsoft.Extensions.Options.Options.Create(new AgentOptions { Sources = sources, ScoringBatchSize = 2 });
+        var collector = new SourceCollector(reader, _repo, cursors, _queue, options, NullLogger<SourceCollector>.Instance);
+        return new(collector, _notifier, options, NullLogger<CollectorFunction>.Instance);
+    }
 
     private static Func<int, SourceBatch> Channel(string username, params int[] ids) =>
         _ => new SourceBatch(new SourceInfo(username, SourceType.Channel), ids.Select(i => Message(i)).ToList(), ids.Max());

@@ -307,7 +307,7 @@ the folder path, and dependencies between features are visible from `using`.
 
 ```
 src/PostAgent.Functions/
-├── Collecting/            collecting posts from Telegram
+├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
