@@ -1,0 +1,50 @@
+name: format
+
+# Pull requests: runs `dotnet format` and commits the fix to the PR branch as github-actions[bot].
+# Forks and Dependabot get a read-only token, so for them it only verifies and fails on a diff.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: format-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: 10.0.x
+  CAN_PUSH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      # A pull request from this repository is checked out on its branch so that the fix can be pushed to it.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CAN_PUSH == 'true' && github.head_ref || '' }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - run: dotnet restore
+
+      - name: Fix formatting and push
+        if: env.CAN_PUSH == 'true'
+        run: |
+          dotnet format --no-restore
+          if git diff --quiet; then
+            echo "Formatting is clean."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Apply dotnet format"
+          git push
+
+      - name: Verify formatting
+        if: env.CAN_PUSH != 'true'
+        run: dotnet format --verify-no-changes --no-restore

@@ -1,6 +1,6 @@
 using System.Text.Json;
-using PostAgent.Digest.Infrastructure;
 using PostAgent.Digest;
+using PostAgent.Digest.Infrastructure;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
 

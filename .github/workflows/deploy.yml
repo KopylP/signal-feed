@@ -62,9 +62,10 @@ jobs:
 
       - run: dotnet restore
 
-      # Skipped on a rollback: that tag was built before the check existed and must stay deployable.
+      # Only on pushes to main. Pull requests are fixed by format.yml; a manual run rebuilds an older tag
+      # that was built before the check existed and must stay deployable.
       - name: Check formatting
-        if: inputs.tag == ''
+        if: github.event_name == 'push'
         run: dotnet format --verify-no-changes --no-restore
 
       - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}

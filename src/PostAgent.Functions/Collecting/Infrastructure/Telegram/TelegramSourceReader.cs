@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
-using TL;
-using WTelegram;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
+using TL;
+using WTelegram;
 
 namespace PostAgent.Collecting.Infrastructure.Telegram;
 

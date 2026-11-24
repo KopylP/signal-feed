@@ -1,5 +1,5 @@
-using TL;
 using PostAgent.Shared.Posts;
+using TL;
 
 namespace PostAgent.Collecting.Infrastructure.Telegram;
 

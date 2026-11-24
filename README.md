@@ -192,6 +192,8 @@ func azure functionapp publish $(terraform -chdir=../infra output -raw function_
 Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time) and then creates a release. It can also be started by hand (`workflow_dispatch`).
 
 Pushes that only change `docs/**`, `README.md`, `CLAUDE.md` files, `.claude/**` or `infra/**` do not run it (the `prompts/*.md` files do, because they ship with the build).
+Formatting follows [`.editorconfig`](.editorconfig). On every pull request [`format.yml`](.github/workflows/format.yml) runs `dotnet format` and commits any fix to the PR branch as `github-actions[bot]` (forks and Dependabot: it only verifies). `deploy.yml` re-checks the formatting on a push to `main`. Run `dotnet format` locally to fix it before you push.
+
 Pull requests that touch `infra/` also run [`terraform-check.yml`](.github/workflows/terraform-check.yml) (`fmt -check`, `validate`, no Azure sign-in), and Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
 
 One-time OIDC setup (no passwords):
@@ -330,7 +332,8 @@ Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
 prompts/                   scoring.md (scoring) and digest.md (digest summary)
-.github/workflows/         deploy.yml (build, test, code deploy), infra.yml (manual terraform plan/apply)
+.github/workflows/         deploy.yml (build, test, code deploy), format.yml (auto-fix formatting on PRs), infra.yml (manual terraform plan/apply)
+.editorconfig              code style and formatting rules (dotnet format)
 ```
 
 **A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add `AddXxx()` for its

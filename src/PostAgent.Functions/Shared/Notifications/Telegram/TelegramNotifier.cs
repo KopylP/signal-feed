@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
+using PostAgent.Shared.Settings;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using PostAgent.Shared.Settings;
 
 namespace PostAgent.Shared.Notifications.Telegram;
 
