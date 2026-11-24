@@ -1,7 +1,7 @@
 # Signal Feed
 
 Telegram post-selection agent on Azure Functions (.NET 10, isolated worker). Documentation map: `docs/README.md` (User Guide for operators, Developer Guide for architecture, code, CI/CD).
-Rules for each part live in the `CLAUDE.md` of its folder: `infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`.
+Rules for each part live in the `CLAUDE.md` of its folder: `infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tools/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`.
 
 ## Language
 

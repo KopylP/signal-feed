@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using PostAgent.Alerts;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
@@ -33,6 +34,7 @@ public static class ServiceCollectionExtensions
             .AddCollecting()
             .AddScoring()
             .AddDigest()
-            .AddCleanup();
+            .AddCleanup()
+            .AddAlerts();
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Cleanup;
@@ -8,10 +7,10 @@ using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Cleanup;
 
-public class CleanupFunctionTests
+public class CleanupJobTests
 {
-    private static CleanupFunction CreateFunction(params ICleanupTask[] tasks) =>
-        new(tasks, new FakeTimeProvider(Now), NullLogger<CleanupFunction>.Instance);
+    private static CleanupJob CreateJob(params ICleanupTask[] tasks) =>
+        new(tasks, new FakeTimeProvider(Now), NullLogger<CleanupJob>.Instance);
 
     [Fact]
     public async Task Runs_every_task_with_the_current_time()
@@ -19,7 +18,7 @@ public class CleanupFunctionTests
         var first = new FakeCleanupTask("one", () => 3);
         var second = new FakeCleanupTask("two", () => 0);
 
-        await CreateFunction(first, second).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(first, second).RunAsync(CancellationToken.None);
 
         Assert.Equal(Now, first.RanAt);
         Assert.Equal(Now, second.RanAt);
@@ -32,7 +31,7 @@ public class CleanupFunctionTests
         var healthy = new FakeCleanupTask("healthy", () => 1);
 
         var error = await Assert.ThrowsAsync<AggregateException>(() =>
-            CreateFunction(failing, healthy).Run(new TimerInfo(), CancellationToken.None));
+            CreateJob(failing, healthy).RunAsync(CancellationToken.None));
 
         Assert.Single(error.InnerExceptions);
         Assert.Equal(Now, healthy.RanAt);

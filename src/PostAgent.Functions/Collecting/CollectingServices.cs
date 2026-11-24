@@ -1,5 +1,6 @@
 using PostAgent.Collecting.Infrastructure;
 using PostAgent.Collecting.Infrastructure.Telegram;
+using PostAgent.Shared.Jobs;
 
 namespace PostAgent.Collecting;
 
@@ -9,5 +10,6 @@ public static class CollectingServices
         services
             .AddSingleton<ISourceCursors, SourceCursors>()
             .AddScoped<ISourceReader, TelegramSourceReader>()
-            .AddScoped<SourceCollector>();
+            .AddScoped<SourceCollector>()
+            .AddJob<CollectorJob>();
 }

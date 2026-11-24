@@ -22,6 +22,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | window of scored posts and pause between alerts for one group |
 | `AlertMaxPerRun` | 3 | entries in one alert (at most 8) |
 | `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours |
+| `ManualRunsEnabled` | `false` | lets a message in the `run-now` queue start a job ([run a job now](#run-a-job-now)); keep it off except while testing |
 | `OpenAIModel` | `gpt-5.4-nano` | scoring model |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
@@ -69,6 +70,21 @@ az functionapp config appsettings set -g <rg> -n <function-app> \
 az functionapp config appsettings set -g <rg> -n <function-app> \
   --settings Sources="channel_one,channel_two,some_group" AlertSources="some_group"
 ```
+
+### Run a job now
+
+To test a job without waiting for its schedule, put its name into the `run-now` queue with [`tools/run-now.cs`](../../tools/run-now.cs).
+The jobs are `collect`, `digest`, `alert` and `cleanup`. `digest` and `alert` send a real Telegram message and mark posts as sent, so the next scheduled run sees fewer posts.
+
+```bash
+az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=true   # restarts the app
+az login   # your account needs "Storage Queue Data Contributor" on the storage account (granted by Terraform to deployer_object_id)
+dotnet run tools/run-now.cs -- digest --storage <storage-account-name>
+az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=false
+```
+
+The command only queues the job and does not wait for it: read the result in the function logs (a manual run is logged under `RunNowFunction`, not under the timer function). `collect` moves the read cursors and reports failed sources to Telegram, and running `digest` right after the scheduled digest sends the "no posts" message. Two runs at the same time (or one together with the timer) can send a message twice. While `ManualRunsEnabled` is `false`, a message is dropped with a warning.
+A job that fails is logged and not retried, like a scheduled run. Access to the queue is controlled by Azure roles, there is no key.
 
 ### Prompts
 

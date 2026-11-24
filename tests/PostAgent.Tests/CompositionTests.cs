@@ -7,7 +7,10 @@ using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
 using PostAgent.Pairing;
+using PostAgent.RunNow;
 using PostAgent.Scoring;
+using PostAgent.Shared.Infrastructure;
+using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Tests;
@@ -69,6 +72,30 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PairingFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
+    }
+
+    [Fact]
+    public void Every_timer_job_is_registered_for_run_now_under_a_unique_name()
+    {
+        using var provider = BuildProvider();
+        using var scope = provider.CreateScope();
+
+        var names = scope.ServiceProvider.GetServices<IJob>().Select(j => j.Name).Order().ToList();
+
+        Assert.Equal(["alert", "cleanup", "collect", "digest"], names);
+    }
+
+    [Fact]
+    public void The_run_now_command_line_knows_every_job_and_the_queue_name()
+    {
+        using var provider = BuildProvider();
+        using var scope = provider.CreateScope();
+        var tool = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "run-now.cs"));
+
+        var jobsLine = tool.Split('\n').Single(l => l.StartsWith("string[] jobs = ", StringComparison.Ordinal));
+        Assert.Contains($"const string queueName = \"{StorageNames.RunNowQueue}\";", tool);
+        Assert.All(scope.ServiceProvider.GetServices<IJob>(), job => Assert.Contains($"\"{job.Name}\"", jobsLine));
     }
 
     [Fact]

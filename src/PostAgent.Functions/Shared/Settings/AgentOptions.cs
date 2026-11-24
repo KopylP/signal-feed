@@ -40,6 +40,9 @@ public sealed class AgentOptions
     public string AlertQuietHours { get; set; } = string.Empty;
     public string AlertTimeZone { get; set; } = "Europe/Kyiv";
 
+    // Allows jobs to start from a message in the run-now queue (tools/run-now.cs). Keep it off in Azure except while testing.
+    public bool ManualRunsEnabled { get; set; }
+
     // OpenAI
     public string OpenAIModel { get; set; } = "gpt-5.4-nano";
     [Required] public string OpenAIApiKey { get; set; } = string.Empty;

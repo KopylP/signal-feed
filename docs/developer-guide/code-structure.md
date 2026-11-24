@@ -19,19 +19,22 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
 │   └── Infrastructure/    AI summary and its response schema
-├── Alerts/                alerts about bursts in groups
+├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
+├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram, ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Ai/                IChatClient, prompts
+│   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
 │   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features
 src/TgLogin/               one-off Telegram sign-in
+tools/                     run-now.cs, a file-based app (`dotnet run tools/run-now.cs`) that starts a job through the queue
 tests/PostAgent.Tests/     xUnit, same folders; Fakes/ holds the fake dependencies for function tests
 Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
@@ -62,6 +65,9 @@ Package versions live only in `Directory.Packages.props`.
 
 **A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add an `AddXxx()` for its services
 and call it in `ServiceCollectionExtensions.AddPostAgent`.
+
+**A new scheduled job.** Put the logic in a class implementing `IJob` (`Name` is the lower-case name, `RunAsync` the work), register it with `AddJob<T>()` in the feature's `AddXxx()`,
+and add a timer function that only calls `job.RunAsync(ct)`. `RunNowFunction` finds it by `Name` with no other change; add the name to `tools/run-now.cs` (a test checks that every job name is there).
 
 **A new cleanup.** Add one class implementing `ICleanupTask` in `Cleanup/` and register it in `Cleanup/CleanupServices.cs`. `CleanupFunction` runs it with the others.
 Cleaning another table, queue or blob needs nothing else.

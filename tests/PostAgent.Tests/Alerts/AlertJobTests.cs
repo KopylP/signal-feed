@@ -1,4 +1,3 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Alerts;
@@ -9,15 +8,15 @@ using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Alerts;
 
-public class AlertFunctionTests
+public class AlertJobTests
 {
     private readonly RecordingNotifier _notifier = new();
 
-    private AlertFunction CreateFunction(InMemoryPostRepository repo, Action<AgentOptions>? configure = null)
+    private AlertJob CreateJob(InMemoryPostRepository repo, Action<AgentOptions>? configure = null)
     {
         var options = new AgentOptions { AlertSources = "chat", AlertTimeZone = "UTC" };
         configure?.Invoke(options);
-        return new AlertFunction(repo, _notifier, Microsoft.Extensions.Options.Options.Create(options), new FakeTimeProvider(Now), NullLogger<AlertFunction>.Instance);
+        return new AlertJob(repo, _notifier, Microsoft.Extensions.Options.Options.Create(options), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
     }
 
     private static PostEntity HotChatPost(string rowKey = "chat_1") =>
@@ -28,7 +27,7 @@ public class AlertFunctionTests
     {
         var repo = new InMemoryPostRepository(HotChatPost());
 
-        await CreateFunction(repo).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo).RunAsync(CancellationToken.None);
 
         var message = Assert.Single(_notifier.Sent);
         Assert.Contains("Тема", message);
@@ -42,7 +41,7 @@ public class AlertFunctionTests
     {
         var repo = new InMemoryPostRepository(Post("chat_1", score: 5, hoursAgo: 1, type: SourceType.Group, source: "chat"));
 
-        await CreateFunction(repo).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo).RunAsync(CancellationToken.None);
 
         Assert.Empty(_notifier.Sent);
         Assert.Empty(repo.SentMarks);
@@ -53,7 +52,7 @@ public class AlertFunctionTests
     {
         var repo = new InMemoryPostRepository(HotChatPost());
 
-        await CreateFunction(repo, o => o.AlertQuietHours = "06:00-10:00").Run(new TimerInfo(), CancellationToken.None); // зараз 08:00 UTC
+        await CreateJob(repo, o => o.AlertQuietHours = "06:00-10:00").RunAsync(CancellationToken.None); // зараз 08:00 UTC
 
         Assert.Empty(_notifier.Sent);
         Assert.Empty(repo.SentMarks);
@@ -65,7 +64,7 @@ public class AlertFunctionTests
     {
         var repo = new InMemoryPostRepository(Post("chat_1", score: 10, hoursAgo: 1, type: SourceType.Channel, source: "chat"));
 
-        await CreateFunction(repo).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo).RunAsync(CancellationToken.None);
 
         Assert.Empty(_notifier.Sent);
     }

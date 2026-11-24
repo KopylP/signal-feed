@@ -27,6 +27,8 @@
     "AlertQuietHours": "",
     "AlertTimeZone": "Europe/Kyiv",
 
+    "ManualRunsEnabled": "true",
+
     "OpenAIModel": "gpt-5.4-nano",
     "OpenAIApiKey": "<openai-api-key>",
 

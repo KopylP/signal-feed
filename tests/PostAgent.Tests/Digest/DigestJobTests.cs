@@ -1,4 +1,3 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Digest;
@@ -8,12 +7,12 @@ using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Digest;
 
-public class DigestFunctionTests
+public class DigestJobTests
 {
     private readonly RecordingNotifier _notifier = new();
 
-    private DigestFunction CreateFunction(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
-        new(repo, summarizer, _notifier, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestFunction>.Instance);
+    private DigestJob CreateJob(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
+        new(repo, summarizer, _notifier, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
 
     private static IDigestSummarizer WithOverview(string overview) =>
         new FakeDigestSummarizer(items => new DigestReport(overview, items.Select(i => i with { Insight = "Пояснення" }).ToList()));
@@ -26,7 +25,7 @@ public class DigestFunctionTests
     {
         var repo = new InMemoryPostRepository();
 
-        await CreateFunction(repo, WithOverview("О")).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
 
         Assert.Equal([DigestMessage.NoPosts], _notifier.Sent);
         Assert.Empty(repo.SentMarks);
@@ -37,7 +36,7 @@ public class DigestFunctionTests
     {
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2), Post("b", score: 4, hoursAgo: 3));
 
-        await CreateFunction(repo, WithOverview("Огляд дня")).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo, WithOverview("Огляд дня")).RunAsync(CancellationToken.None);
 
         var message = Assert.Single(_notifier.Sent);
         Assert.Contains("Огляд дня", message);
@@ -52,7 +51,7 @@ public class DigestFunctionTests
     {
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
 
-        await CreateFunction(repo, Failing()).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo, Failing()).RunAsync(CancellationToken.None);
 
         var message = Assert.Single(_notifier.Sent);
         Assert.Contains("Причина", message); // коротка причина оцінки замість пояснення
@@ -64,7 +63,7 @@ public class DigestFunctionTests
     {
         var repo = new InMemoryPostRepository();
 
-        await CreateFunction(repo, WithOverview("О")).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
 
         Assert.Equal(DigestSelector.QueryStart(Now), repo.QueriedSince);
     }
