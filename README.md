@@ -214,7 +214,7 @@ In the GitHub repository (Settings → Secrets and variables → Actions → Var
 The workflow [`.github/workflows/infra.yml`](.github/workflows/infra.yml) runs only by hand (Actions → infra → Run workflow).
 Without the `apply` checkbox it only runs `terraform plan` (visible in the run summary); with the checkbox it also runs `terraform apply`.
 If the infrastructure does not exist, it is created; if the code in `infra/` changed, it is updated. The application code is deployed by the separate workflow
-`build-test-deploy` after a push to `main`. See [ADR-0004](docs/adr/0004-run-terraform-from-a-manual-workflow.md) for why.
+`build-test-deploy` after a push to `main`.
 
 The pipeline creates the resources itself, so its identity (App Registration) and the state storage are created **by hand once**:
 they cannot be described in the same Terraform that they run.
@@ -259,20 +259,6 @@ After the first `apply`, copy `function_app_name` from the run summary into `AZU
 
 **Deploy is off by default.** Without the `DEPLOY_ENABLED` variable set to `true`, the workflow only builds and tests, and the deploy step
 is skipped. When you are ready to deploy, set this variable in the same place as the rest.
-
-## Working with Claude Code
-
-The root and every part of the project (`infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`)
-have a `CLAUDE.md` with code rules and commands, written in English. Nested files are loaded when Claude works on files in that folder.
-After a change that affects rules, commands or settings, update the matching `CLAUDE.md` together with this README.
-
-Project skills live in `.claude/skills/`. Today there is one: `write-adr`, which writes architecture decision records.
-
-## Architecture decisions
-
-Significant decisions are recorded as ADRs in [`docs/adr/`](docs/adr/README.md) (one file per decision, with an index and a template).
-Write a new ADR for decisions that are hard to reverse; an accepted ADR is never rewritten, it is superseded by a new one.
-The `write-adr` skill walks through it.
 
 ## Security and cost
 
@@ -329,10 +315,7 @@ Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
 prompts/                   scoring.md (scoring) and digest.md (digest summary)
-docs/adr/                  architecture decision records, template and index
-.claude/skills/            project skills for Claude Code (write-adr)
 .github/workflows/         deploy.yml (build, test, code deploy), infra.yml (manual terraform plan/apply)
-CLAUDE.md                  rules for Claude Code; there is also one in infra/, src/*, tests/, prompts/, .github/
 ```
 
 **A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add `AddXxx()` for its

@@ -21,6 +21,11 @@ Record a significant or hard-to-reverse decision (hosting, storage model, identi
 in `docs/adr/`, using the `write-adr` skill. Never edit an accepted ADR to change its decision: write a new one that supersedes it.
 Skip ADRs for small, local or easily reversible choices.
 
+## Skills
+
+Project skills live in `.claude/skills/`. Today: `write-adr` (architecture decision records). Add a skill there when a multi-step
+workflow repeats across tasks; keep one-line rules in `CLAUDE.md` instead.
+
 ## Commands
 
 ```bash
