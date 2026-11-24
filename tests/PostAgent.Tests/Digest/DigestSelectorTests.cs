@@ -92,7 +92,32 @@ public class DigestSelectorTests
 
         Assert.Equal(["ok"], items.Select(i => i.Post.RowKey));
     }
+    [Fact]
+    public void Counts_the_posts_that_did_not_make_it_into_the_digest_by_reason()
+    {
+        var posts = new[]
+        {
+            Post("top", score: 9),
+            Post("copy", score: 4, duplicateOf: "top"),
+            Post("weak1", score: 2),
+            Post("weak2", score: 1),
+            Post("sent", status: PostStatus.Sent, score: 8),
+        };
+        var items = DigestSelector.Build(posts, Options(o => o.DigestSize = 1), Now);
 
+        var skipped = DigestSelector.CountSkipped(posts, items, Now);
+
+        Assert.Equal(new DigestSkipped(Duplicates: 1, Other: 2), skipped);
+    }
+
+    [Fact]
+    public void Nothing_is_skipped_when_every_candidate_is_in_the_digest()
+    {
+        var posts = new[] { Post("a", score: 9), Post("b", score: 8) };
+        var items = DigestSelector.Build(posts, Options(), Now);
+
+        Assert.Equal(DigestSkipped.None, DigestSelector.CountSkipped(posts, items, Now));
+    }
 
     [Fact]
     public void Post_published_just_before_the_previous_digest_is_not_missed()

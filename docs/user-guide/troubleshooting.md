@@ -25,7 +25,8 @@
 
 These are deliberate trade-offs or open edges, not bugs to report.
 
-- **Duplicate messages on retry.** If Telegram answered `sendMessage` with a delay, a retry can produce a duplicate digest or alert. We prefer a duplicate to a lost message.
+- **Duplicate messages on retry.** If Telegram answered `sendMessage` with a delay, a retry can produce a duplicate digest or alert. We prefer a duplicate to a lost message. A long digest is sent as several messages, and the posts are marked as sent only after the last one,
+  so if a later message fails, the next run sends the whole digest again.
 - **Unscored posts stay `New`.** After 5 failed attempts a message lands in `to-score-poison`, and its posts stay `New` until cleanup removes them.
 - **Posts in two bundles.** If a collection run broke off between writing the posts and moving the read position, and new messages arrived meanwhile, the same group messages can land in two bundles.
 - **First-run flood waits.** See the symptom table above.

@@ -8,6 +8,32 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [ibis] - 2026-11-24
+
+### Contract changes
+- **Telegram digest: sections instead of one list** (breaking for anyone who parses the message)
+  - Before: one message «📰 Дайджест» with an overview and up to five entries «🔥 Цікаве» / «📌 Найкраще за день», each with one 200-character sentence and a link
+  - After: sections «🔥 Головне за день», «💼 Корисно для Collaborator», «👀 Варто звернути увагу», «📖 Рекомендую прочитати», «⚠️ Потребує перевірки» and «📌 Можна пропустити». Each entry shows the channel, the date, the text and a link. A long digest is split into several messages, and a continued section repeats its header
+  - Affects: the reader of the digest; the digest can now arrive as 2–3 messages
+  - Migration: none
+- **Model response schema of the digest** (breaking for `prompts/digest.md` only)
+  - Before: `overview` and `items` with `id` and `insight`
+  - After: `overview`, `headlines`, `for_marketplace`, `notable`, `recommended` and `needs_verification`
+  - Affects: `prompts/digest.md` and `DigestSummary` change together; a custom prompt written for the old schema stops working
+  - Migration: none for the default prompt
+
+### Added
+- **«Можна пропустити» line**: the digest says how many posts were left out and why (near-duplicates and less important ones).
+  - Enable: always on
+  - Settings: none
+  - Limits: it counts candidates from the last 26 hours that did not make it into the digest
+
+### Logic
+- **Digest size**
+  - Before: `DigestSize` defaulted to 5 and could not exceed 8, the limit of one Telegram message
+  - After: it defaults to 7 and can be 1–12, because the digest is split into several messages
+  - Effect: more posts in the digest by default; the model may leave weak ones out, and they are counted in «Можна пропустити»
+
 ## [crane] - 2026-11-24
 
 ### Logic

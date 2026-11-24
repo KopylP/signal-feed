@@ -10,8 +10,8 @@ and sends you only what is worth your time.
 
 You get two kinds of messages in Telegram:
 
-- **A daily digest.** The best posts of the day, a short overview of what matters and which topics repeat,
-  and a one-line explanation of what is interesting about each post. Links come from the real posts, never from the model.
+- **A daily digest.** The best posts of the day in sections: the main news with why it matters, what is useful for the marketplace,
+  less obvious items, what to read in full, what to verify and how much can be skipped. Links, channels and dates come from the real posts, never from the model.
 - **Instant alerts** for the groups you mark as important. When a discussion bursts or a very important message appears,
   you hear about it within the hour instead of tomorrow.
 
