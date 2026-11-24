@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Collecting.Infrastructure.Telegram;
 
@@ -17,7 +18,7 @@ public sealed class BlobSessionStream : MemoryStream
 
     public static async Task<BlobSessionStream> LoadAsync(BlobContainerClient container, CancellationToken ct)
     {
-        var blob = container.GetBlobClient(SessionBlob.Name);
+        var blob = container.GetBlobClient(StorageNames.SessionBlob);
         if (!await blob.ExistsAsync(ct))
         {
             throw new InvalidOperationException("Telegram session not found in blob storage. Run TgLogin first.");

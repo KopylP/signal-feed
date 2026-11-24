@@ -1,4 +1,4 @@
-namespace PostAgent.Collecting;
+namespace PostAgent.Shared.Settings;
 
 public static class SourceNames
 {

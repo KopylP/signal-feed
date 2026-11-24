@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace PostAgent.Scoring;
+namespace PostAgent.Shared.Posts;
 
 public sealed record PostScore(
     string Id,

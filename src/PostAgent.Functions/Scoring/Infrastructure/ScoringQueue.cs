@@ -6,8 +6,6 @@ namespace PostAgent.Scoring.Infrastructure;
 
 public sealed class ScoringQueue(QueueClient queue) : IScoringQueue
 {
-    public const string Name = "to-score";
-
     public async Task EnqueueAsync(IReadOnlyList<PostRef> refs, int batchSize, CancellationToken ct)
     {
         foreach (var batch in refs.Chunk(batchSize))

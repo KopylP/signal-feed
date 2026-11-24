@@ -1,6 +1,5 @@
 using Azure;
 using Azure.Data.Tables;
-using PostAgent.Scoring;
 
 namespace PostAgent.Shared.Posts;
 

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace PostAgent.Alerts;
+namespace PostAgent.Shared.Settings;
 
 public static class QuietHours
 {

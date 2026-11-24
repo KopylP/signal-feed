@@ -319,8 +319,8 @@ src/PostAgent.Functions/
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram (Telegram/: Telegram.Bot)
 │   ├── Ai/                IChatClient, prompts
-│   ├── Settings/          AgentOptions and validator
-│   ├── Infrastructure/    Table, Queue and Blob clients
+│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
+│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features

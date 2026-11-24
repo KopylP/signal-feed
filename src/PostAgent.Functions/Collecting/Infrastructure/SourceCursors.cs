@@ -1,14 +1,13 @@
 using Azure.Data.Tables;
+using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Collecting.Infrastructure;
 
 public sealed class SourceCursors(TableServiceClient tables) : ISourceCursors
 {
-    public const string TableName = "ChannelState";
-
     private const string Partition = "source";
 
-    private readonly TableClient _table = tables.GetTableClient(TableName);
+    private readonly TableClient _table = tables.GetTableClient(StorageNames.CursorsTable);
 
     public async Task<int> GetLastPostIdAsync(string username, CancellationToken ct)
     {

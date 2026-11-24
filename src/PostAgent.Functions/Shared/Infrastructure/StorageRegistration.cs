@@ -3,8 +3,6 @@ using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.Options;
-using PostAgent.Collecting.Infrastructure;
-using PostAgent.Scoring.Infrastructure;
 using PostAgent.Shared.Posts.Storage;
 using PostAgent.Shared.Settings;
 
@@ -22,7 +20,7 @@ public static class StorageRegistration
         {
             services.AddSingleton(new TableServiceClient(connectionString));
             services.AddSingleton(new BlobServiceClient(connectionString));
-            services.AddSingleton(new QueueClient(connectionString, ScoringQueue.Name, queueOptions));
+            services.AddSingleton(new QueueClient(connectionString, StorageNames.ScoringQueue, queueOptions));
         }
         else if (!string.IsNullOrEmpty(account))
         {
@@ -30,7 +28,7 @@ public static class StorageRegistration
             services.AddSingleton(new TableServiceClient(new Uri($"https://{account}.table.core.windows.net"), credential));
             services.AddSingleton(new BlobServiceClient(new Uri($"https://{account}.blob.core.windows.net"), credential));
             services.AddSingleton(new QueueClient(
-                new Uri($"https://{account}.queue.core.windows.net/{ScoringQueue.Name}"), credential, queueOptions));
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ScoringQueue}"), credential, queueOptions));
         }
         else
         {
@@ -50,7 +48,7 @@ public static class StorageRegistration
 
         var tables = services.GetRequiredService<TableServiceClient>();
         await tables.CreateTableIfNotExistsAsync(PostRepository.PostsTable);
-        await tables.CreateTableIfNotExistsAsync(SourceCursors.TableName);
+        await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync();
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
