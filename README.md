@@ -1,13 +1,31 @@
 # Signal Feed
 
-A Telegram post-selection agent on Azure Functions. Every hour it reads the public channels and groups you choose,
-scores the posts with OpenAI against your own rules, sends a digest of the best ones once a day,
-and for selected groups also alerts you right away when something is going on in the discussion.
+An agent that reads Telegram channels and groups for you and sends only the posts worth your attention.
+
+## Goal
+
+Telegram has more channels and groups than anyone can read. Signal Feed turns that flow into a short daily digest and rare instant alerts,
+chosen by an AI model against **your own rules**: your topics and your examples of a good post.
+
+## Who it is for
+
+| Reader | What they get | Start with |
+|---|---|---|
+| **Operator**: a person who wants a personal feed for a set of channels and groups | Their own copy running in their own Azure subscription; nothing is shared with anyone | [User Guide](docs/user-guide/overview.md) |
+| **Developer**: a person who changes or extends the agent | The architecture, the code structure, the pipelines and the reasons behind decisions | [Developer Guide](docs/developer-guide/architecture.md) |
+
+## What it does
 
 ```
 Telegram ──► Collector (hourly) ──► Scorer (OpenAI) ──┬──► Daily digest ──► You
                                                       └──► Instant alert (groups) ──► You
 ```
+
+1. **Collects** new posts from the public channels and groups you choose, every hour.
+2. **Scores** each post with OpenAI against your rules, and spots duplicates.
+3. **Delivers** a digest of the best posts once a day, with a short overview of what matters, and an instant alert when a discussion in a chosen group bursts.
+
+Runs on Azure Functions (.NET 10), with state in Azure Storage and secrets in Key Vault. The prompts and the Telegram messages are in Ukrainian; everything else is in English.
 
 ## Where to start
 
@@ -20,10 +38,3 @@ Telegram ──► Collector (hourly) ──► Scorer (OpenAI) ──┬──�
 | Working on pipelines and releases | [CI/CD](docs/developer-guide/ci-cd.md) |
 
 The full map is in [`docs/README.md`](docs/README.md). Decisions and their reasons are in [`docs/adr/`](docs/adr/README.md).
-
-## Quick facts
-
-- .NET 10 (isolated worker) on Azure Functions Flex Consumption; state in Azure Storage; secrets in Key Vault.
-- No secrets in the code or the repository; access between Azure resources uses managed identity.
-- About $0 for Azure at this scale, OpenAI is the main cost. A $5 monthly budget alert is created for the resource group.
-- The prompts and the Telegram messages are in Ukrainian; everything else is in English.
