@@ -7,9 +7,14 @@ variable "location" {
 }
 
 variable "name_prefix" {
-  description = "Префікс імен ресурсів (малі літери, цифри, дефіси)."
+  description = "Префікс імен ресурсів: 3-11 малих літер і цифр. З нього будуються імена storage account і Key Vault."
   type        = string
   default     = "signalfeed"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]{3,11}$", var.name_prefix))
+    error_message = "name_prefix must be 3-11 lowercase letters or digits."
+  }
 }
 
 variable "dotnet_version" {
@@ -71,23 +76,27 @@ variable "alert_sources" {
 # ---------- Розклади (CRON у UTC). Їх читають атрибути таймерів, тому значення за замовчуванням тут ----------
 
 variable "collector_schedule" {
-  type    = string
-  default = "0 0 * * * *"
+  description = "CRON збору постів (UTC)."
+  type        = string
+  default     = "0 0 * * * *"
 }
 
 variable "digest_schedule" {
-  type    = string
-  default = "0 0 8 * * *"
+  description = "CRON денного дайджесту (UTC)."
+  type        = string
+  default     = "0 0 8 * * *"
 }
 
 variable "alert_schedule" {
-  type    = string
-  default = "0 30 * * * *"
+  description = "CRON перевірки алертів (UTC)."
+  type        = string
+  default     = "0 30 * * * *"
 }
 
 variable "cleanup_schedule" {
-  type    = string
-  default = "0 0 3 * * *"
+  description = "CRON очищення старих даних (UTC)."
+  type        = string
+  default     = "0 0 3 * * *"
 }
 
 # ---------- Решта налаштувань ----------

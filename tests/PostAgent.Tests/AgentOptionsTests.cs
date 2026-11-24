@@ -23,7 +23,7 @@ public class AgentOptionsTests
         Sources = "news",
         OpenAIApiKey = "key",
         TelegramBotToken = "token",
-        TelegramChatId = "1",
+        TelegramChatId = 1,
         TelegramApiId = 12345,
         TelegramApiHash = "hash",
         TelegramPhone = "+380000000000",
@@ -46,7 +46,6 @@ public class AgentOptionsTests
     [InlineData(nameof(AgentOptions.OpenAIApiKey))]
     [InlineData(nameof(AgentOptions.TelegramBotToken))]
     [InlineData(nameof(AgentOptions.TelegramApiHash))]
-    [InlineData(nameof(AgentOptions.Sources))]
     public void Missing_required_setting_is_reported_by_name(string setting)
     {
         var options = Complete();

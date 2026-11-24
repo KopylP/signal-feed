@@ -24,6 +24,7 @@
     <PackageReference Include="Telegram.Bot" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="PostAgent.Common" />
     <Using Include="PostAgent.Models" />
     <Using Include="PostAgent.Selection" />
     <Using Include="PostAgent.Ai" />

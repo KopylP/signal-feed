@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,7 +9,7 @@ namespace PostAgent.Delivery;
 public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> options)
 {
     private readonly TelegramBotClient _bot = new(options.Value.TelegramBotToken, http);
-    private readonly ChatId _chat = new(long.Parse(options.Value.TelegramChatId, CultureInfo.InvariantCulture));
+    private readonly ChatId _chat = new(options.Value.TelegramChatId);
 
     public Task SendDigestAsync(DigestReport report, CancellationToken ct) =>
         SendAsync(TelegramMessages.FormatDigest(report), ct);

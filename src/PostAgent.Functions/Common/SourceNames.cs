@@ -1,4 +1,4 @@
-namespace PostAgent.Telegram;
+namespace PostAgent.Common;
 
 /// <summary>Перетворює список джерел із налаштувань на username.</summary>
 public static class SourceNames

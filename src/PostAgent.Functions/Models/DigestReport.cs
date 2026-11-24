@@ -1,4 +1,3 @@
-
 namespace PostAgent.Models;
 
 /// <summary>Пост у дайджесті. Insight — пояснення «що саме цікаве» від моделі (може бути відсутнє).</summary>

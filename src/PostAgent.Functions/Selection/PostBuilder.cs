@@ -1,4 +1,3 @@
-
 namespace PostAgent.Selection;
 
 /// <summary>

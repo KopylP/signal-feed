@@ -1,4 +1,3 @@
-
 namespace PostAgent.Selection;
 
 /// <summary>Вибирає пости для денного дайджесту (чиста функція).</summary>

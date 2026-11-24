@@ -23,6 +23,18 @@ public sealed class TelegramSourceReader(
 
     public async Task<SourceBatch> ReadAsync(string username, int lastPostId, CancellationToken ct)
     {
+        try
+        {
+            return await ReadSourceAsync(username, lastPostId, ct);
+        }
+        catch (RpcException ex) when (ex.Message.StartsWith("FLOOD_WAIT", StringComparison.Ordinal))
+        {
+            throw new SourceThrottledException(ex.Message, ex);
+        }
+    }
+
+    private async Task<SourceBatch> ReadSourceAsync(string username, int lastPostId, CancellationToken ct)
+    {
         var client = _client ??= await ConnectAsync(ct);
         var channel = await ResolveChannelAsync(client, username);
 

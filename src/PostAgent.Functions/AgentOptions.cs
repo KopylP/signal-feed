@@ -16,7 +16,7 @@ public sealed class AgentOptions
     public const int MaxItemsPerMessage = 8;
 
     // Джерела
-    [Required] public string Sources { get; set; } = "";
+    public string Sources { get; set; } = "";
 
     // Дайджест
     [Range(1, MaxItemsPerMessage)] public int DigestSize { get; set; } = 5;
@@ -49,7 +49,7 @@ public sealed class AgentOptions
 
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = "";
-    [Required, RegularExpression(@"^-?\d+$")] public string TelegramChatId { get; set; } = "";
+    public long TelegramChatId { get; set; }
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = "";
     [Required] public string TelegramPhone { get; set; } = "";

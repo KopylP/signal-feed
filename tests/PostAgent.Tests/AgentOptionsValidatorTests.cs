@@ -6,7 +6,7 @@ public class AgentOptionsValidatorTests
 {
     private static ValidateOptionsResult Validate(Action<AgentOptions> configure)
     {
-        var options = new AgentOptions();
+        var options = new AgentOptions { Sources = "news", TelegramChatId = 1 };
         configure(options);
         return new AgentOptionsValidator().Validate(null, options);
     }
@@ -49,5 +49,30 @@ public class AgentOptionsValidatorTests
         });
 
         Assert.Contains("RetentionDays", result.FailureMessage);
+    }
+
+    [Fact]
+    public void Empty_source_list_is_rejected_even_when_the_setting_is_not_blank()
+    {
+        var result = Validate(o => o.Sources = " , ");
+
+        Assert.Contains("Sources", result.FailureMessage);
+    }
+
+    [Fact]
+    public void Missing_chat_id_is_rejected()
+    {
+        var result = Validate(o => o.TelegramChatId = 0);
+
+        Assert.Contains("TelegramChatId", result.FailureMessage);
+    }
+
+    [Fact]
+    public void Unresolved_key_vault_reference_is_reported_by_secret_name()
+    {
+        var result = Validate(o => o.OpenAIApiKey = "@Microsoft.KeyVault(SecretUri=https://kv.vault.azure.net/secrets/OpenAIApiKey/)");
+
+        Assert.Contains("OpenAIApiKey", result.FailureMessage);
+        Assert.Contains("Key Vault", result.FailureMessage);
     }
 }

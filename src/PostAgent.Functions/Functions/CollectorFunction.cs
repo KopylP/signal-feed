@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using TL;
 
 namespace PostAgent.Functions;
 
@@ -22,13 +21,17 @@ public sealed class CollectorFunction(
     public async Task Run([TimerTrigger("%CollectorSchedule%")] TimerInfo timer, CancellationToken ct)
     {
         var failures = new List<string>();
-        foreach (var username in options.Value.SourceList)
+        foreach (var (index, username) in options.Value.SourceList.Index())
         {
+            if (index > 0)
+            {
+                await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // не навантажуємо Telegram
+            }
+
             if (await TryCollectAsync(username, ct) is { } failure)
             {
                 failures.Add(failure);
             }
-            await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // не навантажуємо Telegram
         }
 
         // Без цього збій (наприклад, прострочена сесія) виглядав би як спокійний день.
@@ -46,7 +49,7 @@ public sealed class CollectorFunction(
             await CollectAsync(username, ct);
             return null;
         }
-        catch (RpcException ex) when (ex.Message.StartsWith("FLOOD_WAIT"))
+        catch (SourceThrottledException ex)
         {
             log.LogWarning("@{Source} skipped until the next run: {Message}", username, ex.Message);
             return null; // очікуваний тимчасовий пропуск, не збій

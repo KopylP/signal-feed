@@ -1,4 +1,3 @@
-
 namespace PostAgent.Tests;
 
 internal static class TestData

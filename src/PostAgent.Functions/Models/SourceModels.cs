@@ -1,5 +1,4 @@
-
-namespace PostAgent.Telegram;
+namespace PostAgent.Models;
 
 /// <summary>Повідомлення Telegram у вигляді, незалежному від бібліотеки.</summary>
 public sealed record TgMessage(

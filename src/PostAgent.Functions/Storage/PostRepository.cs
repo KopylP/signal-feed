@@ -83,7 +83,7 @@ public sealed class PostRepository(TableServiceClient tables)
     /// Збій одного поста не зупиняє решту.
     /// </summary>
     public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) =>
-        WriteAllAsync(posts, post =>
+        WriteAllAsync(posts, async post =>
         {
             var columns = new TableEntity(post.PartitionKey, post.RowKey)
             {
@@ -94,7 +94,14 @@ public sealed class PostRepository(TableServiceClient tables)
                 columns[nameof(PostEntity.AlertedAt)] = alertedAt;
             }
 
-            return _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, ct);
+            try
+            {
+                await _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, ct);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                // Пост уже видалив Cleanup (дайджест чи алерт перетнув межу доби): позначати нічого.
+            }
         });
 
     /// <summary>Виконує запис для кожного поста; помилки збирає й кидає разом наприкінці.</summary>

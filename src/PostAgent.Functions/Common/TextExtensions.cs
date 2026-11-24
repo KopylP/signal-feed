@@ -1,4 +1,4 @@
-namespace PostAgent;
+namespace PostAgent.Common;
 
 public static class TextExtensions
 {
