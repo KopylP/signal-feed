@@ -1,6 +1,6 @@
 # Name each release with a changelog word
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-24
 - Deciders: Maintainer
 

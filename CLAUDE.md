@@ -23,8 +23,8 @@ Skip ADRs for small, local or easily reversible choices.
 
 ## Skills
 
-Project skills live in `.claude/skills/`. Today: `write-adr` (decisions), `write-changelog` (what changed), `check-before-pr`, `ship`, `triage-deploy-failure`. Add a skill there when a multi-step
-workflow repeats across tasks; keep one-line rules in `CLAUDE.md` instead.
+Project skills live in `.claude/skills/`. **When you develop functionality (a feature, a fix, a setting, a prompt, infrastructure), follow the `sdlc` skill from start to finish.**
+It is the roadmap and links the rest: `write-adr`, `write-changelog`, `check-before-pr`, `ship`, `triage-deploy-failure`. Add a skill when a multi-step workflow repeats; keep one-line rules here.
 
 ## Releases
 
