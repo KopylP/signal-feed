@@ -1,13 +1,13 @@
-# ---------- Інфраструктура ----------
+# ---------- Infrastructure ----------
 
 variable "location" {
-  description = "Регіон Azure. Перевірте, що Flex Consumption доступний: az functionapp list-flexconsumption-locations"
+  description = "Azure region. Make sure Flex Consumption is available there: az functionapp list-flexconsumption-locations"
   type        = string
   default     = "westeurope"
 }
 
 variable "name_prefix" {
-  description = "Префікс імен ресурсів: 3-11 малих літер і цифр. З нього будуються імена storage account і Key Vault."
+  description = "Resource name prefix: 3-11 lowercase letters or digits. Storage account and Key Vault names are built from it."
   type        = string
   default     = "signalfeed"
 
@@ -18,95 +18,96 @@ variable "name_prefix" {
 }
 
 variable "dotnet_version" {
-  description = "Версія .NET для dotnet-isolated на Flex Consumption."
+  description = ".NET version for dotnet-isolated on Flex Consumption."
   type        = string
   default     = "10.0"
 }
 
 variable "deployer_object_id" {
-  description = "Object ID вашого користувача (az ad signed-in-user show --query id -o tsv). Отримує роботу з секретами й Blob."
+  description = "Object ID of your user (az ad signed-in-user show --query id -o tsv). Gets access to secrets and Blob."
   type        = string
 }
 
 variable "budget_alert_email" {
-  description = "Email для сповіщень про бюджет."
+  description = "Email for budget alerts."
   type        = string
 }
 
 variable "monthly_budget_usd" {
-  description = "Місячний бюджет на resource group."
+  description = "Monthly budget for the resource group."
   type        = number
   default     = 5
 }
 
 variable "session_blob_container" {
-  description = "Контейнер із сесією Telegram. Terraform створює його, а функція читає з нього."
+  description = "Container with the Telegram session. Terraform creates it, the function reads from it."
   type        = string
   default     = "tg-session"
 }
 
-# ---------- Обов'язкові App Settings (без значень за замовчуванням у коді) ----------
+# ---------- Required App Settings (no defaults in code) ----------
 
 variable "sources" {
-  description = "Username каналів і груп через кому."
+  description = "Comma-separated usernames of channels and groups. Override in terraform.tfvars or with the TF_SOURCES variable in GitHub."
   type        = string
+  default     = "badseo,needforseo,devakatalk,sneex_seo,SEOBAZA,seodre"
 }
 
 variable "telegram_chat_id" {
-  description = "Куди слати дайджест і алерти (числовий id чату)."
+  description = "Where to send the digest and alerts (numeric chat id)."
   type        = string
 }
 
 variable "telegram_api_id" {
-  description = "api_id застосунку з my.telegram.org."
+  description = "api_id of the app from my.telegram.org."
   type        = string
 }
 
 variable "telegram_phone" {
-  description = "Номер телефону акаунта-читача, формат +380..."
+  description = "Phone number of the reader account, format +380..."
   type        = string
 }
 
 variable "alert_sources" {
-  description = "Групи, які можуть викликати алерт (username через кому). Канали алертів не викликають."
+  description = "Groups that can trigger an alert (comma-separated usernames). Channels never trigger alerts."
   type        = string
   default     = ""
 }
 
-# ---------- Розклади (CRON у UTC). Їх читають атрибути таймерів, тому значення за замовчуванням тут ----------
+# ---------- Schedules (CRON in UTC). Timer attributes read them, so the defaults live here ----------
 
 variable "collector_schedule" {
-  description = "CRON збору постів (UTC)."
+  description = "CRON for post collection (UTC)."
   type        = string
   default     = "0 0 * * * *"
 }
 
 variable "digest_schedule" {
-  description = "CRON денного дайджесту (UTC)."
+  description = "CRON for the daily digest (UTC)."
   type        = string
   default     = "0 0 8 * * *"
 }
 
 variable "alert_schedule" {
-  description = "CRON перевірки алертів (UTC)."
+  description = "CRON for the alert check (UTC)."
   type        = string
   default     = "0 30 * * * *"
 }
 
 variable "cleanup_schedule" {
-  description = "CRON очищення старих даних (UTC)."
+  description = "CRON for cleaning up old data (UTC)."
   type        = string
   default     = "0 0 3 * * *"
 }
 
-# ---------- Решта налаштувань ----------
+# ---------- Other settings ----------
 
 variable "app_settings" {
   description = <<-EOT
-    Додаткові App Settings: будь-які параметри з src/PostAgent.Functions/Shared/Settings/AgentOptions.cs
-    (DigestSize, AlertThreshold, AlertQuietHours, OpenAIModel, RetentionDays тощо).
-    Якщо параметр не задано, діє значення за замовчуванням із коду. Імена мають збігатися з AgentOptions:
-    помилка в імені не дає помилки, параметр просто ігнорується.
+    Extra App Settings: any parameter from src/PostAgent.Functions/Shared/Settings/AgentOptions.cs
+    (DigestSize, AlertThreshold, AlertQuietHours, OpenAIModel, RetentionDays, etc.).
+    A parameter that is not set uses the default from code. Names must match AgentOptions:
+    a typo in a name is not an error, the parameter is simply ignored.
   EOT
   type        = map(string)
   default     = {}

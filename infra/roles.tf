@@ -12,7 +12,7 @@ locals {
   }
 }
 
-# Managed identity функції: доступ до даних і секретів без ключів.
+# The function's managed identity: access to data and secrets without keys.
 resource "azurerm_role_assignment" "function" {
   for_each             = local.function_roles
   scope                = each.value.scope
@@ -20,7 +20,7 @@ resource "azurerm_role_assignment" "function" {
   principal_id         = azurerm_function_app_flex_consumption.main.identity[0].principal_id
 }
 
-# Ви: задавати секрети в Key Vault і завантажувати сесію Telegram (TgLogin).
+# You: set secrets in Key Vault and upload the Telegram session (TgLogin).
 resource "azurerm_role_assignment" "deployer" {
   for_each             = local.deployer_roles
   scope                = each.value.scope
