@@ -4,6 +4,8 @@ namespace PostAgent.Tests;
 
 public class QuietHoursTests
 {
+    private const string Kyiv = "Europe/Kyiv";
+
     // 24 листопада Київ живе за UTC+2.
     private static DateTimeOffset Utc(int hour, int minute = 0) => new(2026, 11, 24, hour, minute, 0, TimeSpan.Zero);
 
@@ -12,7 +14,7 @@ public class QuietHoursTests
     [InlineData("   ")]
     public void Empty_spec_means_no_quiet_hours(string spec)
     {
-        Assert.False(QuietHours.IsQuiet(spec, "Europe/Kyiv", Utc(2)));
+        Assert.False(QuietHours.IsQuiet(spec, Kyiv, Utc(2)));
     }
 
     [Theory]
@@ -24,7 +26,7 @@ public class QuietHoursTests
     [InlineData(20, 59, false)] // 22:59
     public void Interval_across_midnight(int utcHour, int utcMinute, bool expected)
     {
-        Assert.Equal(expected, QuietHours.IsQuiet("23:00-07:00", "Europe/Kyiv", Utc(utcHour, utcMinute)));
+        Assert.Equal(expected, QuietHours.IsQuiet("23:00-07:00", Kyiv, Utc(utcHour, utcMinute)));
     }
 
     [Theory]
@@ -32,12 +34,12 @@ public class QuietHoursTests
     [InlineData(10, false)] // 12:00
     public void Interval_within_a_day(int utcHour, bool expected)
     {
-        Assert.Equal(expected, QuietHours.IsQuiet("09:00-11:00", "Europe/Kyiv", Utc(utcHour)));
+        Assert.Equal(expected, QuietHours.IsQuiet("09:00-11:00", Kyiv, Utc(utcHour)));
     }
 
     [Fact]
     public void Invalid_spec_throws()
     {
-        Assert.Throws<FormatException>(() => QuietHours.IsQuiet("night", "Europe/Kyiv", Utc(1)));
+        Assert.Throws<FormatException>(() => QuietHours.IsQuiet("night", Kyiv, Utc(1)));
     }
 }

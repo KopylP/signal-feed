@@ -27,7 +27,7 @@ public class ScoreParserTests
     [Fact]
     public void Apply_fills_posts_and_marks_them_scored()
     {
-        var posts = new[] { Post("src_1", status: PostStatus.New, score: null), Post("src_2", status: PostStatus.New, score: null) };
+        var posts = new[] { Unscored("src_1"), Unscored("src_2") };
 
         var missing = ScoreParser.Apply(posts, ScoreParser.Parse(TwoPosts));
 
@@ -41,7 +41,7 @@ public class ScoreParserTests
     [Fact]
     public void Missing_ids_are_reported_and_left_untouched()
     {
-        var posts = new[] { Post("src_1", status: PostStatus.New, score: null), Post("src_3", status: PostStatus.New, score: null) };
+        var posts = new[] { Unscored("src_1"), Unscored("src_3") };
 
         var missing = ScoreParser.Apply(posts, ScoreParser.Parse(TwoPosts));
 
@@ -53,7 +53,7 @@ public class ScoreParserTests
     [Fact]
     public void Unknown_ids_in_the_response_are_ignored()
     {
-        var posts = new[] { Post("src_1", status: PostStatus.New, score: null) };
+        var posts = new[] { Unscored("src_1") };
 
         var missing = ScoreParser.Apply(posts, ScoreParser.Parse(TwoPosts));
 
@@ -64,7 +64,7 @@ public class ScoreParserTests
     [Fact]
     public void Score_is_clamped_and_self_duplicate_is_dropped()
     {
-        var post = Post("src_1", status: PostStatus.New, score: null);
+        var post = Unscored("src_1");
         var scores = new[] { new PostScore("src_1", 42, "T", "R", "src_1") };
 
         ScoreParser.Apply([post], scores);

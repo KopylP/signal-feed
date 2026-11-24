@@ -8,18 +8,17 @@
 
 using Azure.Identity;
 using Azure.Storage.Blobs;
+using PostAgent.Telegram;
 using WTelegram;
-
-const string SessionBlobName = "wtelegram.session"; // те саме ім'я читає PostAgent.Functions
 
 if (args.Length == 0)
 {
-    Console.Error.WriteLine("Usage: TgLogin <storage-account-name | connection-string> [container=tg-session]");
+    Console.Error.WriteLine("Usage: TgLogin <storage-account-name | connection-string> [container]");
     return 1;
 }
 
 var target = args[0];
-var containerName = args.Length > 1 ? args[1] : "tg-session";
+var containerName = args.Length > 1 ? args[1] : SessionBlob.DefaultContainer;
 
 var container = target.Contains('=')
     ? new BlobContainerClient(target, containerName)
@@ -33,8 +32,8 @@ using (var client = new Client(Config, session))
 }
 
 await container.CreateIfNotExistsAsync();
-await container.GetBlobClient(SessionBlobName).UploadAsync(BinaryData.FromBytes(session.ToArray()), overwrite: true);
-Console.WriteLine($"Session uploaded to {container.Uri}/{SessionBlobName}");
+await container.GetBlobClient(SessionBlob.Name).UploadAsync(BinaryData.FromBytes(session.ToArray()), overwrite: true);
+Console.WriteLine($"Session uploaded to {container.Uri}/{SessionBlob.Name}");
 return 0;
 
 static string? Config(string what) => what switch

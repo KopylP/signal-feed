@@ -4,20 +4,22 @@ using PostAgent.Models;
 
 namespace PostAgent.Services;
 
-/// <summary>Таблиці ChannelState і Posts.</summary>
+/// <summary>Таблиці ChannelState (курсор читання джерела) і Posts.</summary>
 public sealed class PostRepository(TableServiceClient tables)
 {
     public const string PostsTable = "Posts";
     public const string ChannelStateTable = "ChannelState";
+
     private const string StatePartition = "source";
+    private const int MaxTransactionSize = 100;
 
     private readonly TableClient _posts = tables.GetTableClient(PostsTable);
     private readonly TableClient _state = tables.GetTableClient(ChannelStateTable);
 
     public async Task<int> GetLastPostIdAsync(string username, CancellationToken ct)
     {
-        var result = await _state.GetEntityIfExistsAsync<TableEntity>(StatePartition, username, cancellationToken: ct);
-        return result.HasValue ? result.Value!.GetInt32("LastPostId") ?? 0 : 0;
+        var state = await _state.GetEntityIfExistsAsync<TableEntity>(StatePartition, username, cancellationToken: ct);
+        return state.HasValue ? state.Value!.GetInt32("LastPostId") ?? 0 : 0;
     }
 
     public Task SetLastPostIdAsync(string username, int lastPostId, CancellationToken ct) =>
@@ -52,54 +54,42 @@ public sealed class PostRepository(TableServiceClient tables)
         return posts;
     }
 
-    /// <summary>Усі пости, опубліковані в [since, now]. Партиції — це дні, тому читаємо 2–3 партиції.</summary>
+    /// <summary>Пости, опубліковані в [since, now]. Партиції — це дні, тож запит читає 2–3 партиції.</summary>
     public async Task<IReadOnlyList<PostEntity>> GetSinceAsync(DateTimeOffset since, DateTimeOffset now, CancellationToken ct)
     {
-        var posts = new List<PostEntity>();
-        for (var day = since.UtcDateTime.Date; day <= now.UtcDateTime.Date; day = day.AddDays(1))
-        {
-            var partition = day.ToString("yyyy-MM-dd");
-            await foreach (var post in _posts.QueryAsync<PostEntity>(p => p.PartitionKey == partition, cancellationToken: ct))
-            {
-                if (post.PublishedAt >= since)
-                {
-                    posts.Add(post);
-                }
-            }
-        }
-        return posts;
+        var (from, to) = (PostEntity.PartitionFor(since), PostEntity.PartitionFor(now));
+        var posts = await _posts
+            .QueryAsync<PostEntity>(TableClient.CreateQueryFilter($"PartitionKey ge {from} and PartitionKey le {to}"), cancellationToken: ct)
+            .ToListAsync(ct);
+
+        return posts.Where(p => p.PublishedAt >= since).ToList();
     }
 
-    public Task UpdateAsync(PostEntity post, CancellationToken ct) =>
-        _posts.UpdateEntityAsync(post, post.ETag, TableUpdateMode.Replace, ct);
+    public async Task UpdateAllAsync(IEnumerable<PostEntity> posts, CancellationToken ct)
+    {
+        foreach (var post in posts)
+        {
+            await _posts.UpdateEntityAsync(post, post.ETag, TableUpdateMode.Replace, ct);
+        }
+    }
 
     /// <summary>Видаляє партиції (дні) старші за cutoff.</summary>
     public async Task DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct)
     {
-        var cutoffKey = PostEntity.PartitionFor(cutoff);
-        var old = _posts.QueryAsync<TableEntity>(
-            TableClient.CreateQueryFilter($"PartitionKey lt {cutoffKey}"),
-            select: ["PartitionKey", "RowKey"],
-            cancellationToken: ct);
+        var cutoffPartition = PostEntity.PartitionFor(cutoff);
+        var old = await _posts
+            .QueryAsync<TableEntity>(
+                TableClient.CreateQueryFilter($"PartitionKey lt {cutoffPartition}"),
+                select: ["PartitionKey", "RowKey"],
+                cancellationToken: ct)
+            .ToListAsync(ct);
 
-        var byPartition = new Dictionary<string, List<TableEntity>>();
-        await foreach (var entity in old)
+        // Транзакція Table Storage працює в межах однієї партиції й до 100 операцій.
+        foreach (var batch in old.GroupBy(e => e.PartitionKey).SelectMany(g => g.Chunk(MaxTransactionSize)))
         {
-            if (!byPartition.TryGetValue(entity.PartitionKey, out var list))
-            {
-                byPartition[entity.PartitionKey] = list = [];
-            }
-            list.Add(entity);
-        }
-
-        foreach (var entities in byPartition.Values)
-        {
-            foreach (var chunk in entities.Chunk(100))
-            {
-                await _posts.SubmitTransactionAsync(
-                    chunk.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e)),
-                    ct);
-            }
+            await _posts.SubmitTransactionAsync(
+                batch.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e)),
+                ct);
         }
     }
 }

@@ -8,8 +8,6 @@ namespace PostAgent.Telegram;
 /// </summary>
 public sealed class BlobSessionStream : MemoryStream
 {
-    public const string BlobName = "wtelegram.session"; // те саме ім'я використовує TgLogin
-
     private readonly BlobClient _blob;
 
     private BlobSessionStream(BlobClient blob, byte[] content)
@@ -21,7 +19,7 @@ public sealed class BlobSessionStream : MemoryStream
 
     public static async Task<BlobSessionStream> LoadAsync(BlobContainerClient container, CancellationToken ct)
     {
-        var blob = container.GetBlobClient(BlobName);
+        var blob = container.GetBlobClient(SessionBlob.Name);
         if (!await blob.ExistsAsync(ct))
         {
             throw new InvalidOperationException("Telegram session not found in blob storage. Run TgLogin first.");

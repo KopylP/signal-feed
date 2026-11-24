@@ -40,7 +40,7 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `CollectorSchedule` | `0 0 * * * *` | CRON збору |
 | `DigestSchedule` | `0 0 8 * * *` | CRON дайджесту |
 | `AlertSchedule` | `0 30 * * * *` | CRON перевірки алертів |
-| `DigestSize` | 5 | скільки постів у дайджесті |
+| `DigestSize` | 5 | скільки постів у дайджесті (не більше 8, інакше повідомлення не вміститься в ліміт Telegram) |
 | `InterestingThreshold` | 7 | від якої оцінки пост «🔥 Цікаве» |
 | `ScoringBatchSize` | 10 | постів в одному повідомленні черги |
 | `MaxPostChars` / `MinPostChars` | 1500 / 80 | обрізання й мінімальна довжина |
@@ -49,13 +49,14 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `AlertSources` | | групи, які можуть викликати алерт |
 | `AlertThreshold` / `BurstMinPosts` | 9 / 8 | пороги алерту |
 | `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | вікно оцінених постів і пауза між алертами однієї групи |
-| `AlertMaxPerRun` | 3 | записів в одному алерті |
+| `AlertMaxPerRun` | 3 | записів в одному алерті (не більше 8) |
 | `AlertQuietHours` / `AlertTimeZone` | порожньо / `Europe/Kyiv` | тихі години |
 | `OpenAIModel` | `gpt-5.4-nano` | модель оцінювання |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **секрети**, лише в Key Vault |
 | `TelegramChatId`, `TelegramApiId`, `TelegramPhone` | | куди слати; дані акаунта для читання |
 | `SessionBlobContainer` | `tg-session` | контейнер із сесією Telegram |
 | `RetentionDays` | 14 | скільки днів зберігати пости |
+| `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
 
 ### Як змінити розклад, джерела й промпт
 

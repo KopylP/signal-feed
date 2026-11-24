@@ -1,5 +1,6 @@
 using PostAgent.Models;
 using PostAgent.Services;
+using PostAgent.Telegram;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests;
@@ -15,7 +16,7 @@ public class PostBuilderTests
         var messages = new[]
         {
             Message(1, service: true),
-            new TgMessage(2, Now, null, null, 0, IsService: false),
+            MessageWithoutText(2),
             Message(3, text: "   "),
             Message(4, text: "коротко"),
             Message(5),
@@ -129,5 +130,20 @@ public class PostBuilderTests
 
         Assert.True(posts[0].Text.Length <= 1000);
         Assert.Equal(100, posts[0].MessageCount);
+    }
+
+    [Fact]
+    public void Bundle_never_exceeds_MaxBundleChars_even_when_MaxPostChars_is_larger()
+    {
+        var messages = Enumerable.Range(1, 10).Select(i => Message(i, Text(500)));
+
+        var post = Assert.Single(PostBuilder.Build(Group, messages, Options(o =>
+        {
+            o.MaxItemsPerGroup = 1;
+            o.MaxPostChars = 1500;
+            o.MaxBundleChars = 300;
+        })));
+
+        Assert.True(post.Text.Length <= 300);
     }
 }

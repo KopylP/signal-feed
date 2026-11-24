@@ -6,6 +6,13 @@ namespace PostAgent.Tests;
 
 public class AlertSelectorTests
 {
+    private static AgentOptions Options(Action<AgentOptions>? configure = null) =>
+        TestData.Options(o =>
+        {
+            o.AlertSources = "chat";
+            configure?.Invoke(o);
+        });
+
     private static PostEntity ChatPost(string rowKey, int score = 5, int messages = 1, string source = "chat",
         double hoursAgo = 1, DateTimeOffset? alertedAt = null, PostStatus status = PostStatus.Scored) =>
         Post(rowKey, score, hoursAgo, status, SourceType.Group, source, messages, alertedAt: alertedAt);

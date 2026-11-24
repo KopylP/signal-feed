@@ -1,15 +1,7 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using PostAgent.Models;
 
 namespace PostAgent.Services;
-
-public sealed record PostScore(
-    string Id,
-    int Score,
-    string Topic,
-    string Reason,
-    [property: JsonPropertyName("duplicate_of")] string? DuplicateOf);
 
 /// <summary>Розбір відповіді моделі та застосування оцінок до постів.</summary>
 public static class ScoreParser
@@ -30,19 +22,14 @@ public static class ScoreParser
 
         foreach (var post in posts)
         {
-            if (!byId.TryGetValue(post.RowKey, out var score))
+            if (byId.TryGetValue(post.RowKey, out var score))
+            {
+                post.ApplyScore(score);
+            }
+            else
             {
                 missing.Add(post.RowKey);
-                continue;
             }
-
-            post.Score = Math.Clamp(score.Score, 0, 10);
-            post.Topic = score.Topic;
-            post.Reason = score.Reason;
-            post.DuplicateOf = string.IsNullOrWhiteSpace(score.DuplicateOf) || score.DuplicateOf == post.RowKey
-                ? null
-                : score.DuplicateOf;
-            post.Status = PostStatus.Scored;
         }
 
         return missing;

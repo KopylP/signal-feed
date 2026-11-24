@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\PostAgent.Functions\Telegram\SessionBlob.cs" Link="SessionBlob.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="WTelegramClient" Version="4.4.11" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.30.2" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />

@@ -5,10 +5,8 @@ using PostAgent.Models;
 namespace PostAgent.Services;
 
 /// <summary>Надсилає повідомлення власнику через Telegram Bot API.</summary>
-public sealed class TelegramNotifier(IHttpClientFactory httpClients, IOptions<AgentOptions> options)
+public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> options)
 {
-    public const string HttpClientName = "telegram-bot";
-
     public Task SendDigestAsync(IReadOnlyList<DigestItem> items, CancellationToken ct) =>
         SendAsync(TelegramMessages.FormatDigest(items), ct);
 
@@ -20,8 +18,6 @@ public sealed class TelegramNotifier(IHttpClientFactory httpClients, IOptions<Ag
     private async Task SendAsync(string html, CancellationToken ct)
     {
         var settings = options.Value;
-        var http = httpClients.CreateClient(HttpClientName);
-
         using var response = await http.PostAsJsonAsync(
             $"bot{settings.TelegramBotToken}/sendMessage",
             new

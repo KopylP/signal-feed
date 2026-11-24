@@ -3,16 +3,11 @@ using Azure.Data.Tables;
 
 namespace PostAgent.Models;
 
-public enum SourceType { Channel, Group }
-
-/// <summary>Post — одне повідомлення; Bundle — пачка повідомлень групи.</summary>
-public enum PostKind { Post, Bundle }
-
-public enum PostStatus { New, Scored, Sent }
-
 /// <summary>Рядок таблиці Posts. PartitionKey = дата публікації (UTC), RowKey = "{username}_{postId}".</summary>
 public sealed class PostEntity : ITableEntity
 {
+    private const string PartitionFormat = "yyyy-MM-dd";
+
     public string PartitionKey { get; set; } = "";
     public string RowKey { get; set; } = "";
     public DateTimeOffset? Timestamp { get; set; }
@@ -39,21 +34,25 @@ public sealed class PostEntity : ITableEntity
     public DateTimeOffset? AlertedAt { get; set; }
 
     public static string PartitionFor(DateTimeOffset publishedAt) =>
-        publishedAt.UtcDateTime.ToString("yyyy-MM-dd");
+        publishedAt.UtcDateTime.ToString(PartitionFormat);
 
     public PostRef ToRef() => new(PartitionKey, RowKey);
+
+    public void ApplyScore(PostScore score)
+    {
+        Score = Math.Clamp(score.Score, 0, 10);
+        Topic = score.Topic;
+        Reason = score.Reason;
+        DuplicateOf = string.IsNullOrWhiteSpace(score.DuplicateOf) || score.DuplicateOf == RowKey ? null : score.DuplicateOf;
+        Status = PostStatus.Scored;
+    }
+
+    public void MarkSent(DateTimeOffset? alertedAt = null)
+    {
+        Status = PostStatus.Sent;
+        AlertedAt = alertedAt ?? AlertedAt;
+    }
 }
 
 /// <summary>Посилання на пост. Саме воно (а не текст) лежить у черзі to-score.</summary>
 public sealed record PostRef(string PartitionKey, string RowKey);
-
-/// <summary>Повідомлення Telegram у вигляді, незалежному від бібліотеки.</summary>
-public sealed record TgMessage(
-    int Id,
-    DateTimeOffset Date,
-    string? Text,
-    string? Author,
-    int Engagement,
-    bool IsService);
-
-public sealed record SourceInfo(string Username, SourceType Type);

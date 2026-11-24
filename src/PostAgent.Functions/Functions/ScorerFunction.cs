@@ -15,23 +15,19 @@ public sealed class ScorerFunction(PostRepository posts, PostScorer scorer, ILog
         [QueueTrigger(ScoringQueue.Name, Connection = "AzureWebJobsStorage")] string message,
         CancellationToken ct)
     {
-        var pending = (await posts.GetAsync(ScoringQueue.Parse(message), ct))
+        var unscored = (await posts.GetAsync(ScoringQueue.Parse(message), ct))
             .Where(p => p.Status == PostStatus.New)
             .ToList();
-
-        if (pending.Count == 0)
+        if (unscored.Count == 0)
         {
             return;
         }
 
-        foreach (var id in await scorer.ScoreAsync(pending, ct))
+        foreach (var id in await scorer.ScoreAsync(unscored, ct))
         {
             log.LogWarning("Model returned no score for {PostId}", id);
         }
 
-        foreach (var post in pending.Where(p => p.Status == PostStatus.Scored))
-        {
-            await posts.UpdateAsync(post, ct);
-        }
+        await posts.UpdateAllAsync(unscored.Where(p => p.Status == PostStatus.Scored), ct);
     }
 }

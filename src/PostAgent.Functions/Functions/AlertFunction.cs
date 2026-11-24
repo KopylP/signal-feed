@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Models;
 using PostAgent.Services;
 
 namespace PostAgent.Functions;
@@ -25,22 +24,18 @@ public sealed class AlertFunction(
             return;
         }
 
-        // Вікно оцінених постів плюс cooldown: AlertedAt шукаємо серед нещодавніх постів.
-        var since = now.AddHours(-(settings.AlertWindowHours + settings.AlertCooldownHours));
-        var alerts = AlertSelector.Select(await posts.GetSinceAsync(since, now, ct), settings, now);
+        var recent = await posts.GetSinceAsync(AlertSelector.LookbackStart(settings, now), now, ct);
+        var alerts = AlertSelector.Select(recent, settings, now);
         if (alerts.Count == 0)
         {
             return;
         }
 
         await notifier.SendAlertAsync(alerts, ct);
-        foreach (var post in alerts)
-        {
-            post.Status = PostStatus.Sent; // у дайджесті такі пости не повторюються
-            post.AlertedAt = now;
-            await posts.UpdateAsync(post, ct);
-        }
 
+        // Sent, щоб дайджест не повторював ці пости; AlertedAt для паузи між алертами групи.
+        alerts.ToList().ForEach(p => p.MarkSent(alertedAt: now));
+        await posts.UpdateAllAsync(alerts, ct);
         log.LogInformation("Alert sent: {Count} posts", alerts.Count);
     }
 }

@@ -1,10 +1,20 @@
 data "azurerm_client_config" "current" {}
 
 locals {
-  suffix           = substr(sha1("${data.azurerm_client_config.current.subscription_id}-${var.name_prefix}"), 0, 6)
-  storage_name     = substr("st${replace(var.name_prefix, "-", "")}${local.suffix}", 0, 24)
-  key_vault_name   = substr("kv-${var.name_prefix}-${local.suffix}", 0, 24)
-  function_name    = "func-${var.name_prefix}-${local.suffix}"
+  suffix         = substr(sha1("${data.azurerm_client_config.current.subscription_id}-${var.name_prefix}"), 0, 6)
+  storage_name   = substr("st${replace(var.name_prefix, "-", "")}${local.suffix}", 0, 24)
+  key_vault_name = substr("kv-${var.name_prefix}-${local.suffix}", 0, 24)
+  function_name  = "func-${var.name_prefix}-${local.suffix}"
+  function_roles = {
+    blob  = { scope = azurerm_storage_account.main.id, role = "Storage Blob Data Owner" }
+    queue = { scope = azurerm_storage_account.main.id, role = "Storage Queue Data Contributor" }
+    table = { scope = azurerm_storage_account.main.id, role = "Storage Table Data Contributor" }
+    vault = { scope = azurerm_key_vault.main.id, role = "Key Vault Secrets User" }
+  }
+  deployer_roles = {
+    secrets = { scope = azurerm_key_vault.main.id, role = "Key Vault Secrets Officer" }
+    blob    = { scope = azurerm_storage_account.main.id, role = "Storage Blob Data Contributor" }
+  }
   secret_names     = ["OpenAIApiKey", "TelegramBotToken", "TelegramApiHash"]
   secret_reference = { for name in local.secret_names : name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${name}/)" }
 
@@ -155,47 +165,19 @@ resource "azurerm_function_app_flex_consumption" "main" {
   app_settings = local.app_settings
 }
 
-# ---------- Ролі для managed identity функції ----------
+# ---------- Ролі ----------
 
-locals {
-  function_principal_id = azurerm_function_app_flex_consumption.main.identity[0].principal_id
+resource "azurerm_role_assignment" "function" {
+  for_each             = local.function_roles
+  scope                = each.value.scope
+  role_definition_name = each.value.role
+  principal_id         = azurerm_function_app_flex_consumption.main.identity[0].principal_id
 }
 
-resource "azurerm_role_assignment" "function_blob_owner" {
-  scope                = azurerm_storage_account.main.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = local.function_principal_id
-}
-
-resource "azurerm_role_assignment" "function_queue" {
-  scope                = azurerm_storage_account.main.id
-  role_definition_name = "Storage Queue Data Contributor"
-  principal_id         = local.function_principal_id
-}
-
-resource "azurerm_role_assignment" "function_table" {
-  scope                = azurerm_storage_account.main.id
-  role_definition_name = "Storage Table Data Contributor"
-  principal_id         = local.function_principal_id
-}
-
-resource "azurerm_role_assignment" "function_secrets" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = local.function_principal_id
-}
-
-# ---------- Ролі для вас (deployer) ----------
-
-resource "azurerm_role_assignment" "deployer_secrets" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = var.deployer_object_id
-}
-
-resource "azurerm_role_assignment" "deployer_blob" {
-  scope                = azurerm_storage_account.main.id
-  role_definition_name = "Storage Blob Data Contributor"
+resource "azurerm_role_assignment" "deployer" {
+  for_each             = local.deployer_roles
+  scope                = each.value.scope
+  role_definition_name = each.value.role
   principal_id         = var.deployer_object_id
 }
 
@@ -211,18 +193,14 @@ resource "azurerm_consumption_budget_resource_group" "main" {
     start_date = formatdate("YYYY-MM-01'T'00:00:00'Z'", timestamp())
   }
 
-  notification {
-    enabled        = true
-    threshold      = 80
-    operator       = "GreaterThanOrEqualTo"
-    contact_emails = [var.budget_alert_email]
-  }
-
-  notification {
-    enabled        = true
-    threshold      = 100
-    operator       = "GreaterThanOrEqualTo"
-    contact_emails = [var.budget_alert_email]
+  dynamic "notification" {
+    for_each = [80, 100]
+    content {
+      enabled        = true
+      threshold      = notification.value
+      operator       = "GreaterThanOrEqualTo"
+      contact_emails = [var.budget_alert_email]
+    }
   }
 
   lifecycle {

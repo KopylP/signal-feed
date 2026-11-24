@@ -1,19 +1,16 @@
+using PostAgent.Telegram;
+
 namespace PostAgent;
 
 /// <summary>
-/// Усі App Settings. Прив'язуються з кореня конфігурації за іменами властивостей,
-/// тому `Sources` в App Settings = `AgentOptions.Sources`.
+/// Усі App Settings, що читає код. Прив'язуються з кореня конфігурації за іменами властивостей.
+/// Розклади (CollectorSchedule, DigestSchedule, AlertSchedule) сюди не входять: їх читають
+/// атрибути [TimerTrigger("%...%")] безпосередньо з App Settings.
 /// </summary>
 public sealed class AgentOptions
 {
     // Джерела
     public string Sources { get; set; } = "";
-
-    // Розклади (CRON, UTC). Самі розклади читаються атрибутами [TimerTrigger("%...%")],
-    // тут вони лише для повноти конфігурації.
-    public string CollectorSchedule { get; set; } = "0 0 * * * *";
-    public string DigestSchedule { get; set; } = "0 0 8 * * *";
-    public string AlertSchedule { get; set; } = "0 30 * * * *";
 
     // Дайджест
     public int DigestSize { get; set; } = 5;
@@ -50,12 +47,12 @@ public sealed class AgentOptions
     public int TelegramApiId { get; set; }
     public string TelegramApiHash { get; set; } = "";
     public string TelegramPhone { get; set; } = "";
-    public string SessionBlobContainer { get; set; } = "tg-session";
+    public string SessionBlobContainer { get; set; } = SessionBlob.DefaultContainer;
 
     public IReadOnlyList<string> SourceList => ParseUsernames(Sources);
     public IReadOnlySet<string> AlertSourceSet => ParseUsernames(AlertSources).ToHashSet();
 
-    public static IReadOnlyList<string> ParseUsernames(string? csv) =>
+    private static IReadOnlyList<string> ParseUsernames(string? csv) =>
         (csv ?? "")
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .Select(NormalizeUsername)
@@ -63,7 +60,7 @@ public sealed class AgentOptions
             .ToList();
 
     /// <summary>"@Name", "https://t.me/Name" і "Name" дають однаковий "name".</summary>
-    public static string NormalizeUsername(string value)
+    private static string NormalizeUsername(string value)
     {
         var v = value.Trim();
         foreach (var prefix in new[] { "https://t.me/", "http://t.me/", "t.me/", "@" })

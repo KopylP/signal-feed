@@ -8,29 +8,40 @@ namespace PostAgent.Services;
 /// </summary>
 public static class AlertSelector
 {
+    /// <summary>З якого моменту читати пости: вікно оцінених постів плюс cooldown (шукаємо AlertedAt).</summary>
+    public static DateTimeOffset LookbackStart(AgentOptions options, DateTimeOffset now) =>
+        now.AddHours(-(options.AlertWindowHours + options.AlertCooldownHours));
+
     public static IReadOnlyList<PostEntity> Select(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now)
     {
         var all = posts.ToList();
         var alertSources = options.AlertSourceSet;
+        var windowStart = now.AddHours(-options.AlertWindowHours);
+        var coolingDown = SourcesAlertedSince(all, now.AddHours(-options.AlertCooldownHours));
 
-        // Джерела, про які вже сповіщали нещодавно.
-        var coolingDown = all
-            .Where(p => p.AlertedAt >= now.AddHours(-options.AlertCooldownHours))
-            .Select(p => p.Source)
-            .ToHashSet();
-
-        return all
-            .Where(p => p.Status == PostStatus.Scored
-                        && p.SourceType == SourceType.Group
-                        && alertSources.Contains(p.Source)
-                        && !coolingDown.Contains(p.Source)
-                        && p.PublishedAt >= now.AddHours(-options.AlertWindowHours)
-                        && (p.Score >= options.AlertThreshold || p.MessageCount >= options.BurstMinPosts))
+        var bestPerSource = all
+            .Where(p => IsCandidate(p, alertSources, windowStart) && IsAlertWorthy(p, options))
+            .Where(p => !coolingDown.Contains(p.Source))
             .GroupBy(p => p.Source)
-            .Select(g => g.OrderByDescending(p => p.Score).ThenByDescending(p => p.MessageCount).First())
-            .OrderByDescending(p => p.Score)
-            .ThenByDescending(p => p.MessageCount)
-            .Take(options.AlertMaxPerRun)
+            .Select(group => Rank(group).First());
+
+        return Rank(bestPerSource)
+            .Take(Math.Min(options.AlertMaxPerRun, TelegramMessages.MaxItems))
             .ToList();
     }
+
+    private static HashSet<string> SourcesAlertedSince(IEnumerable<PostEntity> posts, DateTimeOffset since) =>
+        posts.Where(p => p.AlertedAt >= since).Select(p => p.Source).ToHashSet();
+
+    private static bool IsCandidate(PostEntity post, IReadOnlySet<string> alertSources, DateTimeOffset windowStart) =>
+        post.Status == PostStatus.Scored
+        && post.SourceType == SourceType.Group
+        && alertSources.Contains(post.Source)
+        && post.PublishedAt >= windowStart;
+
+    private static bool IsAlertWorthy(PostEntity post, AgentOptions options) =>
+        post.Score >= options.AlertThreshold || post.MessageCount >= options.BurstMinPosts;
+
+    private static IOrderedEnumerable<PostEntity> Rank(IEnumerable<PostEntity> posts) =>
+        posts.OrderByDescending(p => p.Score).ThenByDescending(p => p.MessageCount);
 }

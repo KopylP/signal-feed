@@ -1,0 +1,11 @@
+using System.Text.Json.Serialization;
+
+namespace PostAgent.Models;
+
+/// <summary>Оцінка одного посту з відповіді моделі.</summary>
+public sealed record PostScore(
+    string Id,
+    int Score,
+    string Topic,
+    string Reason,
+    [property: JsonPropertyName("duplicate_of")] string? DuplicateOf);

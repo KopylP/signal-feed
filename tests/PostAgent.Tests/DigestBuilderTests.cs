@@ -92,4 +92,14 @@ public class DigestBuilderTests
 
         Assert.Equal(["ok"], items.Select(i => i.Post.RowKey));
     }
+
+    [Fact]
+    public void Digest_never_has_more_items_than_fit_into_one_telegram_message()
+    {
+        var posts = Enumerable.Range(1, 30).Select(i => Post($"p{i}", score: 8)).ToList();
+
+        var items = DigestBuilder.Build(posts, Options(o => o.DigestSize = 30), Now);
+
+        Assert.Equal(TelegramMessages.MaxItems, items.Count);
+    }
 }

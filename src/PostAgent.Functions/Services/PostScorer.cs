@@ -23,37 +23,30 @@ public sealed class PostScorer(IOptions<AgentOptions> options)
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // кирилиця без \uXXXX, менше токенів
     };
 
-    private readonly Lazy<ChatClient> _client = new(() =>
-        new ChatClient(options.Value.OpenAIModel, options.Value.OpenAIApiKey));
-
-    private readonly Lazy<string> _systemPrompt = new(() =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "prompts", "scoring.md")));
+    private readonly ChatClient _client = new(options.Value.OpenAIModel, options.Value.OpenAIApiKey);
+    private readonly string _systemPrompt = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "prompts", "scoring.md"));
 
     /// <summary>Записує оцінки в пости. Повертає id, для яких модель оцінки не дала. Помилка API — виняток.</summary>
     public async Task<IReadOnlyList<string>> ScoreAsync(IReadOnlyList<PostEntity> posts, CancellationToken ct)
     {
-        var userMessage = JsonSerializer.Serialize(
-            posts.Select(p => new { id = p.RowKey, source = p.Source, author = p.Author, text = p.Text }),
-            RequestJson);
-
-        var completionOptions = new ChatCompletionOptions
-        {
-            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
-                "scored_posts",
-                BinaryData.FromString(SchemaJson),
-                jsonSchemaIsStrict: true),
-        };
-
-        ChatCompletion completion = await _client.Value.CompleteChatAsync(
-            [new SystemChatMessage(_systemPrompt.Value), new UserChatMessage(userMessage)],
-            completionOptions,
+        var completion = await _client.CompleteChatAsync(
+            [new SystemChatMessage(_systemPrompt), new UserChatMessage(ToUserMessage(posts))],
+            new ChatCompletionOptions { ResponseFormat = StrictResponseFormat() },
             ct);
 
-        if (completion.Content.Count == 0)
+        if (completion.Value.Content.Count == 0)
         {
-            throw new InvalidOperationException($"OpenAI returned no content (finish reason: {completion.FinishReason}).");
+            throw new InvalidOperationException($"OpenAI returned no content (finish reason: {completion.Value.FinishReason}).");
         }
 
-        return ScoreParser.Apply(posts, ScoreParser.Parse(completion.Content[0].Text));
+        return ScoreParser.Apply(posts, ScoreParser.Parse(completion.Value.Content[0].Text));
     }
+
+    private static ChatResponseFormat StrictResponseFormat() =>
+        ChatResponseFormat.CreateJsonSchemaFormat("scored_posts", BinaryData.FromString(SchemaJson), jsonSchemaIsStrict: true);
+
+    private static string ToUserMessage(IEnumerable<PostEntity> posts) =>
+        JsonSerializer.Serialize(
+            posts.Select(p => new { id = p.RowKey, source = p.Source, author = p.Author, text = p.Text }),
+            RequestJson);
 }

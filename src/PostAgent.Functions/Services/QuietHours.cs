@@ -12,18 +12,24 @@ public static class QuietHours
             return false;
         }
 
-        var parts = spec.Split('-', 2, StringSplitOptions.TrimEntries);
-        if (parts.Length != 2
-            || !TimeOnly.TryParse(parts[0], CultureInfo.InvariantCulture, out var start)
-            || !TimeOnly.TryParse(parts[1], CultureInfo.InvariantCulture, out var end))
-        {
-            throw new FormatException($"AlertQuietHours must look like 23:00-07:00, got '{spec}'.");
-        }
-
+        var (start, end) = ParseRange(spec);
         var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-        var local = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
+        var local = TimeOnly.FromTimeSpan(TimeZoneInfo.ConvertTime(now, zone).TimeOfDay);
 
         // Інтервал може переходити через північ.
         return start <= end ? local >= start && local < end : local >= start || local < end;
+    }
+
+    private static (TimeOnly Start, TimeOnly End) ParseRange(string spec)
+    {
+        var parts = spec.Split('-', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length == 2
+            && TimeOnly.TryParse(parts[0], CultureInfo.InvariantCulture, out var start)
+            && TimeOnly.TryParse(parts[1], CultureInfo.InvariantCulture, out var end))
+        {
+            return (start, end);
+        }
+
+        throw new FormatException($"AlertQuietHours must look like 23:00-07:00, got '{spec}'.");
     }
 }

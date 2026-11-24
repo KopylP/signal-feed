@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using PostAgent.Models;
 
@@ -8,52 +9,53 @@ public static class TelegramMessages
 {
     public const string NoPosts = "За добу нових постів не було";
 
-    private const int MaxReasonChars = 300;
+    /// <summary>
+    /// Ліміт записів у одному повідомленні. Запис не перевищує ~450 символів (тема 60, причина 200,
+    /// джерело й посилання), тож 8 записів гарантовано вкладаються в 4096 символів Telegram.
+    /// </summary>
+    public const int MaxItems = 8;
 
-    public static string Escape(string? text) =>
-        (text ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+    private const int MaxTopicChars = 60;
+    private const int MaxReasonChars = 200;
+
+    public static string Escape(string? text) => WebUtility.HtmlEncode(text ?? "");
 
     public static string FormatDigest(IReadOnlyList<DigestItem> items)
     {
-        var sb = new StringBuilder("📰 <b>Дайджест</b>");
+        var message = new StringBuilder("📰 <b>Дайджест</b>");
         foreach (var item in items)
         {
             var label = item.IsInteresting ? "🔥 <b>Цікаве</b>" : "📌 <b>Найкраще за день</b>";
-            sb.Append("\n\n").Append(label).Append(" · ").Append(Escape(item.Post.Topic));
-            AppendDetails(sb, item.Post);
+            message.Append("\n\n").Append(label).Append(" · ").Append(Escape(Topic(item.Post)));
+            AppendDetails(message, item.Post);
         }
-        return sb.ToString();
+        return message.ToString();
     }
 
     public static string FormatAlert(IReadOnlyList<PostEntity> posts)
     {
-        var sb = new StringBuilder("🚨 <b>Щось відбувається</b>");
+        var message = new StringBuilder("🚨 <b>Щось відбувається</b>");
         foreach (var post in posts)
         {
-            sb.Append("\n\n<b>").Append(Escape(post.Topic)).Append("</b>");
-            AppendDetails(sb, post);
+            message.Append("\n\n<b>").Append(Escape(Topic(post))).Append("</b>");
+            AppendDetails(message, post);
         }
-        return sb.ToString();
+        return message.ToString();
     }
 
-    private static void AppendDetails(StringBuilder sb, PostEntity post)
-    {
-        sb.Append("\n@").Append(Escape(post.Source));
-        if (post.MessageCount > 1)
-        {
-            sb.Append(" · ").Append(post.MessageCount).Append(" повідомлень");
-        }
-        else if (post.Author is not null)
-        {
-            sb.Append(" · ").Append(Escape(post.Author));
-        }
+    private static string Topic(PostEntity post) => (post.Topic ?? "").Truncate(MaxTopicChars, "…");
 
-        var reason = post.Reason ?? "";
-        if (reason.Length > MaxReasonChars)
-        {
-            reason = reason[..MaxReasonChars] + "…";
-        }
-        sb.Append('\n').Append(Escape(reason));
-        sb.Append("\n<a href=\"").Append(Escape(post.Url).Replace("\"", "&quot;")).Append("\">Читати</a>");
+    private static void AppendDetails(StringBuilder message, PostEntity post)
+    {
+        message.Append('\n').Append(SourceLine(post));
+        message.Append('\n').Append(Escape((post.Reason ?? "").Truncate(MaxReasonChars, "…")));
+        message.Append("\n<a href=\"").Append(Escape(post.Url)).Append("\">Читати</a>");
+    }
+
+    /// <summary>"@джерело" плюс кількість повідомлень (для пачки) або автор (для повідомлення групи).</summary>
+    private static string SourceLine(PostEntity post)
+    {
+        var details = post.MessageCount > 1 ? $"{post.MessageCount} повідомлень" : post.Author;
+        return details is null ? $"@{Escape(post.Source)}" : $"@{Escape(post.Source)} · {Escape(details)}";
     }
 }

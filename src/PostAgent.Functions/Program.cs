@@ -24,19 +24,18 @@ builder.Logging.Services.Configure<LoggerFilterOptions>(filter =>
     }
 });
 
-builder.Services.AddOptions<AgentOptions>().Configure<IConfiguration>((options, config) => config.Bind(options));
+builder.Services.Configure<AgentOptions>(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddStorage(builder.Configuration);
 
 builder.Services.AddSingleton<PostRepository>();
 builder.Services.AddSingleton<ScoringQueue>();
 builder.Services.AddSingleton<PostScorer>();
-builder.Services.AddSingleton<TelegramNotifier>();
 builder.Services.AddScoped<TelegramSourceReader>();
 
 // RemoveAllLoggers: токен бота входить в URL запиту, у логи він потрапити не повинен.
 builder.Services
-    .AddHttpClient(TelegramNotifier.HttpClientName, http => http.BaseAddress = new Uri("https://api.telegram.org/"))
+    .AddHttpClient<TelegramNotifier>(http => http.BaseAddress = new Uri("https://api.telegram.org/"))
     .RemoveAllLoggers();
 
 var app = builder.Build();

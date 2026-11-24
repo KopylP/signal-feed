@@ -84,6 +84,12 @@ variable "min_post_chars" {
   default = 80
 }
 
+variable "first_run_lookback_hours" {
+  description = "Скільки годин історії читати при першому запуску для нового джерела."
+  type        = number
+  default     = 24
+}
+
 variable "retention_days" {
   type    = number
   default = 14

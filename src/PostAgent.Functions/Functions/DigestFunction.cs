@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Models;
 using PostAgent.Services;
 
 namespace PostAgent.Functions;
@@ -16,27 +15,22 @@ public sealed class DigestFunction(
     [Function(nameof(DigestFunction))]
     public async Task Run([TimerTrigger("%DigestSchedule%")] TimerInfo timer, CancellationToken ct)
     {
-        var settings = options.Value;
         var now = time.GetUtcNow();
+        await posts.DeleteOlderThanAsync(now.AddDays(-options.Value.RetentionDays), ct);
 
-        var recent = await posts.GetSinceAsync(now.AddHours(-48), now, ct);
-        var items = DigestBuilder.Build(recent, settings, now);
-
+        var recent = await posts.GetSinceAsync(now - DigestBuilder.FallbackWindow, now, ct);
+        var items = DigestBuilder.Build(recent, options.Value, now);
         if (items.Count == 0)
         {
             await notifier.SendNoPostsAsync(ct);
-        }
-        else
-        {
-            await notifier.SendDigestAsync(items, ct);
-            foreach (var item in items)
-            {
-                item.Post.Status = PostStatus.Sent;
-                await posts.UpdateAsync(item.Post, ct);
-            }
+            return;
         }
 
-        log.LogInformation("Digest sent: {Count} posts", items.Count);
-        await posts.DeleteOlderThanAsync(now.AddDays(-settings.RetentionDays), ct);
+        await notifier.SendDigestAsync(items, ct);
+
+        var sent = items.Select(i => i.Post).ToList();
+        sent.ForEach(p => p.MarkSent());
+        await posts.UpdateAllAsync(sent, ct);
+        log.LogInformation("Digest sent: {Count} posts", sent.Count);
     }
 }
