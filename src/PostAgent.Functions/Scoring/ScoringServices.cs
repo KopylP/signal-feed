@@ -1,5 +1,4 @@
-using PostAgent.Scoring.Ai;
-using PostAgent.Scoring.Storage;
+using PostAgent.Scoring.Infrastructure;
 
 namespace PostAgent.Scoring;
 

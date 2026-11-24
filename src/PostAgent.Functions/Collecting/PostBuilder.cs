@@ -33,9 +33,10 @@ public static class PostBuilder
 
     private static List<Item> ToTextItems(IEnumerable<TgMessage> messages) =>
         messages
-            .Where(m => !m.IsService && !string.IsNullOrWhiteSpace(m.Text))
+            .Where(m => !m.IsService)
             .OrderBy(m => m.Id)
-            .Select(m => new Item(m, m.Text!.Trim()))
+            .Select(m => m.Text?.Trim() is { Length: > 0 } text ? new Item(m, text) : null)
+            .OfType<Item>()
             .ToList();
 
     // Окремий пост. Повертає null для занадто короткого повідомлення.

@@ -2,12 +2,10 @@ using System.Text.Json;
 using Azure.Storage.Queues;
 using PostAgent.Shared.Posts;
 
-namespace PostAgent.Scoring.Storage;
+namespace PostAgent.Scoring.Infrastructure;
 
 public sealed class ScoringQueue(QueueClient queue) : IScoringQueue
 {
-    public const string Name = "to-score";
-
     public async Task EnqueueAsync(IReadOnlyList<PostRef> refs, int batchSize, CancellationToken ct)
     {
         foreach (var batch in refs.Chunk(batchSize))

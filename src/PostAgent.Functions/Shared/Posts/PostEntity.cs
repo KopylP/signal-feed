@@ -1,6 +1,5 @@
 using Azure;
 using Azure.Data.Tables;
-using PostAgent.Scoring;
 
 namespace PostAgent.Shared.Posts;
 
@@ -44,5 +43,3 @@ public sealed class PostEntity : ITableEntity
         Status = PostStatus.Scored;
     }
 }
-
-public sealed record PostRef(string PartitionKey, string RowKey);

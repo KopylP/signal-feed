@@ -1,6 +1,7 @@
 using Azure.Storage.Blobs;
+using PostAgent.Shared.Infrastructure;
 
-namespace PostAgent.Collecting.Telegram;
+namespace PostAgent.Collecting.Infrastructure.Telegram;
 
 // Сховище сесії WTelegramClient у Blob Storage. Читається в пам'ять, а кожен Flush
 // (бібліотека викликає його при зміні сесії) завантажує вміст назад у blob.
@@ -17,7 +18,7 @@ public sealed class BlobSessionStream : MemoryStream
 
     public static async Task<BlobSessionStream> LoadAsync(BlobContainerClient container, CancellationToken ct)
     {
-        var blob = container.GetBlobClient(SessionBlob.Name);
+        var blob = container.GetBlobClient(StorageNames.SessionBlob);
         if (!await blob.ExistsAsync(ct))
         {
             throw new InvalidOperationException("Telegram session not found in blob storage. Run TgLogin first.");

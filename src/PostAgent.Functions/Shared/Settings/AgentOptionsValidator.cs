@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using PostAgent.Alerts;
 using PostAgent.Shared.Common;
 
 namespace PostAgent.Shared.Settings;

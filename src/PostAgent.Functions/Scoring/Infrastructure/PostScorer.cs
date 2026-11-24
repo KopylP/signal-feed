@@ -2,7 +2,7 @@ using Microsoft.Extensions.AI;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Posts;
 
-namespace PostAgent.Scoring.Ai;
+namespace PostAgent.Scoring.Infrastructure;
 
 public sealed class PostScorer(IChatClient chat) : IPostScorer
 {

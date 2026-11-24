@@ -1,10 +1,10 @@
 using System.Text.Json;
-using PostAgent.Digest.Ai;
 using PostAgent.Digest;
+using PostAgent.Digest.Infrastructure;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
 
-namespace PostAgent.Tests.Digest;
+namespace PostAgent.Tests.Digest.Infrastructure;
 
 public class DigestSummarizerTests
 {

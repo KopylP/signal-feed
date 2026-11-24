@@ -8,7 +8,7 @@
 
 using Azure.Identity;
 using Azure.Storage.Blobs;
-using PostAgent.Collecting.Telegram;
+using PostAgent.Shared.Infrastructure;
 using WTelegram;
 
 if (args.Length == 0)
@@ -18,7 +18,7 @@ if (args.Length == 0)
 }
 
 var target = args[0];
-var containerName = args.Length > 1 ? args[1] : SessionBlob.DefaultContainer;
+var containerName = args.Length > 1 ? args[1] : StorageNames.DefaultSessionContainer;
 
 var container = target.Contains('=')
     ? new BlobContainerClient(target, containerName)
@@ -32,8 +32,8 @@ using (var client = new Client(Config, session))
 }
 
 await container.CreateIfNotExistsAsync();
-await container.GetBlobClient(SessionBlob.Name).UploadAsync(BinaryData.FromBytes(session.ToArray()), overwrite: true);
-Console.WriteLine($"Session uploaded to {container.Uri}/{SessionBlob.Name}");
+await container.GetBlobClient(StorageNames.SessionBlob).UploadAsync(BinaryData.FromBytes(session.ToArray()), overwrite: true);
+Console.WriteLine($"Session uploaded to {container.Uri}/{StorageNames.SessionBlob}");
 return 0;
 
 static string? Config(string what) => what switch

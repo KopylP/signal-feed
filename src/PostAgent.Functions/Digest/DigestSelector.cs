@@ -4,7 +4,7 @@ using PostAgent.Shared.Settings;
 namespace PostAgent.Digest;
 
 // Вибирає пости для денного дайджесту (чиста функція).
-public static class DigestBuilder
+public static class DigestSelector
 {
     // Доба плюс 2 години запасу: пост, опублікований в останню годину перед минулим дайджестом,
     // на той момент ще не був оцінений. Повторів немає, бо надіслані пости мають статус Sent.

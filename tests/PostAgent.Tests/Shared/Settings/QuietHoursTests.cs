@@ -1,6 +1,6 @@
-using PostAgent.Alerts;
+using PostAgent.Shared.Settings;
 
-namespace PostAgent.Tests.Alerts;
+namespace PostAgent.Tests.Shared.Settings;
 
 public class QuietHoursTests
 {

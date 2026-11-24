@@ -23,7 +23,7 @@ Collector (hourly) ──► Posts (Table) ──► to-score (Queue) ──► 
 
 **Channels and groups.** Channels: every post is scored on its own. Groups: if no more than
 `MaxItemsPerGroup` (5) messages arrived during a run, they are separate posts too. If there are more, the messages are split by time into
-`MaxItemsPerGroup` bundles of roughly equal size, and each bundle is scored with one call. The faster the flow,
+at most `MaxItemsPerGroup` bundles of roughly equal size, and each bundle is scored with one call. The faster the flow,
 the bigger the bundle, while the scoring cost does not grow. In the bundle text, the messages with the most
 reactions, forwards and replies come first, so the key ones are not lost. The `MinPostChars` minimum length applies to single
 messages, while short replies stay in a bundle: their number is exactly what shows a burst.
@@ -87,7 +87,7 @@ If something is wrong, the app does not start and the log names the parameter.
 **Schedule.** CRON has six fields (`second minute hour day month weekday`) and is set **in UTC**.
 `0 0 8 * * *` is 08:00 UTC, which is 10:00 in Kyiv in winter (UTC+2) and 11:00 in summer (UTC+3), so you have to account for daylight saving time yourself.
 Schedules are read through `%CollectorSchedule%` and the like, so you can change them without rebuilding the code. Just update the
-App Setting (or the Terraform variable and run `terraform apply`), and the app restarts with the new schedule:
+App Setting (or the Terraform variable, for example `digest_schedule`, or the GitHub Variable `TF_DIGEST_SCHEDULE`, and run `terraform apply` or the `infra` workflow), and the app restarts with the new schedule. Precedence: a schedule key in `app_settings` (`TF_APP_SETTINGS`) wins over the dedicated variable (`TF_*_SCHEDULE`), which wins over the default.
 
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> \
@@ -192,7 +192,9 @@ func azure functionapp publish $(terraform -chdir=../infra output -raw function_
 Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time) and then creates a release. It can also be started by hand (`workflow_dispatch`).
 
 Pushes that only change `docs/**`, `README.md`, `CLAUDE.md` files, `.claude/**` or `infra/**` do not run it (the `prompts/*.md` files do, because they ship with the build).
-Pull requests that touch `infra/` also run [`terraform-check.yml`](.github/workflows/terraform-check.yml) (`fmt -check`, `validate`, no Azure sign-in), and Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
+Formatting follows [`.editorconfig`](.editorconfig). The build job of `deploy.yml` runs `dotnet format` first: on a pull request from this repository it (and `terraform fmt`) commits any fix to the PR branch as `github-actions[bot]` and builds the fixed code; on `main`, forks and Dependabot it only verifies. Run `dotnet format` locally to fix it before you push.
+
+The same build job runs `terraform validate` on `infra/` (no backend, no Azure sign-in), so a broken Terraform change blocks the deploy too. Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
 
 One-time OIDC setup (no passwords):
 
@@ -256,6 +258,7 @@ GitHub Variables (Settings → Secrets and variables → Actions → Variables),
 | `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
 | `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
 | `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | the matching Terraform variables |
+| `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_ALERT_SCHEDULE`, `TF_CLEANUP_SCHEDULE` (optional) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
 | `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
 
@@ -302,27 +305,25 @@ To replace the model or the provider, it is enough to register `IChatClient` dif
 ## Structure
 
 The code is organized by feature: each folder holds everything for one capability (function, logic, interfaces, service registration).
-The technical details of a feature (Telegram, Azure, model) live in its subfolders, and whatever several features share lives in `Shared/`. The namespace matches
+The adapters of a feature (Telegram, Azure, model) live in its `Infrastructure/` subfolder, and whatever several features share lives in `Shared/`. The namespace matches
 the folder path, and dependencies between features are visible from `using`.
 
 ```
 src/PostAgent.Functions/
-├── Collecting/            collecting posts from Telegram
-│   ├── Telegram/          channel and group reader (WTelegramClient), session in Blob
-│   └── Storage/           source read cursors
+├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
+│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
-│   ├── Ai/                model call
-│   └── Storage/           to-score queue
+│   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
-│   └── Ai/                AI summary
+│   └── Infrastructure/    AI summary and its response schema
 ├── Alerts/                alerts about bursts in groups
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram (Telegram/: Telegram.Bot)
 │   ├── Ai/                IChatClient, prompts
-│   ├── Settings/          AgentOptions and validator
-│   ├── Infrastructure/    Table, Queue and Blob clients
+│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
+│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features
@@ -332,7 +333,11 @@ Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
 prompts/                   scoring.md (scoring) and digest.md (digest summary)
-.github/workflows/         deploy.yml (build, test, code deploy), infra.yml (manual terraform plan/apply)
+docs/adr/                  architecture decision records (why, not what)
+.claude/                   project skills and the commit guard hook
+.github/workflows/         deploy.yml (format, build, test, code deploy), infra.yml (manual terraform plan/apply)
+.editorconfig              code style and formatting rules (dotnet format)
+.terraform-version         Terraform version used by deploy.yml and infra.yml
 ```
 
 **A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add `AddXxx()` for its

@@ -19,8 +19,8 @@ public sealed class DigestFunction(
     {
         var now = time.GetUtcNow();
 
-        var recent = await posts.GetSinceAsync(DigestBuilder.QueryStart(now), now, ct);
-        var items = DigestBuilder.Build(recent, options.Value, now);
+        var recent = await posts.GetSinceAsync(DigestSelector.QueryStart(now), now, ct);
+        var items = DigestSelector.Build(recent, options.Value, now);
         if (items.Count == 0)
         {
             await notifier.SendAsync(DigestMessage.NoPosts, ct);

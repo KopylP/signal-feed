@@ -1,9 +1,9 @@
 using Microsoft.Extensions.AI;
-using PostAgent.Scoring.Ai;
+using PostAgent.Scoring.Infrastructure;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
 
-namespace PostAgent.Tests.Scoring;
+namespace PostAgent.Tests.Scoring.Infrastructure;
 
 public class PostScorerTests
 {

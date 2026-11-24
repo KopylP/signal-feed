@@ -1,18 +1,13 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Scoring;
 using PostAgent.Shared.Common;
 using PostAgent.Shared.Notifications;
-using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Collecting;
 
 public sealed class CollectorFunction(
-    ISourceReader reader,
-    IPostRepository posts,
-    ISourceCursors cursors,
-    IScoringQueue queue,
+    SourceCollector collector,
     ITelegramNotifier notifier,
     IOptions<AgentOptions> options,
     ILogger<CollectorFunction> log)
@@ -29,7 +24,7 @@ public sealed class CollectorFunction(
         {
             if (index > 0)
             {
-                await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // не навантажуємо Telegram
+                await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // do not overload Telegram
             }
 
             if (await TryCollectAsync(username, ct) is { } failure)
@@ -38,7 +33,7 @@ public sealed class CollectorFunction(
             }
         }
 
-        // Без цього збій (наприклад, прострочена сесія) виглядав би як спокійний день.
+        // Without this report a failure (for example an expired session) would look like a quiet day.
         if (failures.Count > 0)
         {
             await notifier.SendAsync(CollectionFailureMessage.Format(failures), ct);
@@ -49,37 +44,18 @@ public sealed class CollectorFunction(
     {
         try
         {
-            await CollectAsync(username, ct);
+            await collector.CollectAsync(username, ct);
             return null;
         }
         catch (SourceThrottledException ex)
         {
             log.LogWarning("@{Source} skipped until the next run: {Message}", username, ex.Message);
-            return null; // очікуваний тимчасовий пропуск, не збій
+            return null; // an expected temporary skip, not a failure
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             log.LogError(ex, "Collecting @{Source} failed", username);
             return $"@{username}: {ex.Message.Truncate(MaxErrorChars, "…")}";
         }
-    }
-
-    private async Task CollectAsync(string username, CancellationToken ct)
-    {
-        var batch = await reader.ReadAsync(username, await cursors.GetLastPostIdAsync(username, ct), ct);
-        var newPosts = PostBuilder.Build(batch.Source, batch.Messages, options.Value);
-
-        foreach (var post in newPosts)
-        {
-            await posts.AddIfMissingAsync(post, ct);
-        }
-
-        // Порядок важливий: спершу пости й черга, потім LastPostId. Якщо запуск обірветься,
-        // наступний прочитає те саме, а Scorer пропустить уже оцінені.
-        await queue.EnqueueAsync(newPosts.Select(p => p.ToRef()).ToList(), options.Value.ScoringBatchSize, ct);
-        await cursors.SetLastPostIdAsync(username, batch.LastPostId, ct);
-
-        log.LogInformation("@{Source} ({Type}): {Messages} messages, {Posts} posts",
-            username, batch.Source.Type, batch.Messages.Count, newPosts.Count);
     }
 }

@@ -2,7 +2,7 @@ using Microsoft.Extensions.AI;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Common;
 
-namespace PostAgent.Digest.Ai;
+namespace PostAgent.Digest.Infrastructure;
 
 public sealed class DigestSummarizer(IChatClient chat) : IDigestSummarizer
 {

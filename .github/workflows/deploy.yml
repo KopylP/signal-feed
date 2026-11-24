@@ -32,13 +32,20 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    # contents: write lets the formatting step push its fix to a pull request branch.
+    permissions:
+      contents: write
+    env:
+      # Only a pull request from this repository can be fixed: forks and Dependabot get a read-only token.
+      CAN_PUSH_FIX: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      # An empty ref means the default checkout; with a tag it rebuilds that release.
+      # An empty ref means the default checkout; with a tag it rebuilds that release;
+      # a pull request from this repository is checked out on its branch so that a formatting fix can be pushed.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || (env.CAN_PUSH_FIX == 'true' && github.head_ref) || '' }}
 
       # Version = build date + the built-in run counter, which never resets and never repeats (see ADR-0005).
       # It is calculated once here, baked into the build, and reused for the release tag.
@@ -61,6 +68,48 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - run: dotnet restore
+
+      # The version lives in .terraform-version, shared with infra.yml and with local tools (tfenv, asdf).
+      # Skipped on a manual run, which rebuilds an older tag that predates the Terraform checks.
+      - name: Read the Terraform version
+        id: terraform-version
+        if: github.event_name != 'workflow_dispatch'
+        run: echo "version=$(cat .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: hashicorp/setup-terraform@v3
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+
+      # Formatting follows .editorconfig (C#) and terraform fmt. A pull request from this repository gets the fix
+      # committed to its branch by github-actions[bot] and the build continues on the fixed code. Everything else
+      # (main, forks, Dependabot) only verifies. A manual run rebuilds an older tag that predates the check, so it skips both.
+      - name: Fix formatting
+        if: env.CAN_PUSH_FIX == 'true'
+        run: |
+          dotnet format --no-restore
+          terraform -chdir=infra fmt -recursive
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Apply dotnet format and terraform fmt"
+          git push
+
+      - name: Check formatting
+        if: env.CAN_PUSH_FIX != 'true' && github.event_name != 'workflow_dispatch'
+        run: |
+          dotnet format --verify-no-changes --no-restore
+          terraform -chdir=infra fmt -check -recursive
+
+      # Static checks only: no backend, no Azure sign-in, nothing here can change the infrastructure.
+      - name: Validate Terraform
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          terraform -chdir=infra init -backend=false
+          terraform -chdir=infra validate
+
       - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
       - run: dotnet test --configuration Release --no-build
 

@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using PostAgent.Collecting.Telegram;
-using PostAgent.Collecting;
+using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Shared.Settings;
 
@@ -51,7 +50,7 @@ public sealed class AgentOptions
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = string.Empty;
     [Required] public string TelegramPhone { get; set; } = string.Empty;
-    public string SessionBlobContainer { get; set; } = SessionBlob.DefaultContainer;
+    public string SessionBlobContainer { get; set; } = StorageNames.DefaultSessionContainer;
 
     public IReadOnlyList<string> SourceList => SourceNames.Parse(Sources);
     public IReadOnlySet<string> AlertSourceSet => SourceNames.Parse(AlertSources).ToHashSet();

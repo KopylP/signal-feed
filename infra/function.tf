@@ -1,5 +1,15 @@
 locals {
-  # Merge order: extra settings from var.app_settings first, then explicit values, secrets last (last wins).
+  # Timer attributes read the schedules, so their defaults live here, not in code.
+  # Precedence: a key in var.app_settings, then the dedicated variable, then its default.
+  schedules = {
+    CollectorSchedule = var.collector_schedule
+    DigestSchedule    = var.digest_schedule
+    AlertSchedule     = var.alert_schedule
+    CleanupSchedule   = var.cleanup_schedule
+  }
+
+  # Merge order: extra settings from var.app_settings first, then explicit values, schedules, secrets last (last wins).
+  # Only the schedule keys can be overridden from var.app_settings: everything else managed here wins over it.
   app_settings = merge(
     var.app_settings,
     {
@@ -12,13 +22,8 @@ locals {
       TelegramApiId        = var.telegram_api_id
       TelegramPhone        = var.telegram_phone
       SessionBlobContainer = var.session_blob_container
-
-      # Timer attributes read the schedules, so their defaults live here, not in code.
-      CollectorSchedule = var.collector_schedule
-      DigestSchedule    = var.digest_schedule
-      AlertSchedule     = var.alert_schedule
-      CleanupSchedule   = var.cleanup_schedule
     },
+    { for name, value in local.schedules : name => lookup(var.app_settings, name, value) },
     # Secrets: Key Vault references only, the values never reach the state.
     local.secret_reference,
   )

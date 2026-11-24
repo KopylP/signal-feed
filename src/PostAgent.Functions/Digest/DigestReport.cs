@@ -1,8 +1,6 @@
-using PostAgent.Shared.Posts;
+using PostAgent.Digest.Infrastructure;
 
 namespace PostAgent.Digest;
-
-public sealed record DigestItem(PostEntity Post, bool IsInteresting, string? Insight = null);
 
 public sealed record DigestReport(string? Overview, IReadOnlyList<DigestItem> Items)
 {

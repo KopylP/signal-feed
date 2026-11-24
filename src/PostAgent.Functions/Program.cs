@@ -29,5 +29,5 @@ var app = builder.Build();
 var wtelegramLog = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WTelegram");
 WTelegram.Helpers.Log = (level, text) => wtelegramLog.Log((LogLevel)level, "{Text}", text);
 
-await app.Services.EnsureLocalResourcesAsync();
+await app.Services.EnsureLocalResourcesAsync(app.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
 await app.RunAsync();

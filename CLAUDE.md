@@ -23,7 +23,7 @@ Skip ADRs for small, local or easily reversible choices.
 
 ## Skills
 
-Project skills live in `.claude/skills/`. Today: `write-adr` (architecture decision records). Add a skill there when a multi-step
+Project skills live in `.claude/skills/`. Today: `write-adr` (decisions), `check-before-pr`, `ship`, `triage-deploy-failure`. Add a skill there when a multi-step
 workflow repeats across tasks; keep one-line rules in `CLAUDE.md` instead.
 
 ## Releases
@@ -36,6 +36,7 @@ A hook in `.claude/hooks/` blocks committing secret, state and local-settings fi
 ```bash
 dotnet restore && dotnet build -c Release --no-restore   # build; warnings are errors
 dotnet test -c Release                                    # all tests
+dotnet format --verify-no-changes --no-restore            # formatting (.editorconfig); the build job fixes it on a PR and only verifies on main
 terraform -chdir=infra fmt -check && terraform -chdir=infra validate   # after init -backend=false
 ```
 
@@ -44,7 +45,7 @@ Build and tests must pass before you finish a task.
 ## General C# rules
 
 - `Nullable` is on and `TreatWarningsAsErrors = true`. Do not silence warnings with `#pragma` or `!`, fix the cause.
-- File-scoped namespace matching the folder path (root `PostAgent`). The file name matches the main type; small related types (enum, record) may share a file.
+- File-scoped namespace matching the folder path (root `PostAgent`). One type per file, and the file name is the type name.
 - Every class is `sealed` (or `static`) unless it is designed for inheritance. Use primary constructors for DI.
 - Code is organized by feature (see "Structure" in the README). Do not put feature logic in `Shared/`, and do not make `Shared/` depend on a feature.
 - A method that does I/O is async and takes `CancellationToken ct` as its last parameter and passes it on.

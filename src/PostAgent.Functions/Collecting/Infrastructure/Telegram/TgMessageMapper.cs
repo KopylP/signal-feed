@@ -1,7 +1,7 @@
-using TL;
 using PostAgent.Shared.Posts;
+using TL;
 
-namespace PostAgent.Collecting.Telegram;
+namespace PostAgent.Collecting.Infrastructure.Telegram;
 
 // Перетворює повідомлення бібліотеки WTelegramClient на наш TgMessage.
 public static class TgMessageMapper
