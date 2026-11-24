@@ -20,10 +20,3 @@ Telegram ──► Collector (hourly) ──► Scorer (OpenAI) ──┬──�
 | Working on pipelines and releases | [CI/CD](docs/developer-guide/ci-cd.md) |
 
 The full map is in [`docs/README.md`](docs/README.md). Decisions and their reasons are in [`docs/adr/`](docs/adr/README.md).
-
-## Quick facts
-
-- .NET 10 (isolated worker) on Azure Functions Flex Consumption; state in Azure Storage; secrets in Key Vault.
-- No secrets in the code or the repository; access between Azure resources uses managed identity.
-- About $0 for Azure at this scale, OpenAI is the main cost. A $5 monthly budget alert is created for the resource group.
-- The prompts and the Telegram messages are in Ukrainian; everything else is in English.
