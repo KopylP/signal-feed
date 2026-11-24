@@ -15,3 +15,4 @@
 - Do not list `*.md` in `paths-ignore`: `prompts/*.md` ship with the build. Name documentation files one by one (`README.md`, `CHANGELOG.md`).
 - When you add a variable to `infra.yml`, update the GitHub Variables table in `docs/developer-guide/ci-cd.md`, and `infra/CLAUDE.md` if the rule changed.
 - A new workflow declares the minimum `permissions` it needs and uses `concurrency` where two simultaneous runs are unsafe.
+- A pull request build does not run the paths that exist only on a push (the changelog word, the release job). Reproduce them locally in a full clone before you merge, and never write `cond && 0 || x` in an expression (0 is falsy).
