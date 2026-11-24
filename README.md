@@ -208,6 +208,54 @@ az role assignment create --assignee $APP_ID --role Contributor \
 У репозиторії GitHub (Settings → Secrets and variables → Actions → Variables) задайте:
 `AZURE_CLIENT_ID` (це `$APP_ID`), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_FUNCTIONAPP_NAME`.
 
+### Інфраструктура з GitHub Actions (ручний запуск)
+
+Workflow [`.github/workflows/infra.yml`](.github/workflows/infra.yml) запускається лише вручну (Actions → infra → Run workflow).
+Без галочки `apply` виконується лише `terraform plan` (його видно в підсумку запуску), із галочкою ще й `terraform apply`.
+Якщо інфраструктури нема, вона створюється, якщо код у `infra/` змінився, оновлюється. Код застосунку деплоїть окремий workflow
+`build-test-deploy` після push у `main`.
+
+Pipeline сам створює ресурси, тому його ідентичність (App Registration) і сховище state створюються **вручну один раз**:
+їх не можна описати в тому ж Terraform, який вони запускають.
+
+```bash
+# 1. Сховище для state
+az group create -n rg-tfstate -l westeurope
+az storage account create -g rg-tfstate -n <унікальне-ім'я-sttfstate> --sku Standard_LRS --allow-blob-public-access false
+az storage container create --account-name <те-саме-ім'я> -n tfstate --auth-mode login
+
+# 2. Ідентичність pipeline (замість варіанта з розділу вище, ролі ширші)
+SUB=$(az account show --query id -o tsv)
+APP_ID=$(az ad app create --display-name signal-feed-deploy --query appId -o tsv)
+az ad sp create --id $APP_ID
+az ad app federated-credential create --id $APP_ID --parameters '{
+  "name": "github-main", "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:<github-owner>/<repo>:ref:refs/heads/main", "audiences": ["api://AzureADTokenExchange"]
+}'
+# створювати ресурси
+az role assignment create --assignee $APP_ID --role Contributor --scope /subscriptions/$SUB
+# видавати ролі функції й вам (roles.tf); Contributor цього не вміє
+az role assignment create --assignee $APP_ID --role "Role Based Access Control Administrator" --scope /subscriptions/$SUB
+# читати й писати state
+az role assignment create --assignee $APP_ID --role "Storage Blob Data Contributor" \
+  --scope $(az storage account show -n <ім'я-sttfstate> --query id -o tsv)
+```
+
+GitHub Variables (Settings → Secrets and variables → Actions → Variables), усі несекретні:
+
+| Змінна | Значення |
+|---|---|
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | вхід в Azure (OIDC) |
+| `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | сховище state (`TFSTATE_CONTAINER`, за замовчуванням `tfstate`) |
+| `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
+| `TF_SOURCES`, `TF_ALERT_SOURCES` | `sources`, `alert_sources` |
+| `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | відповідні змінні Terraform |
+| `TF_LOCATION`, `TF_NAME_PREFIX` (необов'язково) | за замовчуванням `westeurope` і `signalfeed` |
+| `TF_APP_SETTINGS` (необов'язково) | JSON, наприклад `{"DigestSize":"6"}`; відповідає `app_settings` |
+
+Секрети (OpenAI, Telegram) у GitHub не потрібні: їх, як і раніше, кладуть у Key Vault командами `az keyvault secret set`.
+Після першого `apply` скопіюйте `function_app_name` з підсумку запуску в `AZURE_FUNCTIONAPP_NAME` для деплою коду.
+
 **Деплой вимкнений за замовчуванням.** Без змінної `DEPLOY_ENABLED` зі значенням `true` workflow лише збирає й тестує, а крок деплою
 пропускається. Коли будете готові розгортати, задайте цю змінну там же, де й решту.
 
