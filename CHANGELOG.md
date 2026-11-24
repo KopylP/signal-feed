@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [finch] - 2026-11-24
+## [v2026.11.24.39-finch] - 2026-11-24
 
 ### Fixed
 - Fixed the first collection run failing for every source with «Збір не вдався» and `Status: 404, Service returned no content`: a source with no saved position yet is now read from the start of the day instead of raising an error.
