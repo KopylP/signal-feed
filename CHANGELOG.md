@@ -8,12 +8,12 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [lark] - 2026-11-24
+## [v2026.11.24.38-lark] - 2026-11-24
 
 ### Fixed
 - Fixed the first code deploy failing with "Cannot find required .azurefunctions directory": the build artifact now keeps hidden files.
 
-## [wren] - 2026-11-24
+## [v2026.11.24.38-wren] - 2026-11-24
 
 ### Setup required
 - **`TF_TELEGRAM_API_ID`**: moved from GitHub Variables to GitHub Secrets
@@ -24,7 +24,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Security
 - The Telegram `api_id` is no longer read from GitHub Variables (not masked in the logs of a public repository), and `telegram_api_id` is a `sensitive` Terraform variable.
 
-## [heron] - 2026-11-24
+## [v2026.11.24.38-heron] - 2026-11-24
 
 ### Setup required
 - **`TF_BUDGET_ALERT_EMAIL`, `TF_TELEGRAM_PHONE`, `TF_TELEGRAM_CHAT_ID`**: moved from GitHub Variables to GitHub Secrets (`TF_TELEGRAM_CHAT_ID` is optional)
@@ -38,7 +38,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Dependencies
 - Terraform 1.9.8 → 1.17.2 (`.terraform-version`, used by `deploy.yml` and `infra.yml`).
 
-## [otter] - 2026-11-24
+## [v2026.11.24.38-otter] - 2026-11-24
 
 ### Logic
 - **Scoring: topics of interest**
@@ -50,7 +50,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - After: both are written in English and ask the model for Ukrainian `topic`, `reason`, `overview` and `insight`
   - Effect: the digest text stays Ukrainian; wording of scores and summaries may differ slightly
 
-## [pine] - 2026-11-24
+## [v2026.11.24.38-pine] - 2026-11-24
 
 ### Setup required
 - **Infrastructure change**: new `run-now` queue and the `Storage Queue Data Contributor` role for `deployer_object_id`
@@ -71,7 +71,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Security
 - Anyone who can write to the `run-now` queue can start a job while `ManualRunsEnabled` is `true`; it is `false` unless you turn it on, and access to the queue is by Azure role only.
 
-## [raven] - 2026-11-24
+## [v2026.11.24.38-raven] - 2026-11-24
 
 ### Setup required
 - **`TelegramPairingKey`**: required, the app does not start without it
@@ -124,7 +124,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Dependencies
 - Added `Microsoft.Azure.Functions.Worker.Extensions.Http` 3.3.0 (the HTTP trigger).
 
-## [iris] - 2026-11-24
+## [v2026.11.24.38-iris] - 2026-11-24
 
 ### Setup required
 - **Let `github-actions[bot]` push to `main`**: required for the changelog headings to receive the build version. The release itself works without it, and the next release renames the headings.
