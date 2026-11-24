@@ -32,7 +32,6 @@ env:
   TF_VAR_name_prefix: ${{ vars.TF_NAME_PREFIX || 'signalfeed' }}
   TF_VAR_deployer_object_id: ${{ vars.TF_DEPLOYER_OBJECT_ID }}
   TF_VAR_budget_alert_email: ${{ vars.TF_BUDGET_ALERT_EMAIL }}
-  TF_VAR_sources: ${{ vars.TF_SOURCES }}
   TF_VAR_alert_sources: ${{ vars.TF_ALERT_SOURCES }}
   TF_VAR_telegram_chat_id: ${{ vars.TF_TELEGRAM_CHAT_ID }}
   TF_VAR_telegram_api_id: ${{ vars.TF_TELEGRAM_API_ID }}
@@ -48,6 +47,13 @@ jobs:
         working-directory: infra
     steps:
       - uses: actions/checkout@v4
+
+      # Порожня TF_VAR_* перекрила б default у variables.tf, тому передаємо лише задане.
+      - name: Необов'язкові змінні
+        env:
+          TF_SOURCES: ${{ vars.TF_SOURCES }}
+        run: |
+          if [ -n "$TF_SOURCES" ]; then echo "TF_VAR_sources=$TF_SOURCES" >> "$GITHUB_ENV"; fi
 
       - uses: azure/login@v2
         with:

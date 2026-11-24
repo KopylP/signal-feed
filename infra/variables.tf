@@ -48,8 +48,9 @@ variable "session_blob_container" {
 # ---------- Обов'язкові App Settings (без значень за замовчуванням у коді) ----------
 
 variable "sources" {
-  description = "Username каналів і груп через кому."
+  description = "Username каналів і груп через кому. Перевизначається в terraform.tfvars або змінною TF_SOURCES у GitHub."
   type        = string
+  default     = "badseo,needforseo,devakatalk,sneex_seo,SEOBAZA,seodre"
 }
 
 variable "telegram_chat_id" {

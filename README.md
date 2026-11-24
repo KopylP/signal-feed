@@ -248,7 +248,7 @@ GitHub Variables (Settings → Secrets and variables → Actions → Variables),
 | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | вхід в Azure (OIDC) |
 | `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | сховище state (`TFSTATE_CONTAINER`, за замовчуванням `tfstate`) |
 | `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
-| `TF_SOURCES`, `TF_ALERT_SOURCES` | `sources`, `alert_sources` |
+| `TF_SOURCES` (необов'язково), `TF_ALERT_SOURCES` | `sources` (за замовчуванням шість SEO-каналів із `variables.tf`), `alert_sources` |
 | `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | відповідні змінні Terraform |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (необов'язково) | за замовчуванням `westeurope` і `signalfeed` |
 | `TF_APP_SETTINGS` (необов'язково) | JSON, наприклад `{"DigestSize":"6"}`; відповідає `app_settings` |
