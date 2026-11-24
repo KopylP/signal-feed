@@ -14,9 +14,7 @@ public sealed class PairingFunction(PairingWebhook webhook)
         CancellationToken ct)
     {
         var token = request.Headers.TryGetValues(SecretHeader, out var values) ? values.FirstOrDefault() : null;
-        using var reader = new StreamReader(request.Body);
-        var body = await reader.ReadToEndAsync(ct);
 
-        return request.CreateResponse(await webhook.HandleAsync(token, body, ct));
+        return request.CreateResponse(await webhook.HandleAsync(token, request.Body, ct));
     }
 }

@@ -71,10 +71,14 @@ public class AgentOptionsValidatorTests
         Assert.True(Validate(o => o.TelegramChatId = 0).Succeeded);
     }
 
-    [Fact]
-    public void A_short_pairing_key_is_rejected()
+    [Theory]
+    [InlineData("short")]
+    [InlineData("has space in it 0123456789")]
+    [InlineData("слово-слово-слово-слово")]
+    [InlineData("0123456789012345678901234567890123456789012345678901234567890123456789")]
+    public void A_pairing_key_that_is_short_long_or_not_deep_link_safe_is_rejected(string key)
     {
-        var result = Validate(o => o.TelegramPairingKey = "short");
+        var result = Validate(o => o.TelegramPairingKey = key);
 
         Assert.Contains("TelegramPairingKey", result.FailureMessage);
     }

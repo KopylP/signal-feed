@@ -21,7 +21,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 
 ## Public endpoint
 
-- `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read.
+- `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read (the body is passed as a `Stream` for that reason, capped at 64 KB).
 - Never reply to a wrong key and never log a key or the secret. The first pairing wins; `TelegramChatId`, when set, overrides the stored chat and turns pairing off (ADR-0008).
 
 ## Data and queues

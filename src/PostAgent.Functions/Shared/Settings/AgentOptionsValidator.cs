@@ -7,7 +7,9 @@ namespace PostAgent.Shared.Settings;
 public sealed class AgentOptionsValidator : IValidateOptions<AgentOptions>
 {
     private const string UnresolvedKeyVaultReference = "@Microsoft.KeyVault(";
-    private const int MinPairingKeyLength = 16;
+
+    // The deep link t.me/<bot>?start=<key> only carries these characters, up to 64 of them.
+    private static readonly Regex PairingKeyPattern = new("^[A-Za-z0-9_-]{16,64}$", RegexOptions.CultureInvariant);
 
     private static readonly Regex WebhookSecretPattern = new("^[A-Za-z0-9_-]{1,256}$", RegexOptions.CultureInvariant);
 
@@ -17,8 +19,8 @@ public sealed class AgentOptionsValidator : IValidateOptions<AgentOptions>
 
         errors.AddIf(options.SourceList.Count == 0, "Sources must contain at least one channel or group username.");
         errors.AddIf(
-            options.TelegramPairingKey.Length is > 0 and < MinPairingKeyLength,
-            $"TelegramPairingKey must be at least {MinPairingKeyLength} characters: anyone who guesses it can claim the agent.");
+            options.TelegramPairingKey.Length > 0 && !PairingKeyPattern.IsMatch(options.TelegramPairingKey),
+            "TelegramPairingKey must be 16-64 characters from A-Z, a-z, 0-9, underscore and hyphen: it is sent in a t.me deep link, and anyone who guesses it can claim the agent.");
         errors.AddIf(
             options.TelegramWebhookSecret.Length > 0 && !WebhookSecretPattern.IsMatch(options.TelegramWebhookSecret),
             "TelegramWebhookSecret must be 1-256 characters from A-Z, a-z, 0-9, underscore and hyphen (a Telegram limit).");

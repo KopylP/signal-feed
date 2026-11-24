@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Common;
@@ -10,13 +11,24 @@ namespace PostAgent.Pairing;
 
 public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions> options, ILogger<PairingWebhook> log)
 {
-    public async Task<HttpStatusCode> HandleAsync(string? secretToken, string body, CancellationToken ct)
+    // A real update is a few hundred bytes; the cap keeps a flood of big bodies from filling the instance's memory.
+    public const int MaxBodyBytes = 64 * 1024;
+
+    // The body is a stream so that it is not touched until the secret token has been checked.
+    public async Task<HttpStatusCode> HandleAsync(string? secretToken, Stream bodyStream, CancellationToken ct)
     {
         // Telegram sends the secret_token given to setWebhook in this header; the endpoint is otherwise public.
         if (!SecretComparison.Matches(options.Value.TelegramWebhookSecret, secretToken))
         {
-            log.LogWarning("Webhook rejected: missing or wrong secret token");
+            // Information, not Warning: the endpoint is public and scanners would flood telemetry.
+            log.LogInformation("Webhook rejected: missing or wrong secret token");
             return HttpStatusCode.Unauthorized;
+        }
+
+        var body = await ReadBodyAsync(bodyStream, ct);
+        if (body is null)
+        {
+            return HttpStatusCode.RequestEntityTooLarge;
         }
 
         Update? update;
@@ -45,5 +57,23 @@ public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions
         }
 
         return HttpStatusCode.OK;
+    }
+
+    private static async Task<string?> ReadBodyAsync(Stream stream, CancellationToken ct)
+    {
+        using var buffer = new MemoryStream();
+        var chunk = new byte[4096];
+        int read;
+        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+        {
+            if (buffer.Length + read > MaxBodyBytes)
+            {
+                return null;
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
     }
 }

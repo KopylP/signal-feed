@@ -13,7 +13,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Setup required
 - **`TelegramPairingKey`**: required, the app does not start without it
   - Where: Key Vault (secret)
-  - Value: any random string of at least 16 characters, for example `openssl rand -hex 16`
+  - Value: a random string of 16-64 characters from `A-Z a-z 0-9 _ -` (it travels in a t.me link), for example `openssl rand -hex 16`
   - Apply: `az keyvault secret set --vault-name <kv> --name TelegramPairingKey --value "$(openssl rand -hex 16)"`, before the code deploys
 - **`TelegramWebhookSecret`**: required, the app does not start without it
   - Where: Key Vault (secret)
@@ -56,7 +56,10 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Limits: one chat only, the first pairing wins; groups and channels cannot be paired; wrong keys get no reply. See [installation](docs/user-guide/installation.md#step-6-connect-your-chat)
 
 ### Security
-- The webhook compares the secret token and the pairing key in constant time and never logs either.
+- The webhook compares the secret token and the pairing key in constant time and never logs either. It checks the secret before reading the request body and accepts bodies up to 64 KB.
+
+### Dependencies
+- Added `Microsoft.Azure.Functions.Worker.Extensions.Http` 3.3.0 (the HTTP trigger).
 
 ## [iris] - 2026-11-24
 

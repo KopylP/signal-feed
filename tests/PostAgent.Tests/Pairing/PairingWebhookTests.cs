@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using PostAgent.Pairing;
@@ -23,12 +24,14 @@ public class PairingWebhookTests
         return new PairingWebhook(service, options, NullLogger<PairingWebhook>.Instance);
     }
 
+    private static MemoryStream Body(string text) => new(Encoding.UTF8.GetBytes(text));
+
     [Fact]
     public async Task Binds_the_chat_from_a_real_telegram_update()
     {
         var store = new InMemoryChatBindingStore();
 
-        var status = await Webhook(store).HandleAsync(Secret, StartUpdate(), CancellationToken.None);
+        var status = await Webhook(store).HandleAsync(Secret, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.Equal(42, store.Bound);
@@ -42,16 +45,36 @@ public class PairingWebhookTests
     {
         var store = new InMemoryChatBindingStore();
 
-        var status = await Webhook(store).HandleAsync(token, StartUpdate(), CancellationToken.None);
+        var status = await Webhook(store).HandleAsync(token, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, status);
         Assert.Null(store.Bound);
     }
 
     [Fact]
+    public async Task A_wrong_secret_is_rejected_before_the_body_is_read()
+    {
+        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync("wrong", new UnreadableStream(), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, status);
+    }
+
+    [Fact]
+    public async Task A_body_over_the_limit_is_rejected_without_parsing()
+    {
+        var store = new InMemoryChatBindingStore();
+        var huge = new MemoryStream(new byte[PairingWebhook.MaxBodyBytes + 1]);
+
+        var status = await Webhook(store).HandleAsync(Secret, huge, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, status);
+        Assert.Null(store.Bound);
+    }
+
+    [Fact]
     public async Task Rejects_a_body_that_is_not_an_update()
     {
-        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync(Secret, "not json", CancellationToken.None);
+        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync(Secret, Body("not json"), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
     }
@@ -59,7 +82,7 @@ public class PairingWebhookTests
     [Fact]
     public async Task Answers_ok_to_updates_that_are_not_messages()
     {
-        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync(Secret, """{"update_id":2}""", CancellationToken.None);
+        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync(Secret, Body("""{"update_id":2}"""), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
     }
@@ -67,7 +90,7 @@ public class PairingWebhookTests
     [Fact]
     public async Task A_storage_failure_does_not_make_telegram_resend_the_update()
     {
-        var status = await Webhook(new FailingStore()).HandleAsync(Secret, StartUpdate(), CancellationToken.None);
+        var status = await Webhook(new FailingStore()).HandleAsync(Secret, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
     }
@@ -79,7 +102,13 @@ public class PairingWebhookTests
         await cts.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => Webhook(new CancellingStore()).HandleAsync(Secret, StartUpdate(), cts.Token));
+            () => Webhook(new CancellingStore()).HandleAsync(Secret, Body(StartUpdate()), cts.Token));
+    }
+
+    private sealed class UnreadableStream : MemoryStream
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("The body must not be read before the secret is checked.");
     }
 
     private sealed class FailingStore : IChatBindingStore

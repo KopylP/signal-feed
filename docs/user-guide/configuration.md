@@ -24,7 +24,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours |
 | `OpenAIModel` | `gpt-5.4-nano` | scoring model |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
-| `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (at least 16 characters) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
+| `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
 | `TelegramChatId` | empty | optional fixed chat id; when set it overrides the paired chat and turns pairing off |
 | `TelegramApiId`, `TelegramPhone` | | account data for reading |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
