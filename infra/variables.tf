@@ -34,132 +34,17 @@ variable "monthly_budget_usd" {
   default     = 5
 }
 
-# ---------- App Settings: джерела й розклади (CRON у UTC) ----------
+variable "session_blob_container" {
+  description = "Контейнер із сесією Telegram. Terraform створює його, а функція читає з нього."
+  type        = string
+  default     = "tg-session"
+}
+
+# ---------- Обов'язкові App Settings (без значень за замовчуванням у коді) ----------
 
 variable "sources" {
   description = "Username каналів і груп через кому."
   type        = string
-}
-
-variable "collector_schedule" {
-  type    = string
-  default = "0 0 * * * *"
-}
-
-variable "digest_schedule" {
-  type    = string
-  default = "0 0 8 * * *"
-}
-
-variable "alert_schedule" {
-  type    = string
-  default = "0 30 * * * *"
-}
-
-# ---------- App Settings: дайджест, збір, оцінювання ----------
-
-variable "digest_size" {
-  type    = number
-  default = 5
-}
-
-variable "interesting_threshold" {
-  type    = number
-  default = 7
-}
-
-variable "scoring_batch_size" {
-  type    = number
-  default = 10
-}
-
-variable "max_post_chars" {
-  type    = number
-  default = 1500
-}
-
-variable "min_post_chars" {
-  type    = number
-  default = 80
-}
-
-variable "first_run_lookback_hours" {
-  description = "Скільки годин історії читати при першому запуску для нового джерела."
-  type        = number
-  default     = 24
-}
-
-variable "cleanup_schedule" {
-  type    = string
-  default = "0 0 3 * * *"
-}
-
-variable "retention_days" {
-  description = "Скільки днів назад зберігати пости. 1 означає вчора й сьогодні."
-  type        = number
-  default     = 1
-}
-
-# ---------- App Settings: групи й алерти ----------
-
-variable "max_items_per_group" {
-  description = "Не більше стільки постів на групу за запуск, решта стискається в пачки."
-  type        = number
-  default     = 5
-}
-
-variable "max_bundle_chars" {
-  type    = number
-  default = 3000
-}
-
-variable "alert_sources" {
-  description = "Групи, які можуть викликати алерт (username через кому). Канали алертів не викликають."
-  type        = string
-  default     = ""
-}
-
-variable "alert_window_hours" {
-  type    = number
-  default = 3
-}
-
-variable "alert_cooldown_hours" {
-  type    = number
-  default = 3
-}
-
-variable "alert_threshold" {
-  type    = number
-  default = 9
-}
-
-variable "burst_min_posts" {
-  type    = number
-  default = 8
-}
-
-variable "alert_max_per_run" {
-  type    = number
-  default = 3
-}
-
-variable "alert_quiet_hours" {
-  description = "Тихі години алертів, наприклад 23:00-07:00. Порожньо — вимкнено."
-  type        = string
-  default     = ""
-}
-
-variable "alert_time_zone" {
-  type    = string
-  default = "Europe/Kyiv"
-}
-
-# ---------- App Settings: OpenAI і Telegram ----------
-
-variable "openai_model" {
-  type    = string
-  default = "gpt-5.4-nano"
 }
 
 variable "telegram_chat_id" {
@@ -177,7 +62,43 @@ variable "telegram_phone" {
   type        = string
 }
 
-variable "session_blob_container" {
+variable "alert_sources" {
+  description = "Групи, які можуть викликати алерт (username через кому). Канали алертів не викликають."
+  type        = string
+  default     = ""
+}
+
+# ---------- Розклади (CRON у UTC). Їх читають атрибути таймерів, тому значення за замовчуванням тут ----------
+
+variable "collector_schedule" {
   type    = string
-  default = "tg-session"
+  default = "0 0 * * * *"
+}
+
+variable "digest_schedule" {
+  type    = string
+  default = "0 0 8 * * *"
+}
+
+variable "alert_schedule" {
+  type    = string
+  default = "0 30 * * * *"
+}
+
+variable "cleanup_schedule" {
+  type    = string
+  default = "0 0 3 * * *"
+}
+
+# ---------- Решта налаштувань ----------
+
+variable "app_settings" {
+  description = <<-EOT
+    Додаткові App Settings: будь-які параметри з src/PostAgent.Functions/AgentOptions.cs
+    (DigestSize, AlertThreshold, AlertQuietHours, OpenAIModel, RetentionDays тощо).
+    Якщо параметр не задано, діє значення за замовчуванням із коду. Імена мають збігатися з AgentOptions:
+    помилка в імені не дає помилки, параметр просто ігнорується.
+  EOT
+  type        = map(string)
+  default     = {}
 }

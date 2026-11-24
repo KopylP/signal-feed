@@ -19,37 +19,22 @@ locals {
   secret_reference = { for name in local.secret_names : name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${name}/)" }
 
   app_settings = merge(
+    var.app_settings,
     {
       # Identity-based підключення до storage: без ключів і рядків підключення.
       AzureWebJobsStorage__accountName = azurerm_storage_account.main.name
 
-      Sources               = var.sources
-      CollectorSchedule     = var.collector_schedule
-      DigestSchedule        = var.digest_schedule
-      AlertSchedule         = var.alert_schedule
-      CleanupSchedule       = var.cleanup_schedule
-      DigestSize            = var.digest_size
-      InterestingThreshold  = var.interesting_threshold
-      ScoringBatchSize      = var.scoring_batch_size
-      MaxPostChars          = var.max_post_chars
-      MinPostChars          = var.min_post_chars
-      RetentionDays         = var.retention_days
-      FirstRunLookbackHours = var.first_run_lookback_hours
-      MaxItemsPerGroup      = var.max_items_per_group
-      MaxBundleChars        = var.max_bundle_chars
-      AlertSources          = var.alert_sources
-      AlertWindowHours      = var.alert_window_hours
-      AlertCooldownHours    = var.alert_cooldown_hours
-      AlertThreshold        = var.alert_threshold
-      BurstMinPosts         = var.burst_min_posts
-      AlertMaxPerRun        = var.alert_max_per_run
-      AlertQuietHours       = var.alert_quiet_hours
-      AlertTimeZone         = var.alert_time_zone
-      OpenAIModel           = var.openai_model
-      TelegramChatId        = var.telegram_chat_id
-      TelegramApiId         = var.telegram_api_id
-      TelegramPhone         = var.telegram_phone
-      SessionBlobContainer  = var.session_blob_container
+      Sources              = var.sources
+      AlertSources         = var.alert_sources
+      TelegramChatId       = var.telegram_chat_id
+      TelegramApiId        = var.telegram_api_id
+      TelegramPhone        = var.telegram_phone
+      SessionBlobContainer = var.session_blob_container
+
+      CollectorSchedule = var.collector_schedule
+      DigestSchedule    = var.digest_schedule
+      AlertSchedule     = var.alert_schedule
+      CleanupSchedule   = var.cleanup_schedule
     },
     # Секрети: лише посилання на Key Vault, значення в state не потрапляють.
     local.secret_reference,

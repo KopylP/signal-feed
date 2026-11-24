@@ -70,6 +70,11 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `RetentionDays` | 1 | скільки днів назад зберігати пости: 1 означає вчорашню й сьогоднішню партиції |
 | `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
 
+**Де значення за замовчуванням.** Єдине джерело: `AgentOptions.cs`. У Terraform окремими змінними є лише обов'язкові й
+інфраструктурні значення (джерела, дані Telegram, розклади, контейнер сесії). Усе інше задається через змінну `app_settings`
+з іменами з таблиці вище, наприклад `app_settings = { DigestSize = "6", AlertQuietHours = "23:00-07:00" }`.
+Якщо параметр не задано, діє значення з коду. Помилка в імені ключа не дає помилки, параметр просто ігнорується.
+
 Налаштування перевіряються під час старту: обов'язкові значення (джерела, ключ OpenAI, токен бота, дані Telegram), діапазони
 (наприклад, `DigestSize` і `AlertMaxPerRun` від 1 до 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
 формат `AlertQuietHours` із часовим поясом, а також що `AlertWindowHours + AlertCooldownHours` не більше за `RetentionDays * 24`.
@@ -234,6 +239,7 @@ src/PostAgent.Functions/
   Models/       PostEntity, відповіді моделі, DigestReport
 src/TgLogin/               одноразовий вхід у Telegram
 tests/PostAgent.Tests/     xUnit (логіка, моделі з підробленим IChatClient, валідація налаштувань)
+Directory.Packages.props   версії всіх NuGet-пакетів в одному місці
 infra/                     Terraform
 prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
 .github/workflows/         build, test, deploy
