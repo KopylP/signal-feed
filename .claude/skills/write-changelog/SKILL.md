@@ -33,6 +33,7 @@ Ask in this order. One change can need two entries (for example a new required s
 4. **Is it the same capability with a different rule, algorithm or threshold?** → `Logic`.
 5. Otherwise use a short category: `Improved`, `Fixed`, `Security`, `Removed / Deprecated`, `Dependencies`.
 
+A new trigger or condition for something that already exists (an extra reason to send an alert, a new threshold) is `Logic`; a new function, message type or setting-driven feature is `Added`.
 An optional setting with a default is only `Added` (or `Logic`, if the default changes behavior). It is `Setup required` only when the operator must act.
 
 ## Structure of the file
