@@ -10,3 +10,4 @@ xUnit. Folders mirror the features in `src/PostAgent.Functions`. Run: `dotnet te
 - Test pure logic directly, and test functions through their `Run` method with fakes, with no network or Azure.
 - `CompositionTests` checks that the app builds from valid settings. Add a new required parameter to `ValidSettings`, otherwise that test fails.
 - Fix a bug together with a test that fails without the fix.
+- `ArchitectureTests` enforces the dependency rules the compiler does not (today: `Shared/` never references a feature). Run it after moving code.
