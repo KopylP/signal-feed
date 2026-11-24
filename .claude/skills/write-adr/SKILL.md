@@ -1,6 +1,6 @@
 ---
 name: write-adr
-description: Write or update an architecture decision record (ADR) in docs/adr/. Use whenever a significant or hard-to-reverse decision is made or discussed, such as hosting, storage, identity and access, how infrastructure or code is deployed, pipeline shape, testing approach, or the prompt/code contract, and whenever the user says "record this decision", "write an ADR", "why did we choose X", or asks to change or reverse an earlier decision. Use it even if the user does not say "ADR", but skip it for small, local or easily reversible choices.
+description: Use when a significant or hard-to-reverse architectural decision is made, discussed or reversed (hosting, storage model, identity and access, deployment, pipeline shape, testing approach), or when asked to record a decision or explain why something was chosen.
 ---
 
 # Write an ADR
