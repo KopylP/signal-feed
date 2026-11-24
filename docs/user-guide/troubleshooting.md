@@ -15,7 +15,7 @@
 | The bot does not answer `/start` | The webhook is not set, the key is wrong, or the agent is already bound to another chat | Check that `setWebhook` returned `ok`; use the `TelegramPairingKey` from Key Vault; to rebind, delete the row (step 6). Wrong keys are never answered, look for «Pairing rejected» in the logs |
 | No digest arrives | The schedule is in UTC, or the deploy failed | Check [the schedule](configuration.md#schedule) and the Actions run or the function app logs |
 | No alerts arrive | The group is not in `AlertSources`, quiet hours are on, or the cooldown is active | Check `AlertSources`, `AlertQuietHours` and `AlertCooldownHours`. Posts held back by quiet hours go into the digest |
-| Posts seem scored against nonsense | The placeholders in `scoring.md` were never replaced | Write your topics and examples ([installation, step 1](installation.md#step-1-write-your-rules)) and deploy again |
+| Posts seem scored against the wrong topics | The topics under `My interests` in `scoring.md` do not match what you follow | Fix the list ([installation, step 1](installation.md#step-1-write-your-rules)) and deploy again |
 | A setting seems ignored | A typo in the key name: unknown keys are silently ignored | Compare the name with the [settings reference](configuration.md#settings-reference) |
 | Posts stay unscored | Scoring failed 5 times and the message went to the `to-score-poison` queue | Open the queue in the Azure portal and find the cause in Application Insights. There is no automatic notification |
 

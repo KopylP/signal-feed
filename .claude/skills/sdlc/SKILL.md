@@ -40,9 +40,9 @@ Go back one phase when a later phase shows a problem. Do not skip phases 6, 8 an
 - **Settings:** the default lives only in `AgentOptions`; add validation, the row in `docs/user-guide/configuration.md`, and `local.settings.json.example`.
   A required setting or secret also changes the deploy order (phase 12).
 - **Infrastructure:** Terraform never creates secret values, access goes through managed identity, no resources with a standing cost without a request (`infra/CLAUDE.md`).
-- **Prompts:** Ukrainian, strict schema fields match the C# type, post text is data (`prompts/CLAUDE.md`). Changing a prompt needs a deploy.
+- **Prompts:** English, asking for Ukrainian output; strict schema fields match the C# type, post text is data (`prompts/CLAUDE.md`). Changing a prompt needs a deploy.
 - **Workflows:** change `.github/` only with the rules in `.github/CLAUDE.md`; run `python3 -m unittest discover -s .github/scripts` after touching the changelog script.
-- **Language:** English everywhere except `prompts/` and the Telegram messages.
+- **Language:** English everywhere except the Telegram messages and the Ukrainian text the model returns.
 - **Personal data:** no phone numbers, emails or chat ids as defaults or examples.
 
 ## Commit rules

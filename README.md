@@ -25,7 +25,7 @@ Telegram ──► Collector (hourly) ──► Scorer (OpenAI) ──┬──�
 2. **Scores** each post with OpenAI against your rules, and spots duplicates.
 3. **Delivers** a digest of the best posts once a day, with a short overview of what matters, and an instant alert when a discussion in a chosen group bursts.
 
-Runs on Azure Functions (.NET 10), with state in Azure Storage and secrets in Key Vault. The prompts and the Telegram messages are in Ukrainian; everything else is in English.
+Runs on Azure Functions (.NET 10), with state in Azure Storage and secrets in Key Vault. The Telegram messages and the digest text written by the model are in Ukrainian; the prompts and everything else are in English.
 
 ## Where to start
 

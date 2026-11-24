@@ -6,7 +6,7 @@ Rules for each part live in the `CLAUDE.md` of its folder: `infra/`, `src/PostAg
 ## Language
 
 - English only for everything we write about the project: `CLAUDE.md` files, `README.md`, ADRs, skills, Terraform (descriptions and comments), workflows, commit messages, identifiers, logs and error messages.
-- Ukrainian only where the end user reads it: the prompts in `prompts/` and the Telegram messages sent by the agent.
+- Ukrainian only where the end user reads it: the Telegram messages sent by the agent and the text the model returns for them (the prompts in `prompts/` are English and ask for Ukrainian output).
 - Comments in C# files that are still in Ukrainian stay as they are until you touch that code; new and edited comments are English.
 
 ## Keep the docs current

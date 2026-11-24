@@ -21,8 +21,9 @@ The installation has six steps: your rules, the Azure resources, the secrets, th
 
 ## Step 1. Write your rules
 
-Open [`prompts/scoring.md`](../../prompts/scoring.md) and replace the placeholders `{тема 1}` with your own topics and `{реальний пост...}` with real examples of good posts.
-If you skip this, the model scores posts against the literal placeholders. The prompts are Ukrainian because the digest is read in Ukrainian.
+Open [`prompts/scoring.md`](../../prompts/scoring.md) and check the list under `My interests`: the model scores every post against it. Replace the topics with your own if they differ.
+Real examples of good and weak posts make the scoring sharper; you can add them under a `## Examples` heading.
+The prompts are English, but they tell the model to write the topic, reason and digest text in Ukrainian, because the digest is read in Ukrainian.
 Prompts ship with the build, so changing them later needs a new deploy.
 
 ## Step 2. Create the Azure resources
