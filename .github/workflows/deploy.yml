@@ -32,13 +32,20 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    # contents: write lets the formatting step push its fix to a pull request branch.
+    permissions:
+      contents: write
+    env:
+      # Only a pull request from this repository can be fixed: forks and Dependabot get a read-only token.
+      CAN_PUSH_FIX: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      # An empty ref means the default checkout; with a tag it rebuilds that release.
+      # An empty ref means the default checkout; with a tag it rebuilds that release;
+      # a pull request from this repository is checked out on its branch so that a formatting fix can be pushed.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || (env.CAN_PUSH_FIX == 'true' && github.head_ref) || '' }}
 
       # Version = build date + the built-in run counter, which never resets and never repeats (see ADR-0005).
       # It is calculated once here, baked into the build, and reused for the release tag.
@@ -62,10 +69,23 @@ jobs:
 
       - run: dotnet restore
 
-      # Only on pushes to main. Pull requests are fixed by format.yml; a manual run rebuilds an older tag
-      # that was built before the check existed and must stay deployable.
+      # Formatting follows .editorconfig. A pull request from this repository gets the fix committed to its branch
+      # by github-actions[bot] and the build continues on the fixed code. Everything else (main, forks, Dependabot)
+      # only verifies. A manual run rebuilds an older tag that predates the check, so it skips both.
+      - name: Fix formatting
+        if: env.CAN_PUSH_FIX == 'true'
+        run: |
+          dotnet format --no-restore
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Apply dotnet format"
+          git push
+
       - name: Check formatting
-        if: github.event_name == 'push'
+        if: env.CAN_PUSH_FIX != 'true' && github.event_name != 'workflow_dispatch'
         run: dotnet format --verify-no-changes --no-restore
 
       - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}

@@ -36,7 +36,7 @@ A hook in `.claude/hooks/` blocks committing secret, state and local-settings fi
 ```bash
 dotnet restore && dotnet build -c Release --no-restore   # build; warnings are errors
 dotnet test -c Release                                    # all tests
-dotnet format --verify-no-changes --no-restore            # formatting (.editorconfig); on a PR CI fixes it and commits, on main it fails on a diff
+dotnet format --verify-no-changes --no-restore            # formatting (.editorconfig); the build job fixes it on a PR and only verifies on main
 terraform -chdir=infra fmt -check && terraform -chdir=infra validate   # after init -backend=false
 ```
 
