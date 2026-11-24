@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\PostAgent.Functions\Telegram\SessionBlob.cs" Link="SessionBlob.cs" />
+    <Compile Include="..\PostAgent.Functions\Collecting\SessionBlob.cs" Link="SessionBlob.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="WTelegramClient" />

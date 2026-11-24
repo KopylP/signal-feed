@@ -3,7 +3,6 @@ using System.Text.Json;
 
 namespace PostAgent.Ai;
 
-/// <summary>JSON для повідомлення користувача в запиті до моделі.</summary>
 public static class PromptJson
 {
     private static readonly JsonSerializerOptions Options = new()

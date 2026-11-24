@@ -4,18 +4,12 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
-    <Using Include="PostAgent.Common" />
-    <Using Include="PostAgent.Models" />
-    <Using Include="PostAgent.Selection" />
-    <Using Include="PostAgent.Ai" />
-    <Using Include="PostAgent.Storage" />
-    <Using Include="PostAgent.Delivery" />
-    <Using Include="PostAgent.Telegram" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PostAgent.Functions\PostAgent.Functions.csproj" />

@@ -2,11 +2,15 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using PostAgent.Functions;
+using PostAgent.Alerts;
+using PostAgent.Cleanup;
+using PostAgent.Collecting;
+using PostAgent.Digest;
+using PostAgent.Scoring;
+using PostAgent.Settings;
 
 namespace PostAgent.Tests;
 
-/// <summary>Перевіряє граф залежностей і налаштування так, як їх збирає Program.cs, без Azure й мережі.</summary>
 public class CompositionTests
 {
     private static readonly Dictionary<string, string?> ValidSettings = new()

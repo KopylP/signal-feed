@@ -4,10 +4,6 @@ namespace PostAgent.Ai;
 
 public static class ChatClientExtensions
 {
-    /// <summary>
-    /// Запит до моделі з відповіддю, розібраною в T. Схему (Structured Outputs) Microsoft.Extensions.AI
-    /// будує з типу T. Ключ "strict" вмикає суворий режим OpenAI (strict: true), без нього адаптер його не ставить.
-    /// </summary>
     public static async Task<T> AskAsync<T>(this IChatClient chat, string systemPrompt, string userMessage, CancellationToken ct)
     {
         var options = new ChatOptions { AdditionalProperties = new AdditionalPropertiesDictionary { ["strict"] = true } };

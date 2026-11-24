@@ -24,13 +24,6 @@
     <PackageReference Include="Telegram.Bot" />
   </ItemGroup>
   <ItemGroup>
-    <Using Include="PostAgent.Common" />
-    <Using Include="PostAgent.Models" />
-    <Using Include="PostAgent.Selection" />
-    <Using Include="PostAgent.Ai" />
-    <Using Include="PostAgent.Storage" />
-    <Using Include="PostAgent.Delivery" />
-    <Using Include="PostAgent.Telegram" />
     <Using Include="Microsoft.Extensions.Configuration" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />

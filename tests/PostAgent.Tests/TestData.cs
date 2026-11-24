@@ -1,3 +1,7 @@
+using PostAgent.Collecting;
+using PostAgent.Posts;
+using PostAgent.Settings;
+
 namespace PostAgent.Tests;
 
 internal static class TestData

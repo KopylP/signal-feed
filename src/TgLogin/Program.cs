@@ -8,7 +8,7 @@
 
 using Azure.Identity;
 using Azure.Storage.Blobs;
-using PostAgent.Telegram;
+using PostAgent.Collecting;
 using WTelegram;
 
 if (args.Length == 0)

@@ -232,19 +232,25 @@ az role assignment create --assignee $APP_ID --role Contributor \
 
 ## Структура
 
+Код організований по фічах: кожна папка містить усе для однієї можливості (функцію, логіку, інтерфейси, реєстрацію сервісів).
+Залежності між фічами видно з `using` у файлах, а сервіси підключаються через інтерфейси.
+
 ```
 src/PostAgent.Functions/
-  Functions/    Collector, Scorer, AlertFunction, Digest, Cleanup: короткі сценарії без розрахунків
-  Selection/    чиста логіка: пости з повідомлень, вибір для дайджесту й алертів, тихі години
-  Ai/           виклики моделі (IChatClient): оцінювання, підсумок дайджесту, промпти
-  Storage/      Table, Queue, Blob: пости, курсори джерел, черга, очищення
-  Delivery/     тексти й відправка повідомлень у Telegram
-  Telegram/     читання каналів і груп (WTelegramClient), сесія в Blob
-  Models/       PostEntity, повідомлення Telegram, відповіді моделі, DigestReport
-  Common/       TextExtensions, SourceNames
-  (корінь)      Program.cs, ServiceCollectionExtensions.cs (усі сервіси), AgentOptions.cs і його валідатор
+  Collecting/      збір: CollectorFunction, читач Telegram (WTelegramClient), пачки груп, курсори джерел, сесія в Blob
+  Scoring/         оцінювання: ScorerFunction, PostScorer, черга to-score
+  Alerts/          алерти: AlertFunction, вибір постів, тихі години
+  Digest/          дайджест: DigestFunction, вибір постів, підсумок від ШІ
+  Cleanup/         очищення: CleanupFunction, ICleanupTask, PostsCleanup
+  Posts/           спільна модель посту і репозиторій таблиці Posts
+  Notifications/   відправка в Telegram (Telegram.Bot), HTML-хелпери, редактор токена в телеметрії
+  Ai/              спільне для викликів моделі: IChatClient, промпти
+  Settings/        AgentOptions і його валідатор
+  Infrastructure/  клієнти Table/Queue/Blob
+  Common/          дрібні розширення
+  Program.cs, ServiceCollectionExtensions.cs   складання застосунку
 src/TgLogin/               одноразовий вхід у Telegram
-tests/PostAgent.Tests/     xUnit (логіка, моделі з підробленим IChatClient, валідація налаштувань)
+tests/PostAgent.Tests/     xUnit, ті самі папки по фічах; Fakes/ — підроблені залежності для тестів функцій
 Directory.Packages.props   версії всіх NuGet-пакетів в одному місці
 infra/                     Terraform, по файлах за змістом:
                              storage, keyvault, function, monitoring, roles, budget
@@ -252,6 +258,9 @@ infra/                     Terraform, по файлах за змістом:
 prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
 .github/workflows/         build, test, deploy
 ```
+
+**Нова фіча.** Створіть папку з функцією, логікою й інтерфейсами, додайте `AddXxx()` для її сервісів і викличте його в
+`ServiceCollectionExtensions.AddPostAgent`. Нове очищення це один клас `ICleanupTask` у `Cleanup/`.
 
 ## Відомі обмеження
 
