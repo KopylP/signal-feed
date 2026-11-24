@@ -43,6 +43,9 @@ public static class TelegramMessages
         return message.ToString();
     }
 
+    public static string FormatHealth(IReadOnlyList<string> failures) =>
+        "⚠️ <b>Збір не вдався</b>\n" + string.Join('\n', failures.Select(Escape));
+
     private static string Topic(PostEntity post) => (post.Topic ?? "").Truncate(MaxTopicChars, "…");
 
     private static void AppendDetails(StringBuilder message, PostEntity post)

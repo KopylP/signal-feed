@@ -66,4 +66,14 @@ public class TelegramMessagesTests
         Assert.Contains("<b>Тема</b>", html);
         Assert.Contains("<a href=\"https://t.me/src/1\">Читати</a>", html);
     }
+
+    [Fact]
+    public void Health_message_lists_failures_escaped()
+    {
+        var html = TelegramMessages.FormatHealth(["@news: <boom> & more", "@chat: timeout"]);
+
+        Assert.StartsWith("⚠️", html);
+        Assert.Contains("@news: &lt;boom&gt; &amp; more", html);
+        Assert.Contains("@chat: timeout", html);
+    }
 }

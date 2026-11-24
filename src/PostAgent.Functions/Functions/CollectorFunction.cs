@@ -11,36 +11,51 @@ public sealed class CollectorFunction(
     TelegramSourceReader reader,
     PostRepository posts,
     ScoringQueue queue,
+    TelegramNotifier notifier,
     IOptions<AgentOptions> options,
     ILogger<CollectorFunction> log)
 {
     private const int MinPauseMs = 1000;
     private const int MaxPauseMs = 2000;
+    private const int MaxErrorChars = 150;
 
     [Function(nameof(CollectorFunction))]
     public async Task Run([TimerTrigger("%CollectorSchedule%")] TimerInfo timer, CancellationToken ct)
     {
+        var failures = new List<string>();
         foreach (var username in options.Value.SourceList)
         {
-            await TryCollectAsync(username, ct);
+            if (await TryCollectAsync(username, ct) is { } failure)
+            {
+                failures.Add(failure);
+            }
             await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // не навантажуємо Telegram
+        }
+
+        // Без цього збій (наприклад, прострочена сесія) виглядав би як спокійний день.
+        if (failures.Count > 0)
+        {
+            await notifier.SendHealthAsync(failures, ct);
         }
     }
 
-    /// <summary>Помилка одного джерела не зупиняє інші.</summary>
-    private async Task TryCollectAsync(string username, CancellationToken ct)
+    /// <summary>Помилка одного джерела не зупиняє інші. Повертає опис збою або null.</summary>
+    private async Task<string?> TryCollectAsync(string username, CancellationToken ct)
     {
         try
         {
             await CollectAsync(username, ct);
+            return null;
         }
         catch (RpcException ex) when (ex.Message.StartsWith("FLOOD_WAIT"))
         {
             log.LogWarning("@{Source} skipped until the next run: {Message}", username, ex.Message);
+            return null; // очікуваний тимчасовий пропуск, не збій
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             log.LogError(ex, "Collecting @{Source} failed", username);
+            return $"@{username}: {ex.Message.Truncate(MaxErrorChars, "…")}";
         }
     }
 

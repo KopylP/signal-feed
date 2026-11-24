@@ -35,7 +35,7 @@ public sealed class AlertFunction(
 
         // Sent, щоб дайджест не повторював ці пости; AlertedAt для паузи між алертами групи.
         alerts.ToList().ForEach(p => p.MarkSent(alertedAt: now));
-        await posts.UpdateAllAsync(alerts, ct);
+        await posts.MarkDeliveredAsync(alerts, ct);
         log.LogInformation("Alert sent: {Count} posts", alerts.Count);
     }
 }

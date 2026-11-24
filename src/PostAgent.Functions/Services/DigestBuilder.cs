@@ -7,7 +7,11 @@ public sealed record DigestItem(PostEntity Post, bool IsInteresting);
 /// <summary>Вибирає пости для денного дайджесту (чиста функція).</summary>
 public static class DigestBuilder
 {
-    public static readonly TimeSpan Window = TimeSpan.FromHours(24);
+    /// <summary>
+    /// Доба плюс 2 години запасу: пост, опублікований в останню годину перед минулим дайджестом,
+    /// на той момент ще не був оцінений. Повторів немає, бо надіслані пости мають статус Sent.
+    /// </summary>
+    public static readonly TimeSpan Window = TimeSpan.FromHours(26);
     public static readonly TimeSpan FallbackWindow = TimeSpan.FromHours(48);
 
     public static IReadOnlyList<DigestItem> Build(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now)

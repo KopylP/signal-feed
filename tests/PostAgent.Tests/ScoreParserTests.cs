@@ -79,4 +79,14 @@ public class ScoreParserTests
         Assert.ThrowsAny<JsonException>(() => ScoreParser.Parse("not json"));
         Assert.ThrowsAny<JsonException>(() => ScoreParser.Parse("{}"));
     }
+
+    [Fact]
+    public void Duplicate_of_an_id_outside_the_batch_is_dropped()
+    {
+        var post = Unscored("src_2");
+
+        ScoreParser.Apply([post], ScoreParser.Parse(TwoPosts)); // у відповіді src_2 дублює src_1, якого в пачці немає
+
+        Assert.Null(post.DuplicateOf);
+    }
 }

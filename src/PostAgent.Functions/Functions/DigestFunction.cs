@@ -28,7 +28,7 @@ public sealed class DigestFunction(
 
         var sent = items.Select(i => i.Post).ToList();
         sent.ForEach(p => p.MarkSent());
-        await posts.UpdateAllAsync(sent, ct);
+        await posts.MarkDeliveredAsync(sent, ct);
         log.LogInformation("Digest sent: {Count} posts", sent.Count);
     }
 }

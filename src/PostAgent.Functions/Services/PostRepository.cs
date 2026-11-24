@@ -65,11 +65,72 @@ public sealed class PostRepository(TableServiceClient tables)
         return posts.Where(p => p.PublishedAt >= since).ToList();
     }
 
-    public async Task UpdateAllAsync(IEnumerable<PostEntity> posts, CancellationToken ct)
+    /// <summary>
+    /// Записує оцінки: лише колонки оцінювання (Merge), з перевіркою ETag. Відповідь 412 означає,
+    /// що пост уже оцінив інший виклик, тож його пропускаємо. Збій одного поста не зупиняє решту.
+    /// </summary>
+    public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
+        WriteAllAsync(posts, async post =>
+        {
+            var columns = new TableEntity(post.PartitionKey, post.RowKey)
+            {
+                [nameof(PostEntity.Score)] = post.Score,
+                [nameof(PostEntity.Topic)] = post.Topic,
+                [nameof(PostEntity.Reason)] = post.Reason,
+                [nameof(PostEntity.Status)] = post.Status.ToString(),
+            };
+            if (post.DuplicateOf is not null)
+            {
+                columns[nameof(PostEntity.DuplicateOf)] = post.DuplicateOf;
+            }
+
+            try
+            {
+                await _posts.UpdateEntityAsync(columns, post.ETag, TableUpdateMode.Merge, ct);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412)
+            {
+            }
+        });
+
+    /// <summary>
+    /// Позначає пости доставленими: лише Status і AlertedAt, без перевірки ETag. Перехід Scored → Sent
+    /// однобічний і повторюваний, тому конфлікти тут не потрібні. Збій одного поста не зупиняє решту.
+    /// </summary>
+    public Task MarkDeliveredAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
+        WriteAllAsync(posts, post =>
+        {
+            var columns = new TableEntity(post.PartitionKey, post.RowKey)
+            {
+                [nameof(PostEntity.Status)] = post.Status.ToString(),
+            };
+            if (post.AlertedAt is not null)
+            {
+                columns[nameof(PostEntity.AlertedAt)] = post.AlertedAt;
+            }
+
+            return _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, ct);
+        });
+
+    /// <summary>Виконує запис для кожного поста; помилки збирає й кидає разом наприкінці.</summary>
+    private static async Task WriteAllAsync(IEnumerable<PostEntity> posts, Func<PostEntity, Task> write)
     {
+        var errors = new List<Exception>();
         foreach (var post in posts)
         {
-            await _posts.UpdateEntityAsync(post, post.ETag, TableUpdateMode.Replace, ct);
+            try
+            {
+                await write(post);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                errors.Add(ex);
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new AggregateException("Some posts could not be saved.", errors);
         }
     }
 

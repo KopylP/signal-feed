@@ -12,6 +12,9 @@ public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> opt
 
     public Task SendNoPostsAsync(CancellationToken ct) => SendAsync(TelegramMessages.NoPosts, ct);
 
+    public Task SendHealthAsync(IReadOnlyList<string> failures, CancellationToken ct) =>
+        SendAsync(TelegramMessages.FormatHealth(failures), ct);
+
     public Task SendAlertAsync(IReadOnlyList<PostEntity> posts, CancellationToken ct) =>
         SendAsync(TelegramMessages.FormatAlert(posts), ct);
 

@@ -102,4 +102,14 @@ public class DigestBuilderTests
 
         Assert.Equal(TelegramMessages.MaxItems, items.Count);
     }
+
+    [Fact]
+    public void Post_published_just_before_the_previous_digest_is_not_missed()
+    {
+        var posts = new[] { Post("fresh", score: 2, hoursAgo: 2), Post("late", score: 9, hoursAgo: 25) };
+
+        var items = DigestBuilder.Build(posts, Options(), Now);
+
+        Assert.Equal(["late", "fresh"], items.Select(i => i.Post.RowKey));
+    }
 }
