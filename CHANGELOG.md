@@ -8,12 +8,12 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [swift] - 2026-11-24
+## [v2026.11.24.40-swift] - 2026-11-24
 
 ### Fixed
 - Fixed `tools/run-now.cs` failing to build with `NU1903` (a vulnerable build-only compiler package): the tool no longer pulls in Native AOT, so `dotnet run tools/run-now.cs -- digest --storage <account>` works as documented.
 
-## [ibis] - 2026-11-24
+## [v2026.11.24.40-ibis] - 2026-11-24
 
 ### Contract changes
 - **Telegram digest: sections instead of one list** (breaking for anyone who parses the message)
@@ -39,7 +39,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - After: it defaults to 7 and can be 1–12, because the digest is split into several messages
   - Effect: more posts in the digest by default; the model may leave weak ones out, and they are counted in «Можна пропустити»
 
-## [crane] - 2026-11-24
+## [v2026.11.24.40-crane] - 2026-11-24
 
 ### Logic
 - **Scoring: what counts as valuable**
