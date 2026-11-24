@@ -17,7 +17,9 @@ so do not write them. Write all texts in Ukrainian. A post may appear in only on
   - id
   - title: a short headline, at most 80 characters.
   - summary: 2–4 sentences, at most 600 characters: what happened and what the point is. Keep the specific numbers, names and results from the text.
-  - why_it_matters: 1–2 sentences, at most 300 characters: why it matters for the SEO market or for my work. If there is no real connection, say what it means for the market.
+  - why_it_matters: 1–2 sentences, at most 300 characters: why it matters for the SEO market or for my work. It must rest on something the post says.
+    Do not speculate about my catalog or demand («може вплинути на попит», «це сигнал для каталогу»): if the post gives no basis for a link to the marketplace,
+    say only what it means for the SEO market, in one plain sentence.
 - for_marketplace: posts that can affect the catalog, new site owners, advertiser demand, the competitiveness of the marketplace, priority countries and niches, or the business strategy.
   Only posts with a real connection; leave the list empty otherwise. For each: id, title (at most 80 characters), note (1–3 sentences, at most 350 characters).
 - notable: less obvious but interesting things: unusual cases, new tools, studies, forecasts, expert opinions. For each: id, title (at most 80 characters), note (1–2 sentences, at most 300 characters).
@@ -28,7 +30,8 @@ so do not write them. Write all texts in Ukrainian. A post may appear in only on
 ## Rules
 - Separate facts from opinions. If the author gives an opinion, a forecast or a guess, show it as theirs
   («автор припускає», «за словами автора»), never as a confirmed fact.
-- Merge posts about the same event: describe it once, under the most complete post.
+- One entry per event across all lists. When several channels report the same event, write a single entry under the most complete post
+  and mention in its summary that other channels reported it too («про це також писали @канал»). Never give two entries to the same event.
 - Do not pad the digest with minor things: quality of the selection matters more than the number of entries.
   Posts that are not worth a place may be left out of every list; the system counts them as skipped.
 - Rely only on the text of the posts. Do not assume anything and never invent a connection to my work.

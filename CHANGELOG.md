@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [plover] - 2026-11-24
+
+### Logic
+- **Digest text: one entry per event, no guesses about demand**
+  - Before: the same event reported by two channels got two entries, and «Чому важливо» sometimes guessed how a post could affect the catalog or demand
+  - After: one entry per event, with a note that other channels wrote about it too; «Чому важливо» must rest on what the post says, and without a basis for a link to the marketplace it says only what the news means for the SEO market
+  - Effect: a shorter digest without repeated news and with fewer speculative remarks
+
 ## [v2026.11.24.42-robin] - 2026-11-24
 
 ### Logic
