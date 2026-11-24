@@ -49,8 +49,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || (env.CAN_PUSH_FIX == 'true' && github.head_ref) || '' }}
-          # A push needs history to see which changelog section it added.
-          fetch-depth: ${{ github.event_name == 'push' && 0 || 1 }}
+          # A push needs history to see which changelog section it added. The condition is written so that
+          # the 0 comes last: in an expression `cond && 0 || 1` is always 1, because 0 is falsy.
+          fetch-depth: ${{ github.event_name != 'push' && 1 || 0 }}
 
       # Version = build date + the built-in run counter, which never resets and never repeats (see ADR-0005).
       # The tag adds the word of the changelog section this push added (ADR-0007): v2026.11.24.131-falcon.
@@ -72,8 +73,9 @@ jobs:
           else
             VERSION="$(date -u +%Y.%m.%d).${{ github.run_number }}"
             if [ "$EVENT_NAME" = "push" ]; then
-              WORD="$(python3 .github/scripts/changelog.py word "$BEFORE" "$GITHUB_SHA")"
-              PENDING="$(python3 .github/scripts/changelog.py pending "$GITHUB_SHA")"
+              # A failed lookup must not block a deploy: warn and continue without a word.
+              WORD="$(python3 .github/scripts/changelog.py word "$BEFORE" "$GITHUB_SHA")" || { echo "::warning::Could not read the changelog word"; WORD=""; }
+              PENDING="$(python3 .github/scripts/changelog.py pending "$GITHUB_SHA")" || { echo "::warning::Could not list the waiting changelog words"; PENDING=""; }
               # No section in this push (an internal-only change): the oldest waiting one names the release, if any.
               [ -n "$WORD" ] || WORD="${PENDING##*,}"
             fi
