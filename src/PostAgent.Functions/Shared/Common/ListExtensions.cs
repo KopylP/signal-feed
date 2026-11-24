@@ -10,5 +10,11 @@ public static class ListExtensions
         }
     }
 
-    public static void AddIfNotNull(this ICollection<string> list, string? item) => list.AddIf(item is not null, item!);
+    public static void AddIfNotNull(this ICollection<string> list, string? item)
+    {
+        if (item is not null)
+        {
+            list.Add(item);
+        }
+    }
 }

@@ -29,7 +29,7 @@
     <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\prompts\*.md" Link="prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\prompts\*.md" Exclude="..\..\prompts\CLAUDE.md" Link="prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="host.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="local.settings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
   </ItemGroup>

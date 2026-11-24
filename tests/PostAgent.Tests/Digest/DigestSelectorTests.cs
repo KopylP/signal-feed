@@ -59,7 +59,7 @@ public class DigestSelectorTests
     }
 
     [Fact]
-    public void Falls_back_to_48_hours_when_nothing_in_the_last_24()
+    public void Falls_back_to_48_hours_when_nothing_in_the_last_26_hours()
     {
         var posts = new[] { Post("old", score: 8, hoursAgo: 30), Post("older", score: 8, hoursAgo: 60) };
 

@@ -38,9 +38,15 @@ internal sealed class FakeScoringQueue : IScoringQueue
 {
     public List<PostRef> Enqueued { get; } = [];
     public int? BatchSize { get; private set; }
+    public Exception? Failure { get; init; }
 
     public Task EnqueueAsync(IReadOnlyList<PostRef> refs, int batchSize, CancellationToken ct)
     {
+        if (Failure is not null)
+        {
+            throw Failure;
+        }
+
         Enqueued.AddRange(refs);
         BatchSize = batchSize;
         return Task.CompletedTask;

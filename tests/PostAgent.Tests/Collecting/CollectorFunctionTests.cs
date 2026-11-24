@@ -11,7 +11,7 @@ namespace PostAgent.Tests.Collecting;
 public class CollectorFunctionTests
 {
     private readonly InMemoryPostRepository _repo = new();
-    private readonly FakeScoringQueue _queue = new();
+    private FakeScoringQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
 
     private CollectorFunction CreateFunction(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
@@ -81,5 +81,18 @@ public class CollectorFunctionTests
 
         Assert.Empty(cursors.Values);
         Assert.Empty(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task Does_not_move_the_cursor_when_queueing_fails_so_the_next_run_reads_the_same_messages()
+    {
+        _queue = new FakeScoringQueue { Failure = new InvalidOperationException("queue down") };
+        var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 1, 2) });
+        var cursors = new FakeSourceCursors(new() { ["news"] = 0 });
+
+        await CreateFunction("news", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+
+        Assert.Equal(0, cursors.Values["news"]);
+        Assert.Contains("@news: queue down", Assert.Single(_notifier.Sent));
     }
 }

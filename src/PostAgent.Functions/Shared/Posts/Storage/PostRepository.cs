@@ -1,15 +1,15 @@
 using Azure;
 using Azure.Data.Tables;
+using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Shared.Posts.Storage;
 
 public sealed class PostRepository(TableServiceClient tables) : IPostRepository
 {
-    public const string PostsTable = "Posts";
 
     private const int MaxTransactionSize = 100;
 
-    private readonly TableClient _posts = tables.GetTableClient(PostsTable);
+    private readonly TableClient _posts = tables.GetTableClient(StorageNames.PostsTable);
 
     public async Task AddIfMissingAsync(PostEntity post, CancellationToken ct)
     {
@@ -28,9 +28,9 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
         foreach (var (partitionKey, rowKey) in refs)
         {
             var result = await _posts.GetEntityIfExistsAsync<PostEntity>(partitionKey, rowKey, cancellationToken: ct);
-            if (result.HasValue)
+            if (result.HasValue && result.Value is { } post)
             {
-                posts.Add(result.Value!);
+                posts.Add(post);
             }
         }
         return posts;

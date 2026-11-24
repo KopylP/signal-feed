@@ -3,7 +3,6 @@ using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.Options;
-using PostAgent.Shared.Posts.Storage;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Shared.Infrastructure;
@@ -39,7 +38,7 @@ public static class StorageRegistration
         return services;
     }
 
-    public static async Task EnsureLocalResourcesAsync(this IServiceProvider services)
+    public static async Task EnsureLocalResourcesAsync(this IServiceProvider services, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(services.GetRequiredService<IConfiguration>()["AzureWebJobsStorage"]))
         {
@@ -47,11 +46,11 @@ public static class StorageRegistration
         }
 
         var tables = services.GetRequiredService<TableServiceClient>();
-        await tables.CreateTableIfNotExistsAsync(PostRepository.PostsTable);
-        await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable);
-        await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync();
+        await tables.CreateTableIfNotExistsAsync(StorageNames.PostsTable, ct);
+        await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable, ct);
+        await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
-        await services.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(container).CreateIfNotExistsAsync();
+        await services.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(container).CreateIfNotExistsAsync(cancellationToken: ct);
     }
 }

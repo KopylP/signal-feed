@@ -23,7 +23,7 @@ Collector (hourly) ──► Posts (Table) ──► to-score (Queue) ──► 
 
 **Channels and groups.** Channels: every post is scored on its own. Groups: if no more than
 `MaxItemsPerGroup` (5) messages arrived during a run, they are separate posts too. If there are more, the messages are split by time into
-`MaxItemsPerGroup` bundles of roughly equal size, and each bundle is scored with one call. The faster the flow,
+at most `MaxItemsPerGroup` bundles of roughly equal size, and each bundle is scored with one call. The faster the flow,
 the bigger the bundle, while the scoring cost does not grow. In the bundle text, the messages with the most
 reactions, forwards and replies come first, so the key ones are not lost. The `MinPostChars` minimum length applies to single
 messages, while short replies stay in a bundle: their number is exactly what shows a burst.
@@ -332,8 +332,11 @@ Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
 prompts/                   scoring.md (scoring) and digest.md (digest summary)
+docs/adr/                  architecture decision records (why, not what)
+.claude/                   project skills and the commit guard hook
 .github/workflows/         deploy.yml (format, build, test, code deploy), infra.yml (manual terraform plan/apply)
 .editorconfig              code style and formatting rules (dotnet format)
+.terraform-version         Terraform version used by deploy.yml and infra.yml
 ```
 
 **A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add `AddXxx()` for its
