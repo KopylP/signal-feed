@@ -101,7 +101,7 @@ public class CompositionTests
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "SignalFeed.sln")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "SignalFeed.slnx")))
         {
             dir = dir.Parent;
         }
