@@ -37,7 +37,8 @@ jobs:
 
   deploy:
     needs: build-test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Деплой вимкнений, доки в репозиторії не задано змінну DEPLOY_ENABLED=true (Settings → Variables).
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     concurrency:
       group: deploy
       cancel-in-progress: false

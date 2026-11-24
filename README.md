@@ -208,6 +208,9 @@ az role assignment create --assignee $APP_ID --role Contributor \
 У репозиторії GitHub (Settings → Secrets and variables → Actions → Variables) задайте:
 `AZURE_CLIENT_ID` (це `$APP_ID`), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_FUNCTIONAPP_NAME`.
 
+**Деплой вимкнений за замовчуванням.** Без змінної `DEPLOY_ENABLED` зі значенням `true` workflow лише збирає й тестує, а крок деплою
+пропускається. Коли будете готові розгортати, задайте цю змінну там же, де й решту.
+
 ## Безпека й вартість
 
 - У коді й репозиторії немає секретів. `local.settings.json` у `.gitignore`, у `local.settings.json.example` лише заглушки.
