@@ -98,11 +98,17 @@ After the first `apply`, copy `function_app_name` from the run summary into `AZU
 
 ## Releases and rollback
 
-Every deploy from a push to `main` is a release: a `vYYYY.MM.DD.N` tag and a GitHub Release with generated notes. `YYYY.MM.DD` is the UTC build date and `N` is GitHub's
-built-in run counter of `deploy.yml`, which only grows, so versions never collide (numbers have gaps because pull request builds count too). The same version is baked into the build
-(`-p:Version`), so it matches the tag. No deploy (see [Deploy is off by default](#deploy-is-off-by-default)) means no release. Details: [ADR-0005](../adr/0005-release-every-deploy-with-a-build-counter-version.md).
+Every deploy from a push to `main` is a release: a `vYYYY.MM.DD.N-word` tag and a GitHub Release. `YYYY.MM.DD` is the UTC build date and `N` is GitHub's
+built-in run counter of `deploy.yml`, which only grows, so versions never collide (numbers have gaps because pull request builds count too).
+The number is baked into the build (`-p:Version`), so it matches the tag. No deploy (see [Deploy is off by default](#deploy-is-off-by-default)) means no release.
+Details: [ADR-0005](../adr/0005-release-every-deploy-with-a-build-counter-version.md) and [ADR-0007](../adr/0007-name-each-release-with-a-changelog-word.md).
 
-**Rollback.** Actions → build-test-deploy → Run workflow, and enter the earlier release tag, for example `v2026.11.20.120`. The workflow rebuilds that tag, tests it and deploys it,
+**The word and the changelog.** A pull request adds a section to [`CHANGELOG.md`](../../CHANGELOG.md) headed `## [word] - date` (the `write-changelog` skill).
+On the push, the build job reads the word from the diff and builds the tag. After the deploy, the release job uses the section as the release notes, renames the heading to
+`## [v2026.11.24.131-word] - date` and commits that to `main` as `github-actions[bot]` (the branch rules must allow it). A push that adds no section gets a plain `vYYYY.MM.DD.N` tag and generated notes.
+The logic is in `.github/scripts/changelog.py`, tested by `python3 -m unittest discover -s .github/scripts`.
+
+**Rollback.** Actions → build-test-deploy → Run workflow, and enter the earlier release tag, for example `v2026.11.20.120` or `v2026.11.24.131-falcon`. The workflow rebuilds that tag, tests it and deploys it,
 and creates no new release. Or revert the commit through a pull request, which deploys the previous code as a new release. A rollback restores code only: infrastructure,
 App Settings, secrets and stored data stay as they are, and a renamed or removed required setting can stop an older version from starting.
 

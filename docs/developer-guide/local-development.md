@@ -42,6 +42,7 @@ dotnet restore && dotnet build -c Release --no-restore
 dotnet test -c Release
 dotnet format --verify-no-changes --no-restore            # drop --verify-no-changes to fix
 terraform -chdir=infra fmt -check && terraform -chdir=infra validate   # after: terraform -chdir=infra init -backend=false
+python3 -m unittest discover -s .github/scripts                         # the changelog and release script
 ```
 
 Storage code (`PostRepository`) is not covered by `dotnet test`. Check it by hand against Azurite after changing it.

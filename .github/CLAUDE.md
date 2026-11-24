@@ -10,7 +10,7 @@
 - Pin actions to a major version (`@v4`) and Terraform to an exact version (`.terraform-version` at the repo root, read by `deploy.yml` and `infra.yml`).
 - The Azure OIDC credential accepts only `refs/heads/main`: `infra` apply and deploy cannot run from a branch, so infra changes merge first and are applied from `main`.
 - `deploy.yml` never changes infrastructure and `infra.yml` never deploys code. Do not mix them.
-- The version is `YYYY.MM.DD.<run_number>`, calculated once in the build job and reused for the tag (ADR-0005). Only the build job (to push the formatting fix on a PR) and the release job get `contents: write`; keep the release job's explicit `if` (it drops the implicit `success()`).
+- The version is `YYYY.MM.DD.<run_number>`, calculated once in the build job and reused for the tag, which adds the changelog word: `vYYYY.MM.DD.N-word` (ADR-0005, ADR-0007). `scripts/changelog.py` finds the word and renames the changelog headings; run its tests when you change it. Only the build job (to push the formatting fix on a PR) and the release job get `contents: write`; keep the release job's explicit `if` (it drops the implicit `success()`).
 - A commit pushed with `GITHUB_TOKEN` starts no workflow, so the formatting commit gets no check of its own (the check stays on the earlier commit; a re-run does not help). A same-repo PR is built on its branch tip, not on the merge with `main` (ADR-0006).
 - Do not list `*.md` in `paths-ignore`: `prompts/*.md` ship with the build. Name documentation files one by one (`README.md`, `CHANGELOG.md`).
 - When you add a variable to `infra.yml`, update the GitHub Variables table in `docs/developer-guide/ci-cd.md`, and `infra/CLAUDE.md` if the rule changed.

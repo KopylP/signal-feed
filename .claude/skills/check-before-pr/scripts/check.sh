@@ -27,6 +27,10 @@ else
   step "terraform (skipped: infra/ unchanged)"
 fi
 
+step "changelog structure and its script tests"
+python3 .github/scripts/changelog.py validate CHANGELOG.md || fail=1
+(cd .github/scripts && python3 -m unittest -q) || fail=1
+
 step "forbidden files in the diff"
 forbidden='(^|/)(local\.settings\.json|terraform\.tfvars|backend\.tf|crash\.log)$|\.tfstate(\.|$)|(^|/)\.terraform/|\.session$|(^|/)\.env($|\.)'
 hits="$(printf '%s\n' "$changed" | grep -E "$forbidden" | grep -v '\.example$' || true)"

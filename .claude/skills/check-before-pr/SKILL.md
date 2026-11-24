@@ -30,7 +30,7 @@ Read the whole change: `git diff origin/main` (committed, staged and unstaged) a
    List the exact names the owner must create: Terraform variable, GitHub Variable (`TF_*`), App Setting, Key Vault secret. You cannot verify Azure from here; ask the owner to confirm
    (`az functionapp config appsettings list -g <rg> -n <app> --query "[].name"`).
 5. **Personal data?** Read the added lines for phone numbers, emails, chat ids, and look-alike values (long digit strings, `+380...`) used as defaults or examples. Placeholders only.
-6. **Changelog?** If the change alters behavior, a contract or a setting, is there a `pending-<id>` section in `CHANGELOG.md` in the same change? Use the `write-changelog` skill.
+6. **Changelog?** If the change alters behavior, a contract or a setting, is there a section named by a new word in `CHANGELOG.md` in the same change? Use the `write-changelog` skill.
    Internal-only changes need no entry; say so.
 7. **Language?** English everywhere except `prompts/` and Telegram messages.
 

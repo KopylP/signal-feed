@@ -45,20 +45,22 @@ The first four are **detailed**: they use the templates below. The rest are **sh
 
 ### Section heading
 
-The version is unknown until the pipeline runs (`vYYYY.MM.DD.N`, ADR-0005), so a pull request writes a **pending** heading with a random id and today's UTC date:
+The version is unknown until the pipeline runs, so a pull request names its section with a **word** and today's UTC date (ADR-0007):
 
 ```
-## [pending-3fa9c1] - 2026-11-24
+## [falcon] - 2026-11-24
 ```
 
-Generate the id with `openssl rand -hex 3`, once per pull request. Do not invent a version number. After the deploy the pending heading is replaced by the real one:
+Get a word that is not used yet with `bash .claude/skills/write-changelog/scripts/new-word.sh`, once per pull request. Never invent a version number and never write `v...` yourself.
+After the deploy the pipeline puts the build version in front of the word and keeps the word:
 
 ```
-## [v2026.11.24.131] - 2026-11-24
+## [v2026.11.24.131-falcon] - 2026-11-24
 ```
 
-Several `pending-*` sections can exist at once (for example an infra-only merge, which runs no pipeline). The release step turns all of them into the new version.
-If two pull requests collide on the top of the file, keep both sections.
+The pipeline also uses the word as the release name (tag `v2026.11.24.131-falcon`) and the section text as the release notes.
+Add the section at the top of the file. If two pull requests collide there, keep both sections.
+A change that merges without a pipeline run (for example together with `infra/**`) keeps its word until the next deploy, which names it too.
 
 ## Detailed categories
 
@@ -147,15 +149,15 @@ One line, the symptom or effect first, no class names:
 
 ## Release step
 
-After a deploy, the pending id is replaced by the version and the text is used for the GitHub Release and the tag `vYYYY.MM.DD.N`.
-The automatic script for this is not built yet. Until it is, the maintainer renames the heading by hand after each release.
-The script is a pipeline change and needs its own ADR (see `write-adr`).
+Automatic, in `deploy.yml` (ADR-0007): after a deploy the release job creates the release `vYYYY.MM.DD.N-word` with the section as notes, renames the heading
+and commits that to `main`. You do nothing after the merge. Run `python3 .github/scripts/changelog.py validate` before a pull request (`check-before-pr` does it): it rejects
+a wrong heading, an unknown or misordered category and a duplicate word.
 
 ## Common mistakes
 
 | Mistake | Fix |
 |---|---|
-| A version number in a pull request | Use `pending-<id>`; the pipeline owns the version |
+| A version number in a pull request | Use a word from `new-word.sh`; the pipeline owns the version |
 | "Updated the scoring" | Say which rule, before and after, with numbers (`Logic`) |
 | A new required setting listed only under `Added` | Also `Setup required`, with the exact name, place and order |
 | A renamed setting under `Improved` | It is a breaking `Contract changes` entry with a migration |
@@ -168,7 +170,7 @@ The script is a pipeline change and needs its own ADR (see `write-adr`).
 Illustrative only: these are not real changes, and the numbers and names are made up.
 
 ```
-## [pending-3fa9c1] - 2026-11-24
+## [falcon] - 2026-11-24
 
 ### Setup required
 - **`AlertQuietHours`**: optional (default empty)
