@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [kite] - 2026-11-24
+## [v2026.11.24.41-kite] - 2026-11-24
 
 ### Fixed
 - Fixed the new sectioned digest not reaching the model: OpenAI rejected its response schema (`reference can only point to definition`), so the digest fell back to the plain list. Each entry type is now used once in the schema, and a test checks it.
