@@ -8,6 +8,18 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [crane] - 2026-11-24
+
+### Logic
+- **Scoring: what counts as valuable**
+  - Before: posts were scored against three short topics (SEO, link building, Collaborator)
+  - After: the prompt describes the owner's work on the Collaborator site catalog and eight areas of interest (Google updates, link building, SEO market, AI and SEO, publishers and media, competitors, tools and analytics, practical cases). Facts and numbers raise the score, an opinion without data is capped at 6, and a connection to the owner's work counts only when the text contains it
+  - Effect: the digest and alerts favor news that affects a link marketplace; more posts about the general SEO market may score lower than before
+- **Digest text: why it matters**
+  - Before: the overview and each insight only said what was interesting
+  - After: insights keep specific numbers and names, show opinions and forecasts as the author's, and say why a post matters for the marketplace only when the connection is real; the overview is cut to 350 characters and says plainly when nothing important happened
+  - Effect: shorter, more specific digest text. The message layout does not change
+
 ## [v2026.11.24.39-finch] - 2026-11-24
 
 ### Fixed
