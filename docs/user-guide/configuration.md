@@ -89,8 +89,8 @@ A job that fails is logged and not retried, like a scheduled run. Access to the 
 ### Prompts
 
 The files [`prompts/scoring.md`](../../prompts/scoring.md) (scoring) and [`prompts/digest.md`](../../prompts/digest.md) (digest summary) are copied into the build, so a change
-needs a new deploy (a push to `main` is enough when [automatic deployment](../developer-guide/ci-cd.md#deploy-is-off-by-default) is on). **Before the first deploy**, fill in your own topics in `scoring.md` in place of `{тема 1}`
-and examples in place of `{реальний пост...}`: otherwise the model will score against the literal placeholders.
+needs a new deploy (a push to `main` is enough when [automatic deployment](../developer-guide/ci-cd.md#deploy-is-off-by-default) is on). **Before the first deploy**, check the topics under `My interests` in `scoring.md`: the model scores every post against them.
+The prompts are English and ask the model to answer in Ukrainian.
 
 ## Next
 

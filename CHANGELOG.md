@@ -22,6 +22,18 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Dependencies
 - Terraform 1.9.8 → 1.17.2 (`.terraform-version`, used by `deploy.yml` and `infra.yml`).
 
+## [otter] - 2026-11-24
+
+### Logic
+- **Scoring: topics of interest**
+  - Before: `scoring.md` held the placeholders `{тема 1}` to `{тема 3}`, so posts were scored against nothing
+  - After: posts are scored against SEO, link building and Collaborator as a platform
+  - Effect: the digest favors posts on these topics; the example posts and the "not interesting" list are gone until real ones are added
+- **Prompts: language**
+  - Before: `scoring.md` and `digest.md` were written in Ukrainian
+  - After: both are written in English and ask the model for Ukrainian `topic`, `reason`, `overview` and `insight`
+  - Effect: the digest text stays Ukrainian; wording of scores and summaries may differ slightly
+
 ## [pine] - 2026-11-24
 
 ### Setup required

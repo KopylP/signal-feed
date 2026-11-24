@@ -19,7 +19,7 @@ and there is no manual release path. Infra apply and deploy work only from `main
    `infra` workflow from `main` (plan, read it for destroy/replace, apply), set Key Vault secrets, and ask the owner to confirm the setting exists
    (`az functionapp config appsettings list -g <rg> -n <app> --query "[].name"`). Only then merge the code. A single PR with both deploys the code first and the app fails to start.
 3. `gh variable get DEPLOY_ENABLED`. If it is not `true`, the merge builds and tests but neither deploys nor releases; tell the user.
-4. Confirm the owner's topics in `prompts/scoring.md` are filled in before the first deploy.
+4. Confirm the owner's topics under `My interests` in `prompts/scoring.md` are right before the first deploy.
 
 ## Merge
 
