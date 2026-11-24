@@ -6,13 +6,14 @@ set -u
 input="$(cat)"
 command="$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null || true)"
 
-case "$command" in
-  *"git commit"*) ;;
-  *) exit 0 ;;
-esac
+# Also matches `git -C <dir> commit` and other options between `git` and `commit`.
+if ! printf '%s' "$command" | grep -Eq '(^|[^[:alnum:]_-])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+commit([[:space:]]|$)'; then
+  exit 0
+fi
 
-forbidden='(^|/)(local\.settings\.json|terraform\.tfvars|backend\.tf|crash\.log)$|\.tfstate(\.|$)|(^|/)\.terraform/'
-staged="$(git diff --cached --name-only 2>/dev/null | grep -E "$forbidden" || true)"
+forbidden='(^|/)(local\.settings\.json|terraform\.tfvars|backend\.tf|crash\.log)$|\.tfstate(\.|$)|(^|/)\.terraform/|\.session$|(^|/)\.env($|\.)'
+repo_dir="$(printf '%s' "$command" | sed -nE 's/.*git[[:space:]]+-C[[:space:]]+"?([^"[:space:]]+)"?.*/\1/p' | head -n1)"
+staged="$(git -C "${repo_dir:-.}" diff --cached --name-only 2>/dev/null | grep -E "$forbidden" | grep -v '\.example$' || true)"
 
 if [ -n "$staged" ]; then
   {

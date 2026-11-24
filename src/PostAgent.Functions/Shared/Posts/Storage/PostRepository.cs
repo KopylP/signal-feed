@@ -47,7 +47,7 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
     }
 
     public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
-        WriteAllAsync(posts, async post =>
+        WriteAllAsync(posts, async (post, token) =>
         {
             var columns = new TableEntity(post.PartitionKey, post.RowKey)
             {
@@ -63,15 +63,15 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
 
             try
             {
-                await _posts.UpdateEntityAsync(columns, post.ETag, TableUpdateMode.Merge, ct);
+                await _posts.UpdateEntityAsync(columns, post.ETag, TableUpdateMode.Merge, token);
             }
             catch (RequestFailedException ex) when (ex.Status == 412)
             {
             }
-        });
+        }, ct);
 
     public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) =>
-        WriteAllAsync(posts, async post =>
+        WriteAllAsync(posts, async (post, token) =>
         {
             var columns = new TableEntity(post.PartitionKey, post.RowKey)
             {
@@ -84,22 +84,22 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
 
             try
             {
-                await _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, ct);
+                await _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, token);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 // Пост уже видалив Cleanup (дайджест чи алерт перетнув межу доби): позначати нічого.
             }
-        });
+        }, ct);
 
-    private static async Task WriteAllAsync(IEnumerable<PostEntity> posts, Func<PostEntity, Task> write)
+    private static async Task WriteAllAsync(IEnumerable<PostEntity> posts, Func<PostEntity, CancellationToken, Task> write, CancellationToken ct)
     {
         var errors = new List<Exception>();
         foreach (var post in posts)
         {
             try
             {
-                await write(post);
+                await write(post, ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

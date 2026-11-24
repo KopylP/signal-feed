@@ -87,7 +87,7 @@ If something is wrong, the app does not start and the log names the parameter.
 **Schedule.** CRON has six fields (`second minute hour day month weekday`) and is set **in UTC**.
 `0 0 8 * * *` is 08:00 UTC, which is 10:00 in Kyiv in winter (UTC+2) and 11:00 in summer (UTC+3), so you have to account for daylight saving time yourself.
 Schedules are read through `%CollectorSchedule%` and the like, so you can change them without rebuilding the code. Just update the
-App Setting (or the Terraform variable and run `terraform apply`), and the app restarts with the new schedule:
+App Setting (or the Terraform variable, for example `digest_schedule`, or the GitHub Variable `TF_DIGEST_SCHEDULE`, and run `terraform apply` or the `infra` workflow), and the app restarts with the new schedule. Precedence: a schedule key in `app_settings` (`TF_APP_SETTINGS`) wins over the dedicated variable (`TF_*_SCHEDULE`), which wins over the default.
 
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> \
@@ -258,6 +258,7 @@ GitHub Variables (Settings → Secrets and variables → Actions → Variables),
 | `TF_DEPLOYER_OBJECT_ID`, `TF_BUDGET_ALERT_EMAIL` | `deployer_object_id`, `budget_alert_email` |
 | `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
 | `TF_TELEGRAM_CHAT_ID`, `TF_TELEGRAM_API_ID`, `TF_TELEGRAM_PHONE` | the matching Terraform variables |
+| `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_ALERT_SCHEDULE`, `TF_CLEANUP_SCHEDULE` (optional) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
 | `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
 

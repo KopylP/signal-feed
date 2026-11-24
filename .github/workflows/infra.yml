@@ -52,8 +52,16 @@ jobs:
       - name: Optional variables
         env:
           TF_SOURCES: ${{ vars.TF_SOURCES }}
+          TF_COLLECTOR_SCHEDULE: ${{ vars.TF_COLLECTOR_SCHEDULE }}
+          TF_DIGEST_SCHEDULE: ${{ vars.TF_DIGEST_SCHEDULE }}
+          TF_ALERT_SCHEDULE: ${{ vars.TF_ALERT_SCHEDULE }}
+          TF_CLEANUP_SCHEDULE: ${{ vars.TF_CLEANUP_SCHEDULE }}
         run: |
           if [ -n "$TF_SOURCES" ]; then echo "TF_VAR_sources=$TF_SOURCES" >> "$GITHUB_ENV"; fi
+          if [ -n "$TF_COLLECTOR_SCHEDULE" ]; then echo "TF_VAR_collector_schedule=$TF_COLLECTOR_SCHEDULE" >> "$GITHUB_ENV"; fi
+          if [ -n "$TF_DIGEST_SCHEDULE" ]; then echo "TF_VAR_digest_schedule=$TF_DIGEST_SCHEDULE" >> "$GITHUB_ENV"; fi
+          if [ -n "$TF_ALERT_SCHEDULE" ]; then echo "TF_VAR_alert_schedule=$TF_ALERT_SCHEDULE" >> "$GITHUB_ENV"; fi
+          if [ -n "$TF_CLEANUP_SCHEDULE" ]; then echo "TF_VAR_cleanup_schedule=$TF_CLEANUP_SCHEDULE" >> "$GITHUB_ENV"; fi
 
       - uses: azure/login@v2
         with:
