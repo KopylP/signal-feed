@@ -189,7 +189,10 @@ func azure functionapp publish $(terraform -chdir=../infra output -raw function_
 
 ## GitHub Actions: build, test, deploy through OIDC
 
-Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time). It can also be started by hand (`workflow_dispatch`).
+Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). It builds and tests on a push to `main` and on every PR, and from `main` it also deploys (deploys never run at the same time) and then creates a release. It can also be started by hand (`workflow_dispatch`).
+
+Pushes that only change `docs/**`, `README.md`, `CLAUDE.md` files, `.claude/**` or `infra/**` do not run it (the `prompts/*.md` files do, because they ship with the build).
+Pull requests that touch `infra/` also run [`terraform-check.yml`](.github/workflows/terraform-check.yml) (`fmt -check`, `validate`, no Azure sign-in), and Dependabot opens weekly grouped updates for NuGet, GitHub Actions and Terraform.
 
 One-time OIDC setup (no passwords):
 
@@ -257,8 +260,20 @@ GitHub Variables (Settings → Secrets and variables → Actions → Variables),
 The secrets (OpenAI, Telegram) are not needed in GitHub: as before, they go into Key Vault with `az keyvault secret set`.
 After the first `apply`, copy `function_app_name` from the run summary into `AZURE_FUNCTIONAPP_NAME` for the code deploy.
 
-**Deploy is off by default.** Without the `DEPLOY_ENABLED` variable set to `true`, the workflow only builds and tests, and the deploy step
-is skipped. When you are ready to deploy, set this variable in the same place as the rest.
+### Releases and rollback
+
+Every deploy from a push to `main` is a release: a `vYYYY.MM.DD.N` tag and a GitHub Release with generated notes. `YYYY.MM.DD` is the UTC build date and `N` is GitHub's
+built-in run counter of `deploy.yml`, which only grows, so versions never collide (numbers have gaps because pull request builds count too). The same version is baked into the build
+(`-p:Version`), so it matches the tag. No deploy (see `DEPLOY_ENABLED` below) means no release. Details: [ADR-0005](docs/adr/0005-release-every-deploy-with-a-build-counter-version.md).
+
+**Rollback.** Actions → build-test-deploy → Run workflow, and enter the earlier release tag, for example `v2026.11.20.120`. The workflow rebuilds that tag, tests it and deploys it,
+and creates no new release. Or revert the commit through a pull request, which deploys the previous code as a new release. A rollback restores code only: infrastructure,
+App Settings, secrets and stored data stay as they are, and a renamed or removed required setting can stop an older version from starting.
+
+The repository must allow Actions to create releases: the release job asks for `contents: write`, so Settings → Actions → General → Workflow permissions must not block it.
+
+**Deploy is off by default.** Without the `DEPLOY_ENABLED` variable set to `true`, the workflow only builds and tests, and the deploy and release steps
+are skipped. When you are ready to deploy, set this variable in the same place as the rest.
 
 ## Security and cost
 

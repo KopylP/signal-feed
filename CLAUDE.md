@@ -26,6 +26,11 @@ Skip ADRs for small, local or easily reversible choices.
 Project skills live in `.claude/skills/`. Today: `write-adr` (architecture decision records). Add a skill there when a multi-step
 workflow repeats across tasks; keep one-line rules in `CLAUDE.md` instead.
 
+## Releases
+
+A push to `main` that changes code is deployed and released as `vYYYY.MM.DD.<run_number>` (ADR-0005). Write PR titles that read well as release notes (squash merge).
+A hook in `.claude/hooks/` blocks committing secret, state and local-settings files.
+
 ## Commands
 
 ```bash

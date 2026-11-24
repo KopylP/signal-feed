@@ -27,3 +27,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0002](0002-host-on-flex-consumption.md) | Host on Azure Functions Flex Consumption | Accepted |
 | [0003](0003-keep-secret-values-out-of-terraform-state.md) | Keep secret values out of Terraform state | Accepted |
 | [0004](0004-run-terraform-from-a-manual-workflow.md) | Run Terraform from a manual workflow | Accepted |
+| [0005](0005-release-every-deploy-with-a-build-counter-version.md) | Release every deploy with a build-counter version | Accepted |

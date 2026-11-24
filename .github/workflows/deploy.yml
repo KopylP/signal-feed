@@ -1,10 +1,25 @@
 name: build-test-deploy
 
+# Every push to main that changes code is built, tested, deployed and released (tag + GitHub Release).
+# A manual run with a tag redeploys that earlier release (rollback) and creates no new release.
 on:
   push:
     branches: [main]
+    # Changes that cannot affect the deployed code do not deploy or release.
+    # prompts/*.md are NOT listed: they ship with the build.
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "**/CLAUDE.md"
+      - ".claude/**"
+      - "infra/**"
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to redeploy (rollback), e.g. v2026.11.24.137. Empty: deploy the current main."
+        type: string
+        default: ""
 
 permissions:
   id-token: write # required to sign in to Azure via OIDC
@@ -17,15 +32,36 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
+      # An empty ref means the default checkout; with a tag it rebuilds that release.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      # Version = build date + the built-in run counter, which never resets and never repeats (see ADR-0005).
+      # It is calculated once here, baked into the build, and reused for the release tag.
+      - name: Calculate version
+        id: version
+        env:
+          ROLLBACK_TAG: ${{ inputs.tag }}
+        run: |
+          if [ -n "$ROLLBACK_TAG" ]; then
+            [[ "$ROLLBACK_TAG" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]] || { echo "Invalid tag: $ROLLBACK_TAG"; exit 1; }
+            VERSION="${ROLLBACK_TAG#v}"
+          else
+            VERSION="$(date -u +%Y.%m.%d).${{ github.run_number }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - run: dotnet restore
-      - run: dotnet build --configuration Release --no-restore
+      - run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
       - run: dotnet test --configuration Release --no-build
 
       - run: dotnet publish src/PostAgent.Functions --configuration Release --no-build --output ${{ env.PACKAGE_PATH }}
@@ -61,3 +97,25 @@ jobs:
           app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
           package: ${{ env.PACKAGE_PATH }}
           sku: flexconsumption
+
+  # A release exists only for code that was actually deployed from a push. Reruns and manual
+  # redeploys (rollback) do not create one. An explicit `if` drops the implicit success() check,
+  # so the deploy result is tested by hand.
+  release:
+    needs: [build-test, deploy]
+    if: needs.deploy.result == 'success' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag and the release; only this job gets write access
+    steps:
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.build-test.outputs.version }}
+        run: |
+          # A re-run of the same run produces the same tag: keep the existing release.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG already exists"
+            exit 0
+          fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
