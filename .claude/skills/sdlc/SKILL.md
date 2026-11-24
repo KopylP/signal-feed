@@ -18,7 +18,7 @@ otherwise do the step by hand as described here.
 
 | # | Phase | What to do | Details |
 |---|---|---|---|
-| 1 | **Orient** | Work on the branch the session gives you (`claude/...`). Never commit to `main` and never push to another branch. Read the folder `CLAUDE.md` files and `docs/README.md` | `CLAUDE.md` |
+| 1 | **Orient** | Work on the branch the session gives you; a branch name has no required prefix. Never commit to `main` unless the owner says so, and never push to another branch. Read the folder `CLAUDE.md` files and `docs/README.md` | `CLAUDE.md` |
 | 2 | **Clarify** | If something that matters is unclear (who is it for, what must stay the same), ask the owner before building. A small, fully specified change needs no questions | `superpowers:brainstorming` |
 | 3 | **Decide** | A hard-to-reverse choice (hosting, storage model, identity, pipeline shape, testing approach) gets an ADR before the code | `write-adr` |
 | 4 | **Plan** | A change with several steps gets a short written plan; a one-file fix does not | `superpowers:writing-plans` |
