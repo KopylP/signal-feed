@@ -48,7 +48,7 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 
 | Параметр | За замовчуванням | Опис |
 |---|---|---|
-| `Sources` | | username каналів і груп через кому |
+| `Sources` | шість SEO-каналів (`infra/variables.tf`) | username каналів і груп через кому |
 | `CollectorSchedule` | `0 0 * * * *` | CRON збору |
 | `DigestSchedule` | `0 0 8 * * *` | CRON дайджесту |
 | `AlertSchedule` | `0 30 * * * *` | CRON перевірки алертів |
@@ -71,8 +71,9 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `RetentionDays` | 1 | скільки днів назад зберігати пости: 1 означає вчорашню й сьогоднішню партиції |
 | `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
 
-**Де значення за замовчуванням.** Єдине джерело: `Shared/Settings/AgentOptions.cs`. У Terraform окремими змінними є лише обов'язкові й
-інфраструктурні значення (джерела, дані Telegram, розклади, контейнер сесії). Усе інше задається через змінну `app_settings`
+**Де значення за замовчуванням.** Єдине джерело: `Shared/Settings/AgentOptions.cs`. Виняток `Sources`: його значення за замовчуванням задано
+в `infra/variables.tf` (перевизначається в `terraform.tfvars` або змінною `TF_SOURCES` у GitHub). У Terraform окремими змінними є лише
+обов'язкові й інфраструктурні значення (джерела, дані Telegram, розклади, контейнер сесії). Усе інше задається через змінну `app_settings`
 з іменами з таблиці вище, наприклад `app_settings = { DigestSize = "6", AlertQuietHours = "23:00-07:00" }`.
 Якщо параметр не задано, діє значення з коду. Помилка в імені ключа не дає помилки, параметр просто ігнорується.
 
@@ -259,6 +260,12 @@ GitHub Variables (Settings → Secrets and variables → Actions → Variables),
 **Деплой вимкнений за замовчуванням.** Без змінної `DEPLOY_ENABLED` зі значенням `true` workflow лише збирає й тестує, а крок деплою
 пропускається. Коли будете готові розгортати, задайте цю змінну там же, де й решту.
 
+## Розробка з Claude Code
+
+У корені й у кожній частині проєкту (`infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`)
+лежить `CLAUDE.md` із правилами коду й команд. Вкладені файли підвантажуються, коли Claude працює з файлами в цій папці.
+Після змін, що впливають на правила, команди чи налаштування, оновлюйте відповідний `CLAUDE.md` разом із цим README.
+
 ## Безпека й вартість
 
 - У коді й репозиторії немає секретів. `local.settings.json` у `.gitignore`, у `local.settings.json.example` лише заглушки.
@@ -314,7 +321,8 @@ Directory.Packages.props   версії всіх NuGet-пакетів в одн�
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group й імена; variables, outputs, providers)
 prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
-.github/workflows/         build, test, deploy
+.github/workflows/         deploy.yml (build, test, deploy коду), infra.yml (ручний terraform plan/apply)
+CLAUDE.md                  правила для Claude Code; свій файл є й у infra/, src/*, tests/, prompts/, .github/
 ```
 
 **Нова фіча.** Створіть папку з функцією, логікою й інтерфейсами, адаптери покладіть у її підпапки, додайте `AddXxx()` для її
