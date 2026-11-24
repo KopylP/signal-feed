@@ -103,7 +103,7 @@ variable "cleanup_schedule" {
 
 variable "app_settings" {
   description = <<-EOT
-    Додаткові App Settings: будь-які параметри з src/PostAgent.Functions/AgentOptions.cs
+    Додаткові App Settings: будь-які параметри з src/PostAgent.Functions/Shared/Settings/AgentOptions.cs
     (DigestSize, AlertThreshold, AlertQuietHours, OpenAIModel, RetentionDays тощо).
     Якщо параметр не задано, діє значення за замовчуванням із коду. Імена мають збігатися з AgentOptions:
     помилка в імені не дає помилки, параметр просто ігнорується.

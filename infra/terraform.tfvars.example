@@ -23,7 +23,7 @@ telegram_phone   = "+380000000000"
 # alert_schedule     = "0 30 * * * *"
 # cleanup_schedule   = "0 0 3 * * *"
 
-# Решта налаштувань: будь-які параметри з src/PostAgent.Functions/AgentOptions.cs.
+# Решта налаштувань: будь-які параметри з src/PostAgent.Functions/Shared/Settings/AgentOptions.cs.
 # Що не задано, те бере значення за замовчуванням із коду. Імена мають збігатися точно.
 app_settings = {
   # DigestSize        = "5"
