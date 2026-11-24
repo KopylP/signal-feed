@@ -12,7 +12,8 @@ public sealed class SourceCursors(TableServiceClient tables) : ISourceCursors
     public async Task<int> GetLastPostIdAsync(string username, CancellationToken ct)
     {
         var cursor = await _table.GetEntityIfExistsAsync<TableEntity>(Partition, username, cancellationToken: ct);
-        return cursor.Value?.GetInt32("LastPostId") ?? 0;
+        // On a missing row, Value throws instead of returning null, so check HasValue first.
+        return cursor.HasValue ? cursor.Value?.GetInt32("LastPostId") ?? 0 : 0;
     }
 
     public Task SetLastPostIdAsync(string username, int lastPostId, CancellationToken ct) =>
