@@ -8,6 +8,7 @@ public static class StorageNames
     public const string CursorsTable = "ChannelState";
     public const string ChatBindingTable = "ChatBinding";
     public const string ScoringQueue = "to-score";
+    public const string RunNowQueue = "run-now";
     public const string SessionBlob = "wtelegram.session";
     public const string DefaultSessionContainer = "tg-session";
 }

@@ -1,4 +1,3 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using PostAgent.Collecting;
 using PostAgent.Shared.Posts;
@@ -8,17 +7,17 @@ using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Collecting;
 
-public class CollectorFunctionTests
+public class CollectorJobTests
 {
     private readonly InMemoryPostRepository _repo = new();
     private FakeScoringQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
 
-    private CollectorFunction CreateFunction(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
+    private CollectorJob CreateJob(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
     {
         var options = Microsoft.Extensions.Options.Options.Create(new AgentOptions { Sources = sources, ScoringBatchSize = 2 });
         var collector = new SourceCollector(reader, _repo, cursors, _queue, options, NullLogger<SourceCollector>.Instance);
-        return new(collector, _notifier, options, NullLogger<CollectorFunction>.Instance);
+        return new(collector, _notifier, options, NullLogger<CollectorJob>.Instance);
     }
 
     private static Func<int, SourceBatch> Channel(string username, params int[] ids) =>
@@ -30,7 +29,7 @@ public class CollectorFunctionTests
         var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 1, 2, 3) });
         var cursors = new FakeSourceCursors(new() { ["news"] = 0 });
 
-        await CreateFunction("news", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob("news", reader, cursors).RunAsync(CancellationToken.None);
 
         Assert.Equal(["news_1", "news_2", "news_3"], _repo.Added.Select(p => p.RowKey));
         Assert.Equal(_repo.Added.Select(p => p.ToRef()), _queue.Enqueued);
@@ -45,7 +44,7 @@ public class CollectorFunctionTests
         var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 8) });
         var cursors = new FakeSourceCursors(new() { ["news"] = 7 });
 
-        await CreateFunction("news", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob("news", reader, cursors).RunAsync(CancellationToken.None);
 
         Assert.Equal([("news", 7)], reader.Reads);
     }
@@ -60,7 +59,7 @@ public class CollectorFunctionTests
         });
         var cursors = new FakeSourceCursors();
 
-        await CreateFunction("bad,good", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob("bad,good", reader, cursors).RunAsync(CancellationToken.None);
 
         Assert.Equal(1, cursors.Values["good"]);
         Assert.DoesNotContain("bad", cursors.Values.Keys);
@@ -77,7 +76,7 @@ public class CollectorFunctionTests
         });
         var cursors = new FakeSourceCursors();
 
-        await CreateFunction("slow", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob("slow", reader, cursors).RunAsync(CancellationToken.None);
 
         Assert.Empty(cursors.Values);
         Assert.Empty(_notifier.Sent);
@@ -90,7 +89,7 @@ public class CollectorFunctionTests
         var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 1, 2) });
         var cursors = new FakeSourceCursors(new() { ["news"] = 0 });
 
-        await CreateFunction("news", reader, cursors).Run(new TimerInfo(), CancellationToken.None);
+        await CreateJob("news", reader, cursors).RunAsync(CancellationToken.None);
 
         Assert.Equal(0, cursors.Values["news"]);
         Assert.Contains("@news: queue down", Assert.Single(_notifier.Sent));

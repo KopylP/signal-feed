@@ -8,6 +8,24 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [pine] - 2026-11-24
+
+### Setup required
+- **Infrastructure change**: new `run-now` queue and the `Storage Queue Data Contributor` role for `deployer_object_id`
+  - Where: Terraform
+  - Value: none
+  - Apply: run the `infra` workflow with apply (or `terraform apply`) before the code merges. The app starts without it, but `tools/run-now.cs` cannot reach Azure until the role exists
+- **`ManualRunsEnabled`**: optional (default `false`)
+  - Where: App Setting (`app_settings`)
+  - Value: `true` only while you test a job with `tools/run-now.cs`, then `false` again
+  - Apply: `az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=true`
+
+### Added
+- **Start a job now**: `dotnet run tools/run-now.cs -- digest --storage <account>` puts a job name (`collect`, `digest`, `alert`, `cleanup`) into the `run-now` queue and the app runs it instead of waiting for the schedule.
+  - Enable: set `ManualRunsEnabled=true`; access to the queue is controlled by Azure roles
+  - Settings: `ManualRunsEnabled` (default `false`)
+  - Limits: it does not wait for the result (read the function logs); a failed job is not retried; `digest` and `alert` send real Telegram messages. See [run a job now](docs/user-guide/configuration.md#run-a-job-now)
+
 ## [raven] - 2026-11-24
 
 ### Setup required

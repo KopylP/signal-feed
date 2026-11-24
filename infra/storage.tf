@@ -39,3 +39,8 @@ resource "azurerm_storage_queue" "to_score" {
   name               = "to-score"
   storage_account_id = azurerm_storage_account.main.id
 }
+
+resource "azurerm_storage_queue" "run_now" {
+  name               = "run-now"
+  storage_account_id = azurerm_storage_account.main.id
+}

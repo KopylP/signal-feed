@@ -31,6 +31,7 @@ graph LR
 | `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
 | `PairingFunction` | HTTP `POST /api/telegram/webhook` (anonymous) | The bot's webhook: checks the secret token header, and binds the chat that sends `/start <TelegramPairingKey>` ([ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md)) |
 | `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`; today it deletes days older than `RetentionDays` from `Posts` |
+| `RunNowFunction` | queue `run-now` | Starts a job by name (`collect`, `digest`, `alert`, `cleanup`) for testing, only when `ManualRunsEnabled` is true. The timer functions and this one call the same `IJob` class, so the logic exists once |
 
 ```mermaid
 graph LR
@@ -59,6 +60,7 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 | Table | `ChannelState` | Per-source read cursor (never cleaned up) |
 | Table | `ChatBinding` | One row (`chat`/`digest`) with the paired chat id; inserted once, deleted by the operator to rebind |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
+| Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
 | Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin` |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
 
@@ -138,6 +140,7 @@ graph LR
 | Deployer (`var.deployer_object_id`) | Key Vault | Key Vault Secrets Officer |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Blob Data Contributor |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Table Data Contributor (to reset `ChatBinding`) |
+| Deployer (`var.deployer_object_id`) | Storage account | Storage Queue Data Contributor (to start a job with `tools/run-now.cs`) |
 
 `AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The secrets are App Settings of the form
 `@Microsoft.KeyVault(SecretUri=.../secrets/<name>/)`. Roles are defined in `infra/roles.tf`.
@@ -157,6 +160,7 @@ graph LR
 
 - **The webhook endpoint is public.** It is protected by the secret token header and the pairing key, not by a function key (Telegram cannot send one).
 - **No network isolation.** Storage and Key Vault are reachable over their public endpoints, protected by RBAC and TLS 1.2. A VNet or private endpoints have a standing cost, so they need an explicit decision.
+- **Anyone with write access to the `run-now` queue can start a job** (the function identity and the deployer; storage keys are not disabled either). The switch `ManualRunsEnabled` is off in Azure by default, so a message does nothing until the operator turns it on.
 - **The poison queue is not monitored.** No alert fires on `to-score-poison`.
 - **Single region, LRS.** Acceptable because posts are disposable and retention is short.
 - **Blob Data Owner** for the function is required by Flex Consumption for the deployment container and is broader than the table and queue roles.
