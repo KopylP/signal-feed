@@ -7,7 +7,12 @@ public class AgentOptionsValidatorTests
 {
     private static ValidateOptionsResult Validate(Action<AgentOptions> configure)
     {
-        var options = new AgentOptions { Sources = "news", TelegramChatId = 1 };
+        var options = new AgentOptions
+        {
+            Sources = "news",
+            TelegramPairingKey = "pairing-key-0123456789",
+            TelegramWebhookSecret = "webhook_secret-token",
+        };
         configure(options);
         return new AgentOptionsValidator().Validate(null, options);
     }
@@ -61,11 +66,40 @@ public class AgentOptionsValidatorTests
     }
 
     [Fact]
-    public void Missing_chat_id_is_rejected()
+    public void Chat_id_is_optional_because_pairing_can_provide_it()
     {
-        var result = Validate(o => o.TelegramChatId = 0);
+        Assert.True(Validate(o => o.TelegramChatId = 0).Succeeded);
+    }
 
-        Assert.Contains("TelegramChatId", result.FailureMessage);
+    [Fact]
+    public void A_short_pairing_key_is_rejected()
+    {
+        var result = Validate(o => o.TelegramPairingKey = "short");
+
+        Assert.Contains("TelegramPairingKey", result.FailureMessage);
+    }
+
+    [Theory]
+    [InlineData("has space")]
+    [InlineData("слово")]
+    [InlineData("semi;colon")]
+    public void A_webhook_secret_outside_the_telegram_alphabet_is_rejected(string secret)
+    {
+        var result = Validate(o => o.TelegramWebhookSecret = secret);
+
+        Assert.Contains("TelegramWebhookSecret", result.FailureMessage);
+    }
+
+    [Theory]
+    [InlineData(nameof(AgentOptions.TelegramPairingKey))]
+    [InlineData(nameof(AgentOptions.TelegramWebhookSecret))]
+    public void Unresolved_key_vault_reference_of_a_pairing_secret_is_reported(string setting)
+    {
+        var reference = "@Microsoft.KeyVault(SecretUri=https://kv.vault.azure.net/secrets/x/)";
+
+        var result = Validate(o => typeof(AgentOptions).GetProperty(setting)!.SetValue(o, reference));
+
+        Assert.Contains(setting, result.FailureMessage);
     }
 
     [Fact]

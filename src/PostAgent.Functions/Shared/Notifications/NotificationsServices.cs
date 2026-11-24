@@ -8,6 +8,8 @@ public static class NotificationsServices
     public static IServiceCollection AddNotifications(this IServiceCollection services)
     {
         services.AddSingleton<ITelemetryInitializer, TelegramTokenRedactor>();
+        services.AddSingleton<IChatBindingStore, ChatBindingStore>();
+        services.AddSingleton<ChatResolver>();
 
         // RemoveAllLoggers: токен бота входить в URL запиту, у логи він потрапити не повинен.
         services

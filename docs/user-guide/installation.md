@@ -17,7 +17,7 @@ Check that the Flex Consumption plan is available in your region (and change `lo
 az functionapp list-flexconsumption-locations -o table
 ```
 
-The installation has five steps: your rules, the Azure resources, the secrets, the Telegram sign-in, the code.
+The installation has six steps: your rules, the Azure resources, the secrets, the Telegram sign-in, the code, the chat.
 
 ## Step 1. Write your rules
 
@@ -50,6 +50,9 @@ KV=$(terraform output -raw key_vault_name)
 read -rsp "OpenAI API key: " V && az keyvault secret set --vault-name $KV --name OpenAIApiKey --value "$V" >/dev/null; echo
 read -rsp "Telegram bot token: " V && az keyvault secret set --vault-name $KV --name TelegramBotToken --value "$V" >/dev/null; echo
 read -rsp "Telegram api_hash: " V && az keyvault secret set --vault-name $KV --name TelegramApiHash --value "$V" >/dev/null; echo
+# two random values you do not have to remember: they connect your chat in step 6
+az keyvault secret set --vault-name $KV --name TelegramPairingKey --value "$(openssl rand -hex 16)" >/dev/null
+az keyvault secret set --vault-name $KV --name TelegramWebhookSecret --value "$(openssl rand -hex 32)" >/dev/null
 ```
 
 The app reads them through Key Vault references. If a reference is not picked up, check that the function's identity has the `Key Vault Secrets User` role and restart the app (`az functionapp restart`).
@@ -76,9 +79,38 @@ cd publish
 func azure functionapp publish $(terraform -chdir=../infra output -raw function_app_name)
 ```
 
+## Step 6. Connect your chat
+
+The agent does not need your chat id: you pair the chat by writing to the bot. First tell Telegram where to send the bot's messages (once, after the code is deployed):
+
+```bash
+KV=$(terraform -chdir=infra output -raw key_vault_name)
+secret() { az keyvault secret show --vault-name $KV --name "$1" --query value -o tsv; }
+HOST=$(az functionapp show -g $(terraform -chdir=infra output -raw resource_group_name) \
+  -n $(terraform -chdir=infra output -raw function_app_name) --query defaultHostName -o tsv)
+curl -s "https://api.telegram.org/bot$(secret TelegramBotToken)/setWebhook" \
+  --data-urlencode "url=https://$HOST/api/telegram/webhook" \
+  --data-urlencode "secret_token=$(secret TelegramWebhookSecret)" \
+  --data-urlencode 'allowed_updates=["message"]'
+echo "https://t.me/<your_bot_username>?start=$(secret TelegramPairingKey)"
+```
+
+`setWebhook` answers `{"ok":true,...}`. Open the printed link on the phone or desktop where you want the digest, press **Start**, and the bot replies «✅ Чат прив'язано».
+(Typing `/start <key>` to the bot works too.) The first chat that pairs wins. Other chats are ignored, even with the right key.
+
+To move the digest to another chat, delete the binding and pair again:
+
+```bash
+az storage entity delete --account-name $(terraform -chdir=infra output -raw storage_account_name) --auth-mode login \
+  --table-name ChatBinding --partition-key chat --row-key digest
+```
+
+Prefer a fixed chat? Set `telegram_chat_id` instead (see [Configuration](configuration.md)): pairing is then off.
+
 ## What to expect
 
 - The collector runs every hour, the digest arrives once a day (08:00 UTC by default), and cleanup runs at 03:00 UTC. Times are UTC: see [Configuration](configuration.md#schedule).
+- Until you pair the chat (step 6), the digest and alerts cannot be sent: each run fails and its posts wait for the next one.
 - Until the first collection the digest has nothing to send. If an hourly «Збір не вдався» ("Collection failed") message arrives, go to [troubleshooting](troubleshooting.md).
 
 ## Automatic deployment (optional)

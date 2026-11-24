@@ -17,6 +17,7 @@ You still need real credentials for Telegram and OpenAI: see the [overview](../u
 azurite --silent --location .azurite &
 cp src/PostAgent.Functions/local.settings.json.example src/PostAgent.Functions/local.settings.json
 # fill in the placeholders: OpenAI key, bot token, Telegram data
+# The webhook needs a public URL, so locally add "TelegramChatId": "<your chat id>" instead of pairing (pairing is then off).
 
 # one-off Telegram sign-in (the session goes to Azurite)
 export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380...

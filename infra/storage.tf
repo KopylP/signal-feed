@@ -25,6 +25,11 @@ resource "azurerm_storage_table" "channel_state" {
   storage_account_id = azurerm_storage_account.main.id
 }
 
+resource "azurerm_storage_table" "chat_binding" {
+  name               = "ChatBinding"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
 resource "azurerm_storage_table" "posts" {
   name               = "Posts"
   storage_account_id = azurerm_storage_account.main.id

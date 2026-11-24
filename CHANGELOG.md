@@ -8,6 +8,56 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [raven] - 2026-11-24
+
+### Setup required
+- **`TelegramPairingKey`**: required, the app does not start without it
+  - Where: Key Vault (secret)
+  - Value: any random string of at least 16 characters, for example `openssl rand -hex 16`
+  - Apply: `az keyvault secret set --vault-name <kv> --name TelegramPairingKey --value "$(openssl rand -hex 16)"`, before the code deploys
+- **`TelegramWebhookSecret`**: required, the app does not start without it
+  - Where: Key Vault (secret)
+  - Value: a random token of `A-Z a-z 0-9 _ -`, for example `openssl rand -hex 32`
+  - Apply: `az keyvault secret set --vault-name <kv> --name TelegramWebhookSecret --value "$(openssl rand -hex 32)"`, before the code deploys
+- **Infrastructure change**: new `ChatBinding` table, two Key Vault references, and the deployer gets `Storage Table Data Contributor`
+  - Where: Terraform
+  - Value: none
+  - Apply: run the `infra` workflow with apply (or `terraform apply`) first, then set the two secrets, then merge the code
+- **Connect the chat**: call Telegram `setWebhook`, then press **Start** in the bot with your pairing key
+  - Where: command line, after the code is deployed
+  - Value: webhook URL `https://<function-host>/api/telegram/webhook` with the `TelegramWebhookSecret` as `secret_token`
+  - Apply: [installation, step 6](docs/user-guide/installation.md#step-6-connect-your-chat). Until the chat is paired, the digest and alerts fail and their posts wait for the next run
+- **`telegram_chat_id` / `TF_TELEGRAM_CHAT_ID`**: now optional (default empty)
+  - Where: Terraform variable, GitHub Variable
+  - Value: leave it as it is to keep sending to the same chat; clear it to bind the chat by pairing instead
+  - Apply: nothing, an existing value keeps working and turns pairing off
+
+### Contract changes
+- **App Settings: `TelegramChatId` is optional** (compatible)
+  - Before: required, the app did not start without it
+  - After: optional; when set it overrides the paired chat, when empty the chat comes from pairing
+  - Affects: nothing for an existing setup that has it set
+  - Migration: none
+- **Storage: new table `ChatBinding`** (compatible)
+  - Before: no such table
+  - After: one row (partition `chat`, row `digest`, column `ChatId`) holds the paired chat; delete the row to pair another chat
+  - Affects: nothing
+  - Migration: none, Terraform creates the table and the app creates it locally
+- **HTTP: new anonymous endpoint `POST /api/telegram/webhook`** (compatible)
+  - Before: the app had only timer and queue triggers
+  - After: the bot's webhook; requests without the `X-Telegram-Bot-Api-Secret-Token` header are rejected with 401
+  - Affects: nothing
+  - Migration: none
+
+### Added
+- **Chat pairing**: write `/start <pairing key>` to the bot in a private chat and the agent remembers that chat for the digest and alerts. It replies «✅ Чат прив'язано. Дайджести й алерти надходитимуть сюди.»
+  - Enable: on by default; needs the setup above
+  - Settings: `TelegramPairingKey`, `TelegramWebhookSecret` (secrets); `TelegramChatId` stays as an override
+  - Limits: one chat only, the first pairing wins; groups and channels cannot be paired; wrong keys get no reply. See [installation](docs/user-guide/installation.md#step-6-connect-your-chat)
+
+### Security
+- The webhook compares the secret token and the pairing key in constant time and never logs either.
+
 ## [iris] - 2026-11-24
 
 ### Setup required

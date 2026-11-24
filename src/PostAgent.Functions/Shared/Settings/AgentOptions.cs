@@ -46,7 +46,10 @@ public sealed class AgentOptions
 
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = string.Empty;
+    // Необов'язковий: якщо не задано, чат береться з прив'язки (/start <TelegramPairingKey>).
     public long TelegramChatId { get; set; }
+    [Required] public string TelegramPairingKey { get; set; } = string.Empty;
+    [Required] public string TelegramWebhookSecret { get; set; } = string.Empty;
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = string.Empty;
     [Required] public string TelegramPhone { get; set; } = string.Empty;

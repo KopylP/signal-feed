@@ -11,6 +11,8 @@
 | «Збір не вдався» ("Collection failed") arrives every hour | Collection fails, most often because the Telegram session expired | Repeat the Telegram sign-in ([installation, step 4](installation.md#step-4-sign-in-to-telegram)). The message repeats hourly until the cause is fixed |
 | One group or channel never appears | The reading account cannot see it | Join it with the reading account |
 | A new busy group is skipped on the first run | Reading a day of history means many requests, and Telegram answered `FLOOD_WAIT` | Nothing: the source is skipped and retried on the next run |
+| No digest or alert arrives, the log says «No Telegram chat is bound yet» | The chat was never paired | Do [installation, step 6](installation.md#step-6-connect-your-chat) |
+| The bot does not answer `/start` | The webhook is not set, the key is wrong, or the agent is already bound to another chat | Check that `setWebhook` returned `ok`; use the `TelegramPairingKey` from Key Vault; to rebind, delete the row (step 6). Wrong keys are never answered, look for «Pairing rejected» in the logs |
 | No digest arrives | The schedule is in UTC, or the deploy failed | Check [the schedule](configuration.md#schedule) and the Actions run or the function app logs |
 | No alerts arrive | The group is not in `AlertSources`, quiet hours are on, or the cooldown is active | Check `AlertSources`, `AlertQuietHours` and `AlertCooldownHours`. Posts held back by quiet hours go into the digest |
 | Posts seem scored against nonsense | The placeholders in `scoring.md` were never replaced | Write your topics and examples ([installation, step 1](installation.md#step-1-write-your-rules)) and deploy again |

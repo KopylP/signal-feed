@@ -24,7 +24,9 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours |
 | `OpenAIModel` | `gpt-5.4-nano` | scoring model |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
-| `TelegramChatId`, `TelegramApiId`, `TelegramPhone` | | where to send; account data for reading |
+| `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (at least 16 characters) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
+| `TelegramChatId` | empty | optional fixed chat id; when set it overrides the paired chat and turns pairing off |
+| `TelegramApiId`, `TelegramPhone` | | account data for reading |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
 | `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
 | `RetentionDays` | 1 | how many days back to keep posts: 1 means yesterday's and today's partitions |
@@ -40,7 +42,7 @@ If a parameter is not set, the value from code applies. A typo in a key name is 
 
 ### Validation
 
-Settings are validated on startup: required values (sources, OpenAI key, bot token, Telegram data), ranges
+Settings are validated on startup: required values (sources, OpenAI key, bot token, pairing key, webhook secret, Telegram data), ranges
 (for example `DigestSize` and `AlertMaxPerRun` from 1 to 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
 the `AlertQuietHours` format with a time zone, and that `AlertWindowHours + AlertCooldownHours` does not exceed `RetentionDays * 24`.
 If something is wrong, the app does not start and the log names the parameter.

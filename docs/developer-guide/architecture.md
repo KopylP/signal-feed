@@ -29,6 +29,7 @@ graph LR
 | `ScorerFunction` | queue `to-score` | Scores posts with OpenAI (Structured Outputs) and writes Score, Topic, Reason, DuplicateOf |
 | `AlertFunction` | `%AlertSchedule%` | Sends an alert about a burst or a very important message in the groups of `AlertSources` |
 | `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
+| `PairingFunction` | HTTP `POST /api/telegram/webhook` (anonymous) | The bot's webhook: checks the secret token header, and binds the chat that sends `/start <TelegramPairingKey>` ([ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md)) |
 | `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`; today it deletes days older than `RetentionDays` from `Posts` |
 
 ```mermaid
@@ -56,6 +57,7 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 |---|---|---|
 | Table | `Posts` | Posts and bundles, partitioned by day so cleanup deletes whole partitions; status, score, topic, reason, duplicate link, alert mark |
 | Table | `ChannelState` | Per-source read cursor (never cleaned up) |
+| Table | `ChatBinding` | One row (`chat`/`digest`) with the paired chat id; inserted once, deleted by the operator to rebind |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin` |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
@@ -76,7 +78,7 @@ Everything lives in one resource group `rg-<prefix>`. Names follow `<abbreviatio
 | Application Insights | `appi-<prefix>` | `azurerm_application_insights` | workspace-based |
 | Budget | `budget-<prefix>` | `azurerm_consumption_budget_resource_group` | monthly, alerts at 80% and 100% |
 
-Secrets in Key Vault (set by hand, never by Terraform): `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`.
+Secrets in Key Vault (set by hand, never by Terraform): `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`, `TelegramPairingKey`, `TelegramWebhookSecret`.
 
 ```mermaid
 graph LR
@@ -89,18 +91,18 @@ graph LR
     subgraph RG["Resource group rg-prefix"]
         subgraph COMPUTE["Compute"]
             PLAN["plan-prefix<br/>Flex Consumption FC1"]
-            FUNC["func-prefix<br/>dotnet-isolated, 512 MB, max 10<br/>Collector, Scorer, Alert, Digest, Cleanup"]
+            FUNC["func-prefix<br/>dotnet-isolated, 512 MB, max 10<br/>Collector, Scorer, Alert, Digest, Cleanup, Pairing"]
             PLAN --> FUNC
         end
 
         subgraph DATA["Data: storage account st..."]
-            TBL["Tables<br/>Posts, ChannelState"]
+            TBL["Tables<br/>Posts, ChannelState, ChatBinding"]
             QUE["Queue<br/>to-score, to-score-poison"]
             BLB["Blob containers<br/>deployment-package, session"]
         end
 
         subgraph SEC["Security"]
-            KV["Key Vault kv-prefix<br/>RBAC, soft delete 7d<br/>OpenAIApiKey, TelegramBotToken,<br/>TelegramApiHash"]
+            KV["Key Vault kv-prefix<br/>RBAC, soft delete 7d<br/>OpenAIApiKey, TelegramBotToken,<br/>TelegramApiHash, TelegramPairingKey,<br/>TelegramWebhookSecret"]
         end
 
         subgraph MON["Monitoring and cost"]
@@ -118,6 +120,7 @@ graph LR
     FUNC -->|"telemetry"| AI
     FUNC ==>|"reads channels and groups"| TG
     FUNC ==>|"digest and alerts"| TG
+    TG ==>|"webhook: /start key"| FUNC
     FUNC -->|"scoring and summary"| OAI
     ADM -.->|"Secrets Officer"| KV
     ADM -.->|"Blob Data Contributor, code deploy"| BLB
@@ -134,8 +137,9 @@ graph LR
 | Function App (system-assigned) | Key Vault | Key Vault Secrets User |
 | Deployer (`var.deployer_object_id`) | Key Vault | Key Vault Secrets Officer |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Blob Data Contributor |
+| Deployer (`var.deployer_object_id`) | Storage account | Storage Table Data Contributor (to reset `ChatBinding`) |
 
-`AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The three secrets are App Settings of the form
+`AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The secrets are App Settings of the form
 `@Microsoft.KeyVault(SecretUri=.../secrets/<name>/)`. Roles are defined in `infra/roles.tf`.
 
 ## Design decisions
@@ -146,10 +150,12 @@ graph LR
 | Secret values never in Terraform state | Terraform state is plain text and read by the pipeline identity; Key Vault references keep values out of it | [ADR-0003](../adr/0003-keep-secret-values-out-of-terraform-state.md) |
 | Terraform runs from a manual workflow | Changes are rare and can be destructive: plan first, apply on request, with a plan visible in the run summary | [ADR-0004](../adr/0004-run-terraform-from-a-manual-workflow.md) |
 | Every deploy is a release with a build-counter version | Traceable versions and simple rollback | [ADR-0005](../adr/0005-release-every-deploy-with-a-build-counter-version.md) |
+| Bind the chat with a pairing key over a webhook | The operator does not have to look up a chat id; the first chat with the secret key wins and the id is stored in a table | [ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md) |
 | Fix formatting and validate Terraform in the build job | One pipeline gates the deploy: a broken format or Terraform change cannot reach it | [ADR-0006](../adr/0006-fix-formatting-and-validate-terraform-in-the-build-job.md) |
 
 ## Known gaps
 
+- **The webhook endpoint is public.** It is protected by the secret token header and the pairing key, not by a function key (Telegram cannot send one).
 - **No network isolation.** Storage and Key Vault are reachable over their public endpoints, protected by RBAC and TLS 1.2. A VNet or private endpoints have a standing cost, so they need an explicit decision.
 - **The poison queue is not monitored.** No alert fires on `to-score-poison`.
 - **Single region, LRS.** Acceptable because posts are disposable and retention is short.

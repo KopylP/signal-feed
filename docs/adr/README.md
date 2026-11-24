@@ -30,3 +30,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0005](0005-release-every-deploy-with-a-build-counter-version.md) | Release every deploy with a build-counter version | Accepted |
 | [0006](0006-fix-formatting-and-validate-terraform-in-the-build-job.md) | Fix formatting and validate Terraform in the build job | Accepted |
 | [0007](0007-name-each-release-with-a-changelog-word.md) | Name each release with a changelog word | Accepted |
+| [0008](0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md) | Bind the Telegram chat with a pairing key over a webhook | Accepted |

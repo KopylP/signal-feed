@@ -48,6 +48,7 @@ public static class StorageRegistration
         var tables = services.GetRequiredService<TableServiceClient>();
         await tables.CreateTableIfNotExistsAsync(StorageNames.PostsTable, ct);
         await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable, ct);
+        await tables.CreateTableIfNotExistsAsync(StorageNames.ChatBindingTable, ct);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;

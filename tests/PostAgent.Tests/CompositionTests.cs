@@ -6,6 +6,7 @@ using PostAgent.Alerts;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
+using PostAgent.Pairing;
 using PostAgent.Scoring;
 using PostAgent.Shared.Settings;
 
@@ -21,6 +22,8 @@ public class CompositionTests
         ["OpenAIApiKey"] = "key",
         ["TelegramBotToken"] = "123456:ABC-DEF",
         ["TelegramChatId"] = "-1001234567890",
+        ["TelegramPairingKey"] = "pairing-key-0123456789",
+        ["TelegramWebhookSecret"] = "webhook_secret-token",
         ["TelegramApiId"] = "12345",
         ["TelegramApiHash"] = "hash",
         ["TelegramPhone"] = "+380000000000",
@@ -65,6 +68,7 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<AlertFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PairingFunction>(services));
     }
 
     [Fact]

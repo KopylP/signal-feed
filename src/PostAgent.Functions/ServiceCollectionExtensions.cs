@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
+using PostAgent.Pairing;
 using PostAgent.Scoring;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Infrastructure;
@@ -28,6 +29,7 @@ public static class ServiceCollectionExtensions
             .AddAi()
             .AddPosts()
             .AddNotifications()
+            .AddPairing()
             .AddCollecting()
             .AddScoring()
             .AddDigest()

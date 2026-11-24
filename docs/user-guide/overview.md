@@ -37,10 +37,11 @@ The agent runs by itself in your own Azure subscription. Nothing is shared with 
 
 ## Privacy and security
 
-- Secrets (OpenAI key, bot token, Telegram `api_hash`) live in Azure Key Vault. They are not in the code, the repository or the Terraform state.
+- Secrets (OpenAI key, bot token, Telegram `api_hash`, pairing key, webhook secret) live in Azure Key Vault. They are not in the code, the repository or the Terraform state.
 - OpenAI receives post texts and, for groups, author names and participant usernames.
   This is personal data of third parties, even though the sources are public. Decide whether that is acceptable for the groups you follow.
 - The bot token never reaches logs or telemetry.
+- The bot answers only the chat that pairs first with your secret key; messages from anyone else are ignored.
 
 ## Where to go next
 

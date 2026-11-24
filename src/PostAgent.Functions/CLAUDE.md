@@ -17,7 +17,12 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Ranges and required values use DataAnnotations; more complex checks go in `AgentOptionsValidator`. Settings are validated on startup (`ValidateOnStart`).
 - Schedules are not part of `AgentOptions`: the `[TimerTrigger("%Name%")]` attributes read them directly.
 - When you add or change a parameter, update the table in `docs/user-guide/configuration.md` and `local.settings.json.example`; for Azure see `infra/CLAUDE.md`.
-- Secrets (`OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`) come from Key Vault. Never log them; `TelegramTokenRedactor` strips the bot token from telemetry.
+- Secrets (`OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`, `TelegramPairingKey`, `TelegramWebhookSecret`) come from Key Vault. Never log them; `TelegramTokenRedactor` strips the bot token from telemetry.
+
+## Public endpoint
+
+- `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read.
+- Never reply to a wrong key and never log a key or the secret. The first pairing wins; `TelegramChatId`, when set, overrides the stored chat and turns pairing off (ADR-0008).
 
 ## Data and queues
 

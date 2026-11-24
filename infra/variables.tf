@@ -54,8 +54,9 @@ variable "sources" {
 }
 
 variable "telegram_chat_id" {
-  description = "Where to send the digest and alerts (numeric chat id)."
+  description = "Optional override: numeric id of the chat for the digest and alerts. Leave empty to bind the chat by sending /start <TelegramPairingKey> to the bot."
   type        = string
+  default     = ""
 }
 
 variable "telegram_api_id" {

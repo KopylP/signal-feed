@@ -20,10 +20,11 @@ src/PostAgent.Functions/
 ├── Digest/                daily digest
 │   └── Infrastructure/    AI summary and its response schema
 ├── Alerts/                alerts about bursts in groups
+├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
-│   ├── Notifications/     sending to Telegram (Telegram/: Telegram.Bot)
+│   ├── Notifications/     sending to Telegram, ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
 │   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)

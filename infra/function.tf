@@ -18,11 +18,12 @@ locals {
 
       Sources              = var.sources
       AlertSources         = var.alert_sources
-      TelegramChatId       = var.telegram_chat_id
       TelegramApiId        = var.telegram_api_id
       TelegramPhone        = var.telegram_phone
       SessionBlobContainer = var.session_blob_container
     },
+    # Optional override: without it the chat is bound by sending /start <TelegramPairingKey> to the bot.
+    var.telegram_chat_id == "" ? {} : { TelegramChatId = var.telegram_chat_id },
     { for name, value in local.schedules : name => lookup(var.app_settings, name, value) },
     # Secrets: Key Vault references only, the values never reach the state.
     local.secret_reference,

@@ -9,6 +9,7 @@ locals {
   deployer_roles = {
     secrets = { scope = azurerm_key_vault.main.id, role = "Key Vault Secrets Officer" }
     blob    = { scope = azurerm_storage_account.main.id, role = "Storage Blob Data Contributor" }
+    table   = { scope = azurerm_storage_account.main.id, role = "Storage Table Data Contributor" }
   }
 }
 
@@ -20,7 +21,7 @@ resource "azurerm_role_assignment" "function" {
   principal_id         = azurerm_function_app_flex_consumption.main.identity[0].principal_id
 }
 
-# You: set secrets in Key Vault and upload the Telegram session (TgLogin).
+# You: set secrets in Key Vault, upload the Telegram session (TgLogin) and reset the chat binding (ChatBinding table).
 resource "azurerm_role_assignment" "deployer" {
   for_each             = local.deployer_roles
   scope                = each.value.scope

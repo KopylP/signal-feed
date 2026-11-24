@@ -24,7 +24,8 @@ public class AgentOptionsTests
         Sources = "news",
         OpenAIApiKey = "key",
         TelegramBotToken = "token",
-        TelegramChatId = 1,
+        TelegramPairingKey = "pairing-key-0123456789",
+        TelegramWebhookSecret = "webhook_secret-token",
         TelegramApiId = 12345,
         TelegramApiHash = "hash",
         TelegramPhone = "+380000000000",
@@ -47,6 +48,8 @@ public class AgentOptionsTests
     [InlineData(nameof(AgentOptions.OpenAIApiKey))]
     [InlineData(nameof(AgentOptions.TelegramBotToken))]
     [InlineData(nameof(AgentOptions.TelegramApiHash))]
+    [InlineData(nameof(AgentOptions.TelegramPairingKey))]
+    [InlineData(nameof(AgentOptions.TelegramWebhookSecret))]
     public void Missing_required_setting_is_reported_by_name(string setting)
     {
         var options = Complete();

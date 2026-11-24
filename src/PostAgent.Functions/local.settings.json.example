@@ -31,7 +31,8 @@
     "OpenAIApiKey": "<openai-api-key>",
 
     "TelegramBotToken": "<bot-token>",
-    "TelegramChatId": "<your-chat-id>",
+    "TelegramPairingKey": "<random-key-of-16+-characters>",
+    "TelegramWebhookSecret": "<random-token-A-Za-z0-9_->",
     "TelegramApiId": "<api-id>",
     "TelegramApiHash": "<api-hash>",
     "TelegramPhone": "<+380...>",
