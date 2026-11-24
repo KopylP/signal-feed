@@ -7,8 +7,9 @@
 //
 // --storage defaults to the AzureWebJobsStorage environment variable, then to Azurite. A bare account
 // name uses DefaultAzureCredential (az login), which needs "Storage Queue Data Contributor" on the account;
-// no storage keys. A connection string is for Azurite only: never pass an account key on the command line. The job runs only if the app has ManualRunsEnabled=true. The command does not wait
-// for the job: read the result in the function logs.
+// no storage keys. A connection string is for Azurite only: never pass an account key on the command line.
+// The job runs only if the app has ManualRunsEnabled=true. The command does not wait for the job:
+// read the result in the function logs.
 // Keep the queue name and the job names in sync with StorageNames.RunNowQueue and the IJob names (a test checks it).
 
 using Azure.Identity;
