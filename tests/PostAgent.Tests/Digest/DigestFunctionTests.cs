@@ -66,6 +66,6 @@ public class DigestFunctionTests
 
         await CreateFunction(repo, WithOverview("О")).Run(new TimerInfo(), CancellationToken.None);
 
-        Assert.Equal(DigestBuilder.QueryStart(Now), repo.QueriedSince);
+        Assert.Equal(DigestSelector.QueryStart(Now), repo.QueriedSince);
     }
 }

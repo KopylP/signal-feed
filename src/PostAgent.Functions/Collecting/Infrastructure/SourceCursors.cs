@@ -1,6 +1,6 @@
 using Azure.Data.Tables;
 
-namespace PostAgent.Collecting.Storage;
+namespace PostAgent.Collecting.Infrastructure;
 
 public sealed class SourceCursors(TableServiceClient tables) : ISourceCursors
 {

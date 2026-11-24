@@ -1,5 +1,5 @@
-using PostAgent.Collecting.Storage;
-using PostAgent.Collecting.Telegram;
+using PostAgent.Collecting.Infrastructure;
+using PostAgent.Collecting.Infrastructure.Telegram;
 
 namespace PostAgent.Collecting;
 

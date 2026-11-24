@@ -2,7 +2,7 @@ using System.Text.Json;
 using Azure.Storage.Queues;
 using PostAgent.Shared.Posts;
 
-namespace PostAgent.Scoring.Storage;
+namespace PostAgent.Scoring.Infrastructure;
 
 public sealed class ScoringQueue(QueueClient queue) : IScoringQueue
 {

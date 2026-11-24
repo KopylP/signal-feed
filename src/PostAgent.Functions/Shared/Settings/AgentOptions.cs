@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using PostAgent.Collecting.Telegram;
+using PostAgent.Collecting.Infrastructure.Telegram;
 using PostAgent.Collecting;
 
 namespace PostAgent.Shared.Settings;

@@ -1,4 +1,4 @@
-namespace PostAgent.Collecting.Telegram;
+namespace PostAgent.Collecting.Infrastructure.Telegram;
 
 public static class SessionBlob
 {

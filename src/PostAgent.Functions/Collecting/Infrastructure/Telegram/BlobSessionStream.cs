@@ -1,6 +1,6 @@
 using Azure.Storage.Blobs;
 
-namespace PostAgent.Collecting.Telegram;
+namespace PostAgent.Collecting.Infrastructure.Telegram;
 
 // Сховище сесії WTelegramClient у Blob Storage. Читається в пам'ять, а кожен Flush
 // (бібліотека викликає його при зміні сесії) завантажує вміст назад у blob.

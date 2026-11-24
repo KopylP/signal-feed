@@ -4,7 +4,7 @@ using PostAgent.Shared.Posts;
 
 namespace PostAgent.Tests.Digest;
 
-public class DigestBuilderTests
+public class DigestSelectorTests
 {
     [Fact]
     public void Normal_day_takes_best_posts_sorted_by_score_then_newer_first()
@@ -18,7 +18,7 @@ public class DigestBuilderTests
             Post("e", score: 3, hoursAgo: 1),
         };
 
-        var items = DigestBuilder.Build(posts, Options(o => o.DigestSize = 3), Now);
+        var items = DigestSelector.Build(posts, Options(o => o.DigestSize = 3), Now);
 
         Assert.Equal(["a", "c", "b"], items.Select(i => i.Post.RowKey));
         Assert.All(items, i => Assert.True(i.IsInteresting));
@@ -29,7 +29,7 @@ public class DigestBuilderTests
     {
         var posts = new[] { Post("a", score: 5), Post("b", score: 6) };
 
-        var items = DigestBuilder.Build(posts, Options(o => o.InterestingThreshold = 7), Now);
+        var items = DigestSelector.Build(posts, Options(o => o.InterestingThreshold = 7), Now);
 
         Assert.Equal(["b", "a"], items.Select(i => i.Post.RowKey));
         Assert.All(items, i => Assert.False(i.IsInteresting));
@@ -38,14 +38,14 @@ public class DigestBuilderTests
     [Fact]
     public void Score_equal_to_threshold_is_interesting()
     {
-        var items = DigestBuilder.Build([Post("a", score: 7)], Options(o => o.InterestingThreshold = 7), Now);
+        var items = DigestSelector.Build([Post("a", score: 7)], Options(o => o.InterestingThreshold = 7), Now);
         Assert.True(items[0].IsInteresting);
     }
 
     [Fact]
     public void Day_without_any_posts_gives_empty_digest()
     {
-        Assert.Empty(DigestBuilder.Build([], Options(), Now));
+        Assert.Empty(DigestSelector.Build([], Options(), Now));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class DigestBuilderTests
     {
         var posts = new[] { Post("a", score: 9), Post("b", score: 4, duplicateOf: "a") };
 
-        var items = DigestBuilder.Build(posts, Options(), Now);
+        var items = DigestSelector.Build(posts, Options(), Now);
 
         Assert.Equal(["a"], items.Select(i => i.Post.RowKey));
     }
@@ -63,7 +63,7 @@ public class DigestBuilderTests
     {
         var posts = new[] { Post("old", score: 8, hoursAgo: 30), Post("older", score: 8, hoursAgo: 60) };
 
-        var items = DigestBuilder.Build(posts, Options(), Now);
+        var items = DigestSelector.Build(posts, Options(), Now);
 
         Assert.Equal(["old"], items.Select(i => i.Post.RowKey));
     }
@@ -73,7 +73,7 @@ public class DigestBuilderTests
     {
         var posts = new[] { Post("fresh", score: 2, hoursAgo: 2), Post("old", score: 9, hoursAgo: 30) };
 
-        var items = DigestBuilder.Build(posts, Options(), Now);
+        var items = DigestSelector.Build(posts, Options(), Now);
 
         Assert.Equal(["fresh"], items.Select(i => i.Post.RowKey));
     }
@@ -88,7 +88,7 @@ public class DigestBuilderTests
             Post("ok", score: 5),
         };
 
-        var items = DigestBuilder.Build(posts, Options(), Now);
+        var items = DigestSelector.Build(posts, Options(), Now);
 
         Assert.Equal(["ok"], items.Select(i => i.Post.RowKey));
     }
@@ -99,7 +99,7 @@ public class DigestBuilderTests
     {
         var posts = new[] { Post("fresh", score: 2, hoursAgo: 2), Post("late", score: 9, hoursAgo: 25) };
 
-        var items = DigestBuilder.Build(posts, Options(), Now);
+        var items = DigestSelector.Build(posts, Options(), Now);
 
         Assert.Equal(["late", "fresh"], items.Select(i => i.Post.RowKey));
     }

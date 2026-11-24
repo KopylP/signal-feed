@@ -3,8 +3,8 @@ using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.Options;
-using PostAgent.Collecting.Storage;
-using PostAgent.Scoring.Storage;
+using PostAgent.Collecting.Infrastructure;
+using PostAgent.Scoring.Infrastructure;
 using PostAgent.Shared.Posts.Storage;
 using PostAgent.Shared.Settings;
 

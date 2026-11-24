@@ -302,19 +302,17 @@ To replace the model or the provider, it is enough to register `IChatClient` dif
 ## Structure
 
 The code is organized by feature: each folder holds everything for one capability (function, logic, interfaces, service registration).
-The technical details of a feature (Telegram, Azure, model) live in its subfolders, and whatever several features share lives in `Shared/`. The namespace matches
+The adapters of a feature (Telegram, Azure, model) live in its `Infrastructure/` subfolder, and whatever several features share lives in `Shared/`. The namespace matches
 the folder path, and dependencies between features are visible from `using`.
 
 ```
 src/PostAgent.Functions/
 ├── Collecting/            collecting posts from Telegram
-│   ├── Telegram/          channel and group reader (WTelegramClient), session in Blob
-│   └── Storage/           source read cursors
+│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
-│   ├── Ai/                model call
-│   └── Storage/           to-score queue
+│   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
-│   └── Ai/                AI summary
+│   └── Infrastructure/    AI summary and its response schema
 ├── Alerts/                alerts about bursts in groups
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features

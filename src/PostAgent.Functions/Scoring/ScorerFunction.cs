@@ -1,5 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
-using PostAgent.Scoring.Storage;
+using PostAgent.Scoring.Infrastructure;
 using PostAgent.Shared.Posts;
 
 namespace PostAgent.Scoring;

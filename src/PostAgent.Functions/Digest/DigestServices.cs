@@ -1,4 +1,4 @@
-using PostAgent.Digest.Ai;
+using PostAgent.Digest.Infrastructure;
 
 namespace PostAgent.Digest;
 

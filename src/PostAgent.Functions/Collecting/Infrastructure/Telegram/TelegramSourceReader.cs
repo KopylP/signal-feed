@@ -6,7 +6,7 @@ using WTelegram;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 
-namespace PostAgent.Collecting.Telegram;
+namespace PostAgent.Collecting.Infrastructure.Telegram;
 
 public sealed class TelegramSourceReader(
     IOptions<AgentOptions> options,

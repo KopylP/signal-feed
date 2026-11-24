@@ -44,5 +44,3 @@ public sealed class PostEntity : ITableEntity
         Status = PostStatus.Scored;
     }
 }
-
-public sealed record PostRef(string PartitionKey, string RowKey);
