@@ -333,7 +333,7 @@ Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
 prompts/                   scoring.md (scoring) and digest.md (digest summary)
-docs/architecture.md        Azure resources and how they connect (Mermaid diagram)
+docs/architecture.md         Azure resources and how they connect (Mermaid diagram)
 docs/adr/                  architecture decision records (why, not what)
 .claude/                   project skills and the commit guard hook
 .github/workflows/         deploy.yml (format, build, test, code deploy), infra.yml (manual terraform plan/apply)
