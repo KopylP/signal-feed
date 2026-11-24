@@ -60,6 +60,30 @@ public class PairingWebhookTests
     }
 
     [Fact]
+    public async Task A_body_of_exactly_the_limit_is_accepted()
+    {
+        var store = new InMemoryChatBindingStore();
+        var update = StartUpdate();
+        var padded = update + new string(' ', PairingWebhook.MaxBodyBytes - Encoding.UTF8.GetByteCount(update));
+
+        var status = await Webhook(store).HandleAsync(Secret, Body(padded), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(42, store.Bound);
+    }
+
+    [Fact]
+    public async Task A_body_with_a_utf8_byte_order_mark_is_still_read()
+    {
+        var store = new InMemoryChatBindingStore();
+        var withBom = new MemoryStream([0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes(StartUpdate())]);
+
+        var status = await Webhook(store).HandleAsync(Secret, withBom, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+    }
+
+    [Fact]
     public async Task A_body_over_the_limit_is_rejected_without_parsing()
     {
         var store = new InMemoryChatBindingStore();

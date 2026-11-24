@@ -34,7 +34,7 @@ public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions
         Update? update;
         try
         {
-            update = JsonSerializer.Deserialize<Update>(body, JsonBotAPI.Options);
+            update = JsonSerializer.Deserialize<Update>(body.AsSpan(), JsonBotAPI.Options);
         }
         catch (JsonException)
         {
@@ -59,7 +59,7 @@ public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions
         return HttpStatusCode.OK;
     }
 
-    private static async Task<string?> ReadBodyAsync(Stream stream, CancellationToken ct)
+    private static async Task<byte[]?> ReadBodyAsync(Stream stream, CancellationToken ct)
     {
         using var buffer = new MemoryStream();
         var chunk = new byte[4096];
@@ -74,6 +74,7 @@ public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions
             buffer.Write(chunk, 0, read);
         }
 
-        return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
+        var bytes = buffer.ToArray();
+        return bytes.AsSpan().StartsWith(Encoding.UTF8.Preamble) ? bytes[Encoding.UTF8.Preamble.Length..] : bytes;
     }
 }
