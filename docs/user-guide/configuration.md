@@ -79,6 +79,7 @@ The jobs are `collect`, `digest`, `alert` and `cleanup`. `digest` and `alert` se
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=true   # restarts the app
 az login   # your account needs "Storage Queue Data Contributor" on the storage account (granted by Terraform to deployer_object_id)
+export AZURE_TOKEN_CREDENTIALS=AzureCliCredential   # use only your az login; without it the credential lookup can hang on some machines
 dotnet run tools/run-now.cs -- digest --storage <storage-account-name>
 az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=false
 ```

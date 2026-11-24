@@ -1,5 +1,8 @@
 #:package Azure.Storage.Queues
 #:package Azure.Identity
+// File-based apps publish with Native AOT by default, which pulls in Microsoft.DotNet.ILCompiler. The tool only runs through `dotnet run`,
+// and that package's audit warning (NU1903) is an error here.
+#:property PublishAot=false
 
 // Starts a job now instead of waiting for its schedule, by putting its name into the run-now queue.
 //
