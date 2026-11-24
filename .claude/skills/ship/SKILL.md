@@ -24,7 +24,7 @@ and there is no manual release path. Infra apply and deploy work only from `main
 ## Merge
 
 Open a pull request (title written as a release note), wait for the `build-test` check, then squash merge once the user confirms.
-The pipeline is skipped only when every changed file is under `docs/**`, `README.md`, a `CLAUDE.md`, `.claude/**` or `infra/**`; any other file in the diff runs it.
+The pipeline is skipped only when every changed file is under `docs/**`, `README.md`, `CHANGELOG.md`, a `CLAUDE.md`, `.claude/**` or `infra/**`; any other file in the diff runs it.
 Asked to "release" a change that skips it: explain that a release exists only for code changes, and merge it without one.
 
 ## Verify

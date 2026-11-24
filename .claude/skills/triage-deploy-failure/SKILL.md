@@ -34,11 +34,11 @@ a Key Vault reference that does not resolve (secret missing, or the function ide
 
 - The digest always sends something (even "no posts"), so silence means the run never finished.
 - Timer history: `requests | where name == "DigestFunction" | order by timestamp desc | take 20` (use the failing function's name). No rows means the schedule: CRON is UTC, check daylight saving.
-- Failures hourly with "Collection failed": the Telegram session expired. Repeat the TgLogin step in the README.
+- Failures hourly with "Collection failed": the Telegram session expired. Repeat the TgLogin step in `docs/user-guide/installation.md` (step 4).
 - Scoring stuck: check the `to-score` and `to-score-poison` queue lengths; poisoned posts stay `New` until cleanup.
 - OpenAI errors: the digest still arrives without a summary.
 
 ## Fix and record
 
 Fix at the failing layer: a bad setting is fixed through `infra`, not by rolling back code. Roll back code (the `ship` skill, run manually as `/ship`) only if the new code caused it.
-If a missing rule or step caused this, add it to the matching `CLAUDE.md` or the README "Known limitations".
+If a missing rule or step caused this, add it to the matching `CLAUDE.md` or `docs/user-guide/troubleshooting.md`.

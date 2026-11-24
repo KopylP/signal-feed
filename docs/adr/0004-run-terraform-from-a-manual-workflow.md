@@ -26,3 +26,7 @@ The pipeline identity (App Registration with a federated credential) and the sta
 The one-time bootstrap (state storage, identity, three role assignments) is documented in the README.
 The identity needs Contributor and Role Based Access Control Administrator at subscription scope, which is broad; narrowing it to a resource group is a possible follow-up.
 Deploying code and changing infrastructure stay independent, so an infra change that code depends on must be applied first.
+
+## Updates
+
+2026-11-24: The one-time bootstrap is no longer in the README. It lives in [CI/CD](../developer-guide/ci-cd.md#bootstrap).

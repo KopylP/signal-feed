@@ -37,3 +37,7 @@ Flex Consumption has no deployment slots, so rollback is a redeploy of older cod
 - A rollback restores code only. Infrastructure, App Settings, secrets and stored data are not rolled back, and a renamed or removed required setting can stop an older version from starting.
 - Merges that skip the pipeline (docs, `infra/**`) are not releases. Infrastructure changes still go through the manual `infra` workflow (ADR-0004).
 - The repository needs Actions to be allowed to create releases (`contents: write`), which is granted to the release job only.
+
+## Updates
+
+2026-11-24: The tag now carries the changelog word: `vYYYY.MM.DD.N-word`. See [ADR-0007](0007-name-each-release-with-a-changelog-word.md). The rest of this decision stands.

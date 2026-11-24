@@ -25,3 +25,7 @@ Access to storage also uses the managed identity, with no keys or connection str
 
 Setting up an environment needs a manual step per secret (documented in the README). An unresolved reference shows up as a startup error naming the secret.
 Rotating a secret is done in Key Vault and may need `az functionapp restart`. The deployer needs the `Key Vault Secrets Officer` role to set values.
+
+## Updates
+
+2026-11-24: The setup steps are no longer in the README. They moved to [installation](../user-guide/installation.md) (secrets in Key Vault); the README is now a short entry point.
