@@ -1,0 +1,16 @@
+# Key Vault у RBAC-режимі. Значення секретів Terraform не створює, щоб вони не потрапили в state.
+resource "azurerm_key_vault" "main" {
+  name                       = local.key_vault_name
+  resource_group_name        = azurerm_resource_group.main.name
+  location                   = azurerm_resource_group.main.location
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  sku_name                   = "standard"
+  rbac_authorization_enabled = true
+  soft_delete_retention_days = 7
+}
+
+locals {
+  # Секрети, які застосунок читає через Key Vault references (значення задаються вручну, див. README).
+  secret_names     = ["OpenAIApiKey", "TelegramBotToken", "TelegramApiHash"]
+  secret_reference = { for name in local.secret_names : name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${name}/)" }
+}

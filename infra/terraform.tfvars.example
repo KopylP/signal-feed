@@ -1,0 +1,35 @@
+# Скопіюйте в terraform.tfvars і заповніть. Секрети (OpenAI, Telegram) сюди не пишемо:
+# вони задаються командами az keyvault secret set (див. README).
+
+location           = "westeurope"
+name_prefix        = "signalfeed"
+deployer_object_id = "00000000-0000-0000-0000-000000000000" # az ad signed-in-user show --query id -o tsv
+budget_alert_email = "you@example.com"
+
+# Джерела: username через кому
+sources = "channel_one,channel_two,some_group"
+
+# Алерти лише для цих груп (канали алертів не викликають)
+alert_sources = "some_group"
+
+# Telegram (несекретні частини)
+telegram_chat_id = "123456789"
+telegram_api_id  = "1234567"
+telegram_phone   = "+380000000000"
+
+# Розклади (CRON у UTC, шість полів: секунди хвилини години дні місяці дні-тижня). Це значення за замовчуванням.
+# collector_schedule = "0 0 * * * *"
+# digest_schedule    = "0 0 8 * * *"
+# alert_schedule     = "0 30 * * * *"
+# cleanup_schedule   = "0 0 3 * * *"
+
+# Решта налаштувань: будь-які параметри з src/PostAgent.Functions/Shared/Settings/AgentOptions.cs.
+# Що не задано, те бере значення за замовчуванням із коду. Імена мають збігатися точно.
+app_settings = {
+  # DigestSize        = "5"
+  # AlertThreshold    = "9"
+  # AlertQuietHours   = "23:00-07:00"
+  # AlertTimeZone     = "Europe/Kyiv"
+  # RetentionDays     = "1"
+  # OpenAIModel       = "gpt-5.4-nano"
+}
