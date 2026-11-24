@@ -34,7 +34,7 @@ a Key Vault reference that does not resolve (secret missing, or the function ide
 
 - The digest always sends something (even "no posts"), so silence means the run never finished.
 - Timer history: `requests | where name == "DigestFunction" | order by timestamp desc | take 20` (use the failing function's name). No rows means the schedule: CRON is UTC, check daylight saving.
-- Failures hourly with "Collection failed": the Telegram session expired. Repeat the TgLogin step in the README.
+- Failures hourly with "Collection failed": the Telegram session expired. Repeat the TgLogin step in `docs/deployment.md`.
 - Scoring stuck: check the `to-score` and `to-score-poison` queue lengths; poisoned posts stay `New` until cleanup.
 - OpenAI errors: the digest still arrives without a summary.
 

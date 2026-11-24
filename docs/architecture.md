@@ -85,7 +85,7 @@ graph LR
 
 **Data flow.** The Collector timer reads sources over MTProto (session kept in a blob), writes posts to `Posts`, and queues batches in `to-score`.
 The queue-triggered Scorer calls OpenAI and writes scores back. The Alert and Digest timers read `Posts` and send messages through the Bot API.
-Cleanup deletes whole day partitions from `Posts`. See the README for the full pipeline.
+Cleanup deletes whole day partitions from `Posts`. See the README (How it works) for the full pipeline.
 
 **Identity and RBAC** (`infra/roles.tf`).
 

@@ -1,6 +1,6 @@
 # Signal Feed
 
-Telegram post-selection agent on Azure Functions (.NET 10, isolated worker). How it works, settings and deployment: `README.md`.
+Telegram post-selection agent on Azure Functions (.NET 10, isolated worker). How it works: `README.md`. Settings: `docs/configuration.md`. Deployment: `docs/deployment.md`. Azure diagram: `docs/architecture.md`.
 Rules for each part live in the `CLAUDE.md` of its folder: `infra/`, `src/PostAgent.Functions/`, `src/TgLogin/`, `tests/PostAgent.Tests/`, `prompts/`, `.github/`.
 
 ## Language

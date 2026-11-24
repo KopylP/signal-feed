@@ -10,7 +10,7 @@ resource "azurerm_key_vault" "main" {
 }
 
 locals {
-  # Secrets the app reads through Key Vault references (values are set manually, see README).
+  # Secrets the app reads through Key Vault references (values are set manually, see docs/deployment.md).
   secret_names     = ["OpenAIApiKey", "TelegramBotToken", "TelegramApiHash"]
   secret_reference = { for name in local.secret_names : name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${name}/)" }
 }

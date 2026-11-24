@@ -13,5 +13,5 @@
 - The version is `YYYY.MM.DD.<run_number>`, calculated once in the build job and reused for the tag (ADR-0005). Only the build job (to push the formatting fix on a PR) and the release job get `contents: write`; keep the release job's explicit `if` (it drops the implicit `success()`).
 - A commit pushed with `GITHUB_TOKEN` starts no workflow, so the formatting commit gets no check of its own (the check stays on the earlier commit; a re-run does not help). A same-repo PR is built on its branch tip, not on the merge with `main` (ADR-0006).
 - Do not list `*.md` in `paths-ignore`: `prompts/*.md` ship with the build.
-- When you add a variable to `infra.yml`, update the GitHub Variables table in the README, and `infra/CLAUDE.md` if the rule changed.
+- When you add a variable to `infra.yml`, update the GitHub Variables table in `docs/deployment.md`, and `infra/CLAUDE.md` if the rule changed.
 - A new workflow declares the minimum `permissions` it needs and uses `concurrency` where two simultaneous runs are unsafe.

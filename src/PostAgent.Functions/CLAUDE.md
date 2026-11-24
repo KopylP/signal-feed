@@ -16,7 +16,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `README.md`.
 - All App Settings are read through `AgentOptions` (`Shared/Settings`). Defaults live only there, it is the single source.
 - Ranges and required values use DataAnnotations; more complex checks go in `AgentOptionsValidator`. Settings are validated on startup (`ValidateOnStart`).
 - Schedules are not part of `AgentOptions`: the `[TimerTrigger("%Name%")]` attributes read them directly.
-- When you add or change a parameter, update the README table and `local.settings.json.example`; for Azure see `infra/CLAUDE.md`.
+- When you add or change a parameter, update the table in `docs/configuration.md` and `local.settings.json.example`; for Azure see `infra/CLAUDE.md`.
 - Secrets (`OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`) come from Key Vault. Never log them; `TelegramTokenRedactor` strips the bot token from telemetry.
 
 ## Data and queues
