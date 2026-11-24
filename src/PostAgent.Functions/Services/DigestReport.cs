@@ -1,4 +1,3 @@
-using System.Text.Json;
 using PostAgent.Models;
 
 namespace PostAgent.Services;
@@ -9,27 +8,18 @@ public sealed record DigestItem(PostEntity Post, bool IsInteresting, string? Ins
 /// <summary>Дайджест до відправки: короткий підсумок дня і пости з поясненнями.</summary>
 public sealed record DigestReport(string? Overview, IReadOnlyList<DigestItem> Items)
 {
-    private sealed record ItemInsight(string Id, string Insight);
-
-    private sealed record Response(string Overview, List<ItemInsight> Items);
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     /// <summary>Дайджест без підсумку: запасний варіант, якщо модель недоступна.</summary>
     public static DigestReport Plain(IReadOnlyList<DigestItem> items) => new(null, items);
 
-    /// <summary>Додає до постів пояснення з відповіді моделі. Посилання лишаються з наших даних, а не від моделі.</summary>
-    public static DigestReport Parse(IReadOnlyList<DigestItem> items, string json)
+    /// <summary>Додає до постів пояснення моделі. Посилання лишаються з наших даних, а не від моделі.</summary>
+    public static DigestReport From(IReadOnlyList<DigestItem> items, DigestSummary summary)
     {
-        var response = JsonSerializer.Deserialize<Response>(json, JsonOptions)
-                       ?? throw new JsonException("Model response is empty.");
-
-        var insights = response.Items
+        var insights = summary.Items
             .GroupBy(i => i.Id)
             .ToDictionary(g => g.Key, g => NullIfBlank(g.First().Insight));
 
         return new DigestReport(
-            NullIfBlank(response.Overview),
+            NullIfBlank(summary.Overview),
             items.Select(item => item with { Insight = insights.GetValueOrDefault(item.Post.RowKey) }).ToList());
     }
 

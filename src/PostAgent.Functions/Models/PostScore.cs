@@ -2,7 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace PostAgent.Models;
 
-/// <summary>Оцінка одного посту з відповіді моделі.</summary>
+/// <summary>Відповідь моделі на оцінювання: схему для Structured Outputs Microsoft.Extensions.AI будує з цього типу.</summary>
+public sealed record ScoredPosts(List<PostScore> Posts);
+
+/// <summary>Оцінка одного посту.</summary>
 public sealed record PostScore(
     string Id,
     int Score,

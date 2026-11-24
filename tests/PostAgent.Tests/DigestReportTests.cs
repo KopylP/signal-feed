@@ -1,4 +1,4 @@
-using System.Text.Json;
+using PostAgent.Models;
 using PostAgent.Services;
 using static PostAgent.Tests.TestData;
 
@@ -15,11 +15,8 @@ public class DigestReportTests
     [Fact]
     public void Insights_are_attached_to_posts_by_id()
     {
-        var report = DigestReport.Parse(Items, """
-            {"overview":"Головне сьогодні","items":[
-              {"id":"src_1","insight":"Перший факт"},
-              {"id":"src_2","insight":"Другий факт"}]}
-            """);
+        var report = DigestReport.From(Items, new DigestSummary("Головне сьогодні",
+            [new("src_1", "Перший факт"), new("src_2", "Другий факт")]));
 
         Assert.Equal("Головне сьогодні", report.Overview);
         Assert.Equal(["Перший факт", "Другий факт"], report.Items.Select(i => i.Insight));
@@ -28,9 +25,7 @@ public class DigestReportTests
     [Fact]
     public void Post_without_an_insight_keeps_working_and_unknown_ids_are_ignored()
     {
-        var report = DigestReport.Parse(Items, """
-            {"overview":"О","items":[{"id":"src_1","insight":"Факт"},{"id":"вигаданий","insight":"Зайве"}]}
-            """);
+        var report = DigestReport.From(Items, new DigestSummary("О", [new("src_1", "Факт"), new("вигаданий", "Зайве")]));
 
         Assert.Equal("Факт", report.Items[0].Insight);
         Assert.Null(report.Items[1].Insight);
@@ -39,7 +34,7 @@ public class DigestReportTests
     [Fact]
     public void Blank_overview_and_insight_become_null()
     {
-        var report = DigestReport.Parse(Items, """{"overview":"  ","items":[{"id":"src_1","insight":""}]}""");
+        var report = DigestReport.From(Items, new DigestSummary("  ", [new("src_1", "")]));
 
         Assert.Null(report.Overview);
         Assert.Null(report.Items[0].Insight);
@@ -48,16 +43,10 @@ public class DigestReportTests
     [Fact]
     public void Links_and_other_post_data_stay_untouched()
     {
-        var report = DigestReport.Parse(Items, """{"overview":"О","items":[{"id":"src_1","insight":"Факт"}]}""");
+        var report = DigestReport.From(Items, new DigestSummary("О", [new("src_1", "Факт")]));
 
         Assert.Equal(Items[0].Post.Url, report.Items[0].Post.Url);
         Assert.Equal(Items[0].IsInteresting, report.Items[0].IsInteresting);
-    }
-
-    [Fact]
-    public void Malformed_response_throws_so_the_digest_falls_back_to_the_plain_version()
-    {
-        Assert.ThrowsAny<JsonException>(() => DigestReport.Parse(Items, "not json"));
     }
 
     [Fact]

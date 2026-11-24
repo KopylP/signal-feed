@@ -45,7 +45,7 @@ public sealed class AgentOptions
 
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = "";
-    [Required] public string TelegramChatId { get; set; } = "";
+    [Required, RegularExpression(@"^-?\d+$")] public string TelegramChatId { get; set; } = "";
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = "";
     [Required] public string TelegramPhone { get; set; } = "";

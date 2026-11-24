@@ -1,41 +1,34 @@
-using System.Net.Http.Json;
+using System.Globalization;
 using Microsoft.Extensions.Options;
 using PostAgent.Models;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Services;
 
-/// <summary>Надсилає повідомлення власнику через Telegram Bot API.</summary>
+/// <summary>Надсилає повідомлення власнику через Telegram Bot API (бібліотека Telegram.Bot).</summary>
 public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> options)
 {
+    private readonly TelegramBotClient _bot = new(options.Value.TelegramBotToken, http);
+    private readonly ChatId _chat = new(long.Parse(options.Value.TelegramChatId, CultureInfo.InvariantCulture));
+
     public Task SendDigestAsync(DigestReport report, CancellationToken ct) =>
         SendAsync(TelegramMessages.FormatDigest(report), ct);
 
     public Task SendNoPostsAsync(CancellationToken ct) => SendAsync(TelegramMessages.NoPosts, ct);
 
-    public Task SendHealthAsync(IReadOnlyList<string> failures, CancellationToken ct) =>
-        SendAsync(TelegramMessages.FormatHealth(failures), ct);
-
     public Task SendAlertAsync(IReadOnlyList<PostEntity> posts, CancellationToken ct) =>
         SendAsync(TelegramMessages.FormatAlert(posts), ct);
 
-    private async Task SendAsync(string html, CancellationToken ct)
-    {
-        var settings = options.Value;
-        using var response = await http.PostAsJsonAsync(
-            $"bot{settings.TelegramBotToken}/sendMessage",
-            new
-            {
-                chat_id = settings.TelegramChatId,
-                text = html,
-                parse_mode = "HTML",
-                link_preview_options = new { is_disabled = true },
-            },
-            ct);
+    public Task SendHealthAsync(IReadOnlyList<string> failures, CancellationToken ct) =>
+        SendAsync(TelegramMessages.FormatHealth(failures), ct);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await response.Content.ReadAsStringAsync(ct);
-            throw new HttpRequestException($"Telegram sendMessage failed: {(int)response.StatusCode} {body}");
-        }
-    }
+    private Task SendAsync(string html, CancellationToken ct) =>
+        _bot.SendMessage(
+            _chat,
+            html,
+            ParseMode.Html,
+            linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
+            cancellationToken: ct);
 }

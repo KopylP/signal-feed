@@ -1,19 +1,10 @@
-using System.Text.Json;
 using PostAgent.Models;
 
 namespace PostAgent.Services;
 
-/// <summary>Розбір відповіді моделі та застосування оцінок до постів.</summary>
-public static class ScoreParser
+/// <summary>Застосовує оцінки моделі до постів.</summary>
+public static class ScoreApplier
 {
-    private sealed record Response(List<PostScore> Posts);
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    public static IReadOnlyList<PostScore> Parse(string json) =>
-        JsonSerializer.Deserialize<Response>(json, JsonOptions)?.Posts
-        ?? throw new JsonException("Model response has no 'posts' array.");
-
     /// <summary>Записує оцінки в пости. Повертає id постів, для яких оцінки немає.</summary>
     public static IReadOnlyList<string> Apply(IEnumerable<PostEntity> posts, IReadOnlyList<PostScore> scores)
     {

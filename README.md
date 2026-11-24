@@ -206,6 +206,19 @@ az role assignment create --assignee $APP_ID --role Contributor \
 - Орієнтовно: функції в межах безкоштовної квоти Flex Consumption, storage копійки, основна стаття витрат OpenAI.
   Бюджет $5 на resource group дає сповіщення на email при 80% і 100%.
 
+## Готові рішення замість власного коду
+
+| Задача | Що використано |
+|---|---|
+| Виклики моделі, відповідь за строгою схемою | `Microsoft.Extensions.AI` (`IChatClient`) з адаптером OpenAI; схема будується з C#-типів, `strict: true` вмикає `ChatClientExtensions.AskAsync` |
+| Bot API Telegram | `Telegram.Bot` |
+| Читання каналів і груп (MTProto) | `WTelegramClient` |
+| Table, Queue, Blob, автентифікація | `Azure.Data.Tables`, `Azure.Storage.Queues`, `Azure.Storage.Blobs`, `Azure.Identity` |
+| Повтори й таймаути HTTP | `Microsoft.Extensions.Http.Resilience` |
+| Перевірка налаштувань | `Options` з DataAnnotations і `ValidateOnStart` |
+
+Щоб замінити модель чи провайдера, достатньо інакше зареєструвати `IChatClient` у `Program.cs`: код оцінювання й підсумку про провайдера не знає.
+
 ## Структура
 
 ```
