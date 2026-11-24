@@ -8,6 +8,11 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [lark] - 2026-11-24
+
+### Fixed
+- Fixed the first code deploy failing with "Cannot find required .azurefunctions directory": the build artifact now keeps hidden files.
+
 ## [wren] - 2026-11-24
 
 ### Setup required

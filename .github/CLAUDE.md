@@ -14,5 +14,6 @@
 - A commit pushed with `GITHUB_TOKEN` starts no workflow, so the formatting commit gets no check of its own (the check stays on the earlier commit; a re-run does not help). A same-repo PR is built on its branch tip, not on the merge with `main` (ADR-0006).
 - Do not list `*.md` in `paths-ignore`: `prompts/*.md` ship with the build. Name documentation files one by one (`README.md`, `CHANGELOG.md`).
 - When you add a variable to `infra.yml`, update the GitHub Variables table in `docs/developer-guide/ci-cd.md`, and `infra/CLAUDE.md` if the rule changed.
+- The `functions-package` artifact is uploaded with `include-hidden-files: true`: the publish output has a hidden `.azurefunctions` directory, and without it the deploy fails with "Cannot find required .azurefunctions directory".
 - A new workflow declares the minimum `permissions` it needs and uses `concurrency` where two simultaneous runs are unsafe.
 - A pull request build does not run the paths that exist only on a push (the changelog word, the release job). Reproduce them locally in a full clone before you merge, and never write `cond && 0 || x` in an expression (0 is falsy).

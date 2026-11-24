@@ -142,6 +142,8 @@ jobs:
         with:
           name: functions-package
           path: ${{ env.PACKAGE_PATH }}
+          # The package has a hidden `.azurefunctions` directory, which upload-artifact v4 skips by default; the deploy fails without it.
+          include-hidden-files: true
 
   deploy:
     needs: build-test
