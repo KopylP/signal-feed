@@ -48,5 +48,5 @@ Storage code (`PostRepository`) is not covered by `dotnet test`. Check it by han
 
 ## Before opening a pull request
 
-Use the `check-before-pr` skill (`.claude/skills/`). Keep the documentation current in the same commit, and record hard-to-reverse decisions as an [ADR](../adr/README.md).
+Use the `check-before-pr` skill (`.claude/skills/`). Keep the documentation current in the same commit, add a [`CHANGELOG.md`](../../CHANGELOG.md) entry when behavior, a contract or a setting changes (`write-changelog` skill), and record hard-to-reverse decisions as an [ADR](../adr/README.md).
 What happens after the merge: [CI/CD](ci-cd.md).

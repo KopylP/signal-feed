@@ -23,7 +23,7 @@ Skip ADRs for small, local or easily reversible choices.
 
 ## Skills
 
-Project skills live in `.claude/skills/`. Today: `write-adr` (decisions), `check-before-pr`, `ship`, `triage-deploy-failure`. Add a skill there when a multi-step
+Project skills live in `.claude/skills/`. Today: `write-adr` (decisions), `write-changelog` (what changed), `check-before-pr`, `ship`, `triage-deploy-failure`. Add a skill there when a multi-step
 workflow repeats across tasks; keep one-line rules in `CLAUDE.md` instead.
 
 ## Releases
