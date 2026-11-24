@@ -31,6 +31,7 @@ builder.Services.AddStorage(builder.Configuration);
 builder.Services.AddSingleton<PostRepository>();
 builder.Services.AddSingleton<ScoringQueue>();
 builder.Services.AddSingleton<PostScorer>();
+builder.Services.AddSingleton<ICleanupTask, PostsCleanup>();
 builder.Services.AddScoped<TelegramSourceReader>();
 
 // RemoveAllLoggers: токен бота входить в URL запиту, у логи він потрапити не повинен.

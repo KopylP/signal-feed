@@ -16,8 +16,6 @@ public sealed class DigestFunction(
     public async Task Run([TimerTrigger("%DigestSchedule%")] TimerInfo timer, CancellationToken ct)
     {
         var now = time.GetUtcNow();
-        await posts.DeleteOlderThanAsync(now.AddDays(-options.Value.RetentionDays), ct);
-
         var recent = await posts.GetSinceAsync(now - DigestBuilder.FallbackWindow, now, ct);
         var items = DigestBuilder.Build(recent, options.Value, now);
         if (items.Count == 0)

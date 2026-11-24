@@ -18,7 +18,8 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `CollectorFunction` | `%CollectorSchedule%` | Читає нові повідомлення джерел через MTProto, зберігає пости, ставить їх у чергу пачками по `ScoringBatchSize` |
 | `ScorerFunction` | черга `to-score` | Оцінює пости через OpenAI (Structured Outputs), пише Score, Topic, Reason, DuplicateOf |
 | `AlertFunction` | `%AlertSchedule%` | Надсилає алерт про сплеск або дуже важливе повідомлення в групах зі списку `AlertSources` |
-| `DigestFunction` | `%DigestSchedule%` | Надсилає дайджест (завжди), прибирає пости старші за `RetentionDays` |
+| `DigestFunction` | `%DigestSchedule%` | Надсилає дайджест (завжди) |
+| `CleanupFunction` | `%CleanupSchedule%` | Виконує всі `ICleanupTask`. Зараз це видалення з `Posts` днів старших за `RetentionDays` |
 
 **Канали й групи.** Канали: кожен пост оцінюється окремо. Групи: якщо за запуск прийшло не більше
 `MaxItemsPerGroup` (5) повідомлень, вони теж окремі пости. Якщо більше, повідомлення за часом ділиться на
@@ -31,6 +32,11 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 сповіщаємо не частіше ніж раз на `AlertCooldownHours`, за один запуск не більше `AlertMaxPerRun` записів.
 У `AlertQuietHours` (наприклад, `23:00-07:00`) алерти не надсилаються, такі пости потрапляють у дайджест.
 Пост, про який вже сповістили, у дайджесті не повторюється.
+
+**Очищення даних.** Таблиця `Posts` розбита на дні, тому `CleanupFunction` видаляє цілі дні старші за `RetentionDays`.
+`ChannelState` (курсори читання) не чіпається. Щоб очищати щось нове (іншу таблицю, чергу чи blob), додайте клас, що реалізує
+`ICleanupTask`, і зареєструйте його в `Program.cs`: функція виконає його разом з іншими.
+Резервне вікно дайджесту в 48 годин працює лише в межах даних, що лишилися, тобто з `RetentionDays = 1` це вчорашній і сьогоднішній день.
 
 ## Налаштування (App Settings)
 
@@ -55,7 +61,8 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **секрети**, лише в Key Vault |
 | `TelegramChatId`, `TelegramApiId`, `TelegramPhone` | | куди слати; дані акаунта для читання |
 | `SessionBlobContainer` | `tg-session` | контейнер із сесією Telegram |
-| `RetentionDays` | 14 | скільки днів зберігати пости |
+| `CleanupSchedule` | `0 0 3 * * *` | CRON очищення (UTC) |
+| `RetentionDays` | 1 | скільки днів назад зберігати пости: 1 означає вчорашню й сьогоднішню партиції |
 | `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
 
 ### Як змінити розклад, джерела й промпт

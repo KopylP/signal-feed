@@ -21,7 +21,7 @@ public sealed class AgentOptions
     public int MaxPostChars { get; set; } = 1500;
     public int MinPostChars { get; set; } = 80;
     public int FirstRunLookbackHours { get; set; } = 24;
-    public int RetentionDays { get; set; } = 14;
+    public int RetentionDays { get; set; } = 1;
 
     // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки
     public int MaxItemsPerGroup { get; set; } = 5;

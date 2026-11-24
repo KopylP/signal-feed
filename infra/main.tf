@@ -27,6 +27,7 @@ locals {
       CollectorSchedule    = var.collector_schedule
       DigestSchedule       = var.digest_schedule
       AlertSchedule        = var.alert_schedule
+      CleanupSchedule      = var.cleanup_schedule
       DigestSize           = var.digest_size
       InterestingThreshold = var.interesting_threshold
       ScoringBatchSize     = var.scoring_batch_size

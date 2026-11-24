@@ -73,8 +73,8 @@ public sealed class PostRepository(TableServiceClient tables)
         }
     }
 
-    /// <summary>Видаляє партиції (дні) старші за cutoff.</summary>
-    public async Task DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct)
+    /// <summary>Видаляє партиції (дні) старші за день cutoff. Повертає кількість видалених постів.</summary>
+    public async Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct)
     {
         var cutoffPartition = PostEntity.PartitionFor(cutoff);
         var old = await _posts
@@ -91,5 +91,7 @@ public sealed class PostRepository(TableServiceClient tables)
                 batch.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e)),
                 ct);
         }
+
+        return old.Count;
     }
 }

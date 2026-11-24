@@ -90,9 +90,15 @@ variable "first_run_lookback_hours" {
   default     = 24
 }
 
+variable "cleanup_schedule" {
+  type    = string
+  default = "0 0 3 * * *"
+}
+
 variable "retention_days" {
-  type    = number
-  default = 14
+  description = "Скільки днів назад зберігати пости. 1 означає вчора й сьогодні."
+  type        = number
+  default     = 1
 }
 
 # ---------- App Settings: групи й алерти ----------
