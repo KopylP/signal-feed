@@ -46,7 +46,7 @@ jobs:
       run:
         working-directory: infra
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # An empty TF_VAR_* would override the default in variables.tf, so pass only what is set.
       - name: Optional variables
@@ -55,13 +55,13 @@ jobs:
         run: |
           if [ -n "$TF_SOURCES" ]; then echo "TF_VAR_sources=$TF_SOURCES" >> "$GITHUB_ENV"; fi
 
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.9.8
 
