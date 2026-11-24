@@ -24,7 +24,10 @@ builder.Logging.Services.Configure<LoggerFilterOptions>(filter =>
     }
 });
 
-builder.Services.Configure<AgentOptions>(builder.Configuration);
+builder.Services.AddOptions<AgentOptions>()
+    .Bind(builder.Configuration)
+    .ValidateDataAnnotations()
+    .ValidateOnStart(); // помилка в налаштуваннях зупиняє запуск зрозумілим повідомленням
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddStorage(builder.Configuration);
 
@@ -39,7 +42,8 @@ builder.Services.AddScoped<TelegramSourceReader>();
 // RemoveAllLoggers: токен бота входить в URL запиту, у логи він потрапити не повинен.
 builder.Services
     .AddHttpClient<TelegramNotifier>(http => http.BaseAddress = new Uri("https://api.telegram.org/"))
-    .RemoveAllLoggers();
+    .RemoveAllLoggers()
+    .AddStandardResilienceHandler(); // повтори, таймаути й circuit breaker від Microsoft.Extensions.Http.Resilience
 
 var app = builder.Build();
 await app.Services.EnsureLocalResourcesAsync();

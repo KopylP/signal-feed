@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using PostAgent.Services;
 using PostAgent.Telegram;
 
 namespace PostAgent;
@@ -10,21 +12,21 @@ namespace PostAgent;
 public sealed class AgentOptions
 {
     // Джерела
-    public string Sources { get; set; } = "";
+    [Required] public string Sources { get; set; } = "";
 
     // Дайджест
-    public int DigestSize { get; set; } = 5;
+    [Range(1, TelegramMessages.MaxItems)] public int DigestSize { get; set; } = 5;
     public int InterestingThreshold { get; set; } = 7;
 
     // Збір і оцінювання
-    public int ScoringBatchSize { get; set; } = 10;
+    [Range(1, 100)] public int ScoringBatchSize { get; set; } = 10;
     public int MaxPostChars { get; set; } = 1500;
     public int MinPostChars { get; set; } = 80;
     public int FirstRunLookbackHours { get; set; } = 24;
-    public int RetentionDays { get; set; } = 1;
+    [Range(1, 365)] public int RetentionDays { get; set; } = 1;
 
     // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки
-    public int MaxItemsPerGroup { get; set; } = 5;
+    [Range(1, 50)] public int MaxItemsPerGroup { get; set; } = 5;
     public int MaxBundleChars { get; set; } = 3000;
 
     // Алерти (лише для груп зі списку AlertSources)
@@ -33,20 +35,20 @@ public sealed class AgentOptions
     public int AlertCooldownHours { get; set; } = 3;
     public int AlertThreshold { get; set; } = 9;
     public int BurstMinPosts { get; set; } = 8;
-    public int AlertMaxPerRun { get; set; } = 3;
+    [Range(1, TelegramMessages.MaxItems)] public int AlertMaxPerRun { get; set; } = 3;
     public string AlertQuietHours { get; set; } = "";
     public string AlertTimeZone { get; set; } = "Europe/Kyiv";
 
     // OpenAI
     public string OpenAIModel { get; set; } = "gpt-5.4-nano";
-    public string OpenAIApiKey { get; set; } = "";
+    [Required] public string OpenAIApiKey { get; set; } = "";
 
     // Telegram
-    public string TelegramBotToken { get; set; } = "";
-    public string TelegramChatId { get; set; } = "";
-    public int TelegramApiId { get; set; }
-    public string TelegramApiHash { get; set; } = "";
-    public string TelegramPhone { get; set; } = "";
+    [Required] public string TelegramBotToken { get; set; } = "";
+    [Required] public string TelegramChatId { get; set; } = "";
+    [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
+    [Required] public string TelegramApiHash { get; set; } = "";
+    [Required] public string TelegramPhone { get; set; } = "";
     public string SessionBlobContainer { get; set; } = SessionBlob.DefaultContainer;
 
     public IReadOnlyList<string> SourceList => ParseUsernames(Sources);
