@@ -18,7 +18,7 @@ public class DigestReportTests
         string overview = "Головне",
         List<HeadlineEntry>? headlines = null,
         List<NoteEntry>? forMarketplace = null,
-        List<NoteEntry>? notable = null,
+        List<NotableEntry>? notable = null,
         List<PickEntry>? recommended = null,
         List<string>? needsVerification = null) =>
         new(overview, headlines ?? [], forMarketplace ?? [], notable ?? [], recommended ?? [], needsVerification ?? []);

@@ -8,6 +8,6 @@ public sealed record DigestSummary(
     string Overview,
     List<HeadlineEntry> Headlines,
     [property: JsonPropertyName("for_marketplace")] List<NoteEntry> ForMarketplace,
-    List<NoteEntry> Notable,
+    List<NotableEntry> Notable,
     List<PickEntry> Recommended,
     [property: JsonPropertyName("needs_verification")] List<string> NeedsVerification);
