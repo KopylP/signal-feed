@@ -1,18 +1,59 @@
+# .NET build output and IDE files
 bin/
 obj/
+publish/
 *.user
+*.suo
 .vs/
+.idea/
+*.swp
+
+# Test results and coverage
+TestResults/
+*.trx
+*.coverage
+coverage/
+
+# Local settings and secrets: never commit
 local.settings.json
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+# Telegram sessions (WTelegramClient); the real session lives in Blob Storage
+*.session
+
+# Azurite (local Azure Storage emulator)
 __azurite_db_*.json
 __blobstorage__/
 __queuestorage__/
 AzuriteConfig
+azurite-debug.log
+.azurite/
+
+# Terraform
 infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.*
 infra/terraform.tfvars
+infra/*.auto.tfvars
+infra/*.tfvars.json
 infra/backend.tf
 infra/crash.log
-publish/
+infra/crash.*.log
+infra/*.tfplan
+infra/tfplan
+infra/override.tf
+infra/override.tf.json
 .terraform.lock.hcl
-.azurite/
+
+# Claude Code: personal and local files only (CLAUDE.md, .claude/settings.json, skills and hooks are shared)
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/skills/*-workspace/
+
+# OS files
+.DS_Store
+Thumbs.db
