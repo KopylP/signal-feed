@@ -8,6 +8,17 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [robin] - 2026-11-24
+
+### Logic
+- **Telegram sends: no automatic repeat, 30 seconds per attempt**
+  - Before: a send that timed out after 10 seconds was repeated up to three times, and each repeat could deliver the message again, because the first attempt may have reached Telegram even though its answer came too late
+  - After: a send is tried once and gets 30 seconds; if it fails, the job fails and the next run sends the posts again
+  - Effect: no more copies of one message from a slow answer; a failed digest is repeated by the next run, as before
+
+### Improved
+- The log shows the length and the time of every Telegram send (`Telegram message sent: N chars in M ms`, `Telegram send failed: N chars after M ms`), never the text.
+
 ## [v2026.11.24.41-kite] - 2026-11-24
 
 ### Fixed
