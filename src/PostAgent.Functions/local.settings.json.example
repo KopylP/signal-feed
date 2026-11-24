@@ -1,0 +1,38 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "Sources": "channel_one,channel_two,some_group",
+    "CollectorSchedule": "0 0 * * * *",
+    "DigestSchedule": "0 0 8 * * *",
+    "DigestSize": "5",
+    "InterestingThreshold": "7",
+    "ScoringBatchSize": "10",
+    "MaxPostChars": "1500",
+    "MinPostChars": "80",
+
+    "MaxItemsPerGroup": "5",
+    "MaxBundleChars": "3000",
+    "AlertSchedule": "0 30 * * * *",
+    "AlertSources": "some_group",
+    "AlertWindowHours": "3",
+    "AlertCooldownHours": "3",
+    "AlertThreshold": "9",
+    "BurstMinPosts": "8",
+    "AlertMaxPerRun": "3",
+    "AlertQuietHours": "",
+    "AlertTimeZone": "Europe/Kyiv",
+
+    "OpenAIModel": "gpt-5.4-nano",
+    "OpenAIApiKey": "<openai-api-key>",
+
+    "TelegramBotToken": "<bot-token>",
+    "TelegramChatId": "<your-chat-id>",
+    "TelegramApiId": "<api-id>",
+    "TelegramApiHash": "<api-hash>",
+    "TelegramPhone": "<+380...>",
+    "SessionBlobContainer": "tg-session"
+  }
+}

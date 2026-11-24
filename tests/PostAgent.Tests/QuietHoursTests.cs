@@ -1,0 +1,43 @@
+using PostAgent.Services;
+
+namespace PostAgent.Tests;
+
+public class QuietHoursTests
+{
+    // 24 листопада Київ живе за UTC+2.
+    private static DateTimeOffset Utc(int hour, int minute = 0) => new(2026, 11, 24, hour, minute, 0, TimeSpan.Zero);
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Empty_spec_means_no_quiet_hours(string spec)
+    {
+        Assert.False(QuietHours.IsQuiet(spec, "Europe/Kyiv", Utc(2)));
+    }
+
+    [Theory]
+    [InlineData(21, 0, true)]   // 23:00 за Києвом
+    [InlineData(23, 30, true)]  // 01:30
+    [InlineData(4, 59, true)]   // 06:59
+    [InlineData(5, 0, false)]   // 07:00, кінець інтервалу не входить
+    [InlineData(12, 0, false)]
+    [InlineData(20, 59, false)] // 22:59
+    public void Interval_across_midnight(int utcHour, int utcMinute, bool expected)
+    {
+        Assert.Equal(expected, QuietHours.IsQuiet("23:00-07:00", "Europe/Kyiv", Utc(utcHour, utcMinute)));
+    }
+
+    [Theory]
+    [InlineData(8, true)]   // 10:00
+    [InlineData(10, false)] // 12:00
+    public void Interval_within_a_day(int utcHour, bool expected)
+    {
+        Assert.Equal(expected, QuietHours.IsQuiet("09:00-11:00", "Europe/Kyiv", Utc(utcHour)));
+    }
+
+    [Fact]
+    public void Invalid_spec_throws()
+    {
+        Assert.Throws<FormatException>(() => QuietHours.IsQuiet("night", "Europe/Kyiv", Utc(1)));
+    }
+}
