@@ -39,7 +39,6 @@ variable "monthly_budget_usd" {
 variable "sources" {
   description = "Username каналів і груп через кому."
   type        = string
-  default     = ""
 }
 
 variable "collector_schedule" {
@@ -164,19 +163,18 @@ variable "openai_model" {
 }
 
 variable "telegram_chat_id" {
-  description = "Куди слати дайджест і алерти."
+  description = "Куди слати дайджест і алерти (числовий id чату)."
   type        = string
-  default     = ""
 }
 
 variable "telegram_api_id" {
-  type    = string
-  default = ""
+  description = "api_id застосунку з my.telegram.org."
+  type        = string
 }
 
 variable "telegram_phone" {
-  type    = string
-  default = ""
+  description = "Номер телефону акаунта-читача, формат +380..."
+  type        = string
 }
 
 variable "session_blob_container" {

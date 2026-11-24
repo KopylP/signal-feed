@@ -5,8 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostAgent;
-using PostAgent.Services;
-using PostAgent.Telegram;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -33,7 +31,9 @@ builder.Services.AddOptions<AgentOptions>()
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddStorage(builder.Configuration);
 
+builder.Services.AddSingleton<IValidateOptions<AgentOptions>, AgentOptionsValidator>();
 builder.Services.AddSingleton<PostRepository>();
+builder.Services.AddSingleton<SourceCursors>();
 builder.Services.AddSingleton<ScoringQueue>();
 builder.Services.AddChatClient(sp =>
 {
@@ -49,8 +49,15 @@ builder.Services.AddScoped<TelegramSourceReader>();
 builder.Services
     .AddHttpClient<TelegramNotifier>()
     .RemoveAllLoggers()
-    .AddStandardResilienceHandler(); // повтори, таймаути й circuit breaker від Microsoft.Extensions.Http.Resilience
+    // Повтори, таймаути й circuit breaker. Повтор POST sendMessage після таймауту інколи дає дубль повідомлення,
+    // але це краще за втрачений дайджест.
+    .AddStandardResilienceHandler();
 
 var app = builder.Build();
+
+// Логи WTelegramClient (статичний хук бібліотеки) йдуть у загальний ILogger.
+var wtelegramLog = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WTelegram");
+WTelegram.Helpers.Log = (level, text) => wtelegramLog.Log((LogLevel)level, "{Text}", text);
+
 await app.Services.EnsureLocalResourcesAsync();
 await app.RunAsync();

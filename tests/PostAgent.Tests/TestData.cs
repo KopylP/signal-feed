@@ -1,5 +1,3 @@
-using PostAgent.Models;
-using PostAgent.Telegram;
 
 namespace PostAgent.Tests;
 

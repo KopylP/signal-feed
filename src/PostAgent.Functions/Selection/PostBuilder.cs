@@ -1,7 +1,5 @@
-using PostAgent.Models;
-using PostAgent.Telegram;
 
-namespace PostAgent.Services;
+namespace PostAgent.Selection;
 
 /// <summary>
 /// Перетворює повідомлення джерела на пости (чиста функція, без Telegram і сховища).
@@ -30,7 +28,7 @@ public static class PostBuilder
             .ToList();
     }
 
-    public static string MessageUrl(string username, int id) => $"https://t.me/{username}/{id}";
+    private static string MessageUrl(string username, int id) => $"https://t.me/{username}/{id}";
 
     private static List<Item> ToTextItems(IEnumerable<TgMessage> messages) =>
         messages
@@ -54,13 +52,11 @@ public static class PostBuilder
             RowKey = $"{source.Username}_{message.Id}",
             Source = source.Username,
             SourceType = source.Type,
-            Kind = PostKind.Post,
             PostId = message.Id,
             Author = source.Type == SourceType.Group ? message.Author : null,
             Url = MessageUrl(source.Username, message.Id),
             Text = item.Text.Truncate(options.MaxPostChars),
             PublishedAt = message.Date,
-            Engagement = message.Engagement,
         };
     }
 
@@ -79,13 +75,11 @@ public static class PostBuilder
             RowKey = $"{source.Username}_{first.Id}-{last.Id}",
             Source = source.Username,
             SourceType = source.Type,
-            Kind = PostKind.Bundle,
             PostId = last.Id,
             Url = MessageUrl(source.Username, ranked[0].Message.Id),
             Text = BundleText(ranked, options),
             PublishedAt = last.Date,
             MessageCount = chunk.Length,
-            Engagement = chunk.Sum(i => i.Message.Engagement),
         };
     }
 

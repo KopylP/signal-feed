@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using PostAgent.Services;
 
 namespace PostAgent.Tests;
 
@@ -62,7 +61,7 @@ public class AgentOptionsTests
     public void Digest_size_above_what_fits_into_one_telegram_message_is_rejected()
     {
         var options = Complete();
-        options.DigestSize = TelegramMessages.MaxItems + 1;
+        options.DigestSize = AgentOptions.MaxItemsPerMessage + 1;
 
         Assert.Contains(nameof(AgentOptions.DigestSize), Validate(options).SelectMany(r => r.MemberNames));
     }

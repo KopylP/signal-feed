@@ -1,7 +1,6 @@
 using Microsoft.Extensions.AI;
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Ai;
 
 /// <summary>Оцінює пачку постів за промптом prompts/scoring.md.</summary>
 public sealed class PostScorer(IChatClient chat)

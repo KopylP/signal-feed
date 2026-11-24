@@ -9,7 +9,7 @@
 ```
 Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) ──► Scorer (OpenAI)
                                                                      │
-                       AlertCheck (щогодини, лише групи) ◄───────────┤
+                       AlertFunction (щогодини, лише групи) ◄───────────┤
                        Digest (раз на день) ◄────────────────────────┘
 ```
 
@@ -70,8 +70,10 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `RetentionDays` | 1 | скільки днів назад зберігати пости: 1 означає вчорашню й сьогоднішню партиції |
 | `FirstRunLookbackHours` | 24 | скільки годин історії читати при першому запуску для нового джерела |
 
-Обов'язкові значення (джерела, ключ OpenAI, токен бота, дані Telegram) перевіряються під час старту: якщо щось порожнє або поза межами, застосунок
-не запуститься, а в логу буде назва параметра.
+Налаштування перевіряються під час старту: обов'язкові значення (джерела, ключ OpenAI, токен бота, дані Telegram), діапазони
+(наприклад, `DigestSize` і `AlertMaxPerRun` від 1 до 8, `ScoringBatchSize` 1–100, `MaxItemsPerGroup` 1–50, `RetentionDays` 1–365),
+формат `AlertQuietHours` із часовим поясом, а також що `AlertWindowHours + AlertCooldownHours` не більше за `RetentionDays * 24`.
+Якщо щось не так, застосунок не запуститься, а в логу буде назва параметра.
 
 ### Як змінити розклад, джерела й промпт
 
@@ -179,7 +181,7 @@ func azure functionapp publish $(terraform -chdir=../infra output -raw function_
 
 ## GitHub Actions: build, test, deploy через OIDC
 
-Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Збирає й тестує на кожен push і PR, а з `main` деплоїть.
+Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Збирає й тестує на push у `main` і на кожен PR, а з `main` ще й деплоїть (деплої не виконуються одночасно). Запускається й вручну (`workflow_dispatch`).
 
 Одноразове налаштування OIDC (без паролів):
 
@@ -222,9 +224,26 @@ az role assignment create --assignee $APP_ID --role Contributor \
 ## Структура
 
 ```
-src/PostAgent.Functions/   функції, сервіси, Telegram-читач
+src/PostAgent.Functions/
+  Functions/    Collector, Scorer, AlertFunction, Digest, Cleanup: короткі сценарії без розрахунків
+  Selection/    чиста логіка: пости з повідомлень, вибір для дайджесту й алертів, тихі години
+  Ai/           виклики моделі (IChatClient): оцінювання, підсумок дайджесту, промпти
+  Storage/      Table, Queue, Blob: пости, курсори джерел, черга, очищення
+  Delivery/     тексти й відправка повідомлень у Telegram
+  Telegram/     читання каналів і груп (WTelegramClient), сесія в Blob
+  Models/       PostEntity, відповіді моделі, DigestReport
 src/TgLogin/               одноразовий вхід у Telegram
-tests/PostAgent.Tests/     xUnit
+tests/PostAgent.Tests/     xUnit (логіка, моделі з підробленим IChatClient, валідація налаштувань)
 infra/                     Terraform
-prompts/scoring.md         системний промпт оцінювання
+prompts/                   scoring.md (оцінювання) і digest.md (підсумок дайджесту)
+.github/workflows/         build, test, deploy
 ```
+
+## Відомі обмеження
+
+- **Повтори повідомлень.** Якщо Telegram відповів на `sendMessage` із затримкою, повтор може дати дубль дайджесту чи алерта. Це свідомий вибір на користь того, щоб не втратити повідомлення.
+- **Збій збору.** Повідомлення «Збір не вдався» приходить щогодини, поки причину не усунуто.
+- **Пачки після збою.** Якщо запуск Collector обірвався між записом постів і оновленням курсору, а за цей час прийшли нові повідомлення, ті самі повідомлення групи можуть потрапити у дві різні пачки.
+- **Перший запуск.** Для зайнятої групи читання історії за добу це багато запитів поспіль, тому можливий FLOOD_WAIT. Джерело тоді пропускається до наступного запуску.
+- **Свіжі повідомлення** ще не набрали реакцій, тому порядок у пачці за помітністю спершу приблизний.
+- **Тести сховища** не входять до `dotnet test`: `PostRepository` перевіряється вручну на Azurite.

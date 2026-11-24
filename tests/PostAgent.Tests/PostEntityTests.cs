@@ -1,4 +1,3 @@
-using PostAgent.Models;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests;
@@ -23,26 +22,31 @@ public class PostEntityTests
         Assert.False(string.CompareOrdinal(PostEntity.PartitionFor(Now.AddHours(-20)), cutoffPartition) < 0); // лишається
     }
 
-    [Fact]
-    public void MarkSent_keeps_an_earlier_AlertedAt_when_no_alert_time_is_given()
-    {
-        var post = Post("a", alertedAt: Now.AddHours(-1));
-
-        post.MarkSent();
-
-        Assert.Equal(PostStatus.Sent, post.Status);
-        Assert.Equal(Now.AddHours(-1), post.AlertedAt);
-    }
+    private static readonly IReadOnlySet<string> Batch = new HashSet<string> { "src_1", "src_2" };
 
     [Fact]
-    public void ApplyScore_clamps_the_score_and_drops_a_self_reference()
+    public void ApplyScore_clamps_the_score_and_marks_the_post_scored()
     {
         var post = Unscored("src_1");
 
-        post.ApplyScore(new PostScore("src_1", 42, "T", "R", "src_1"));
+        post.ApplyScore(new PostScore("src_1", 42, "T", "R", null), Batch);
 
         Assert.Equal(10, post.Score);
-        Assert.Null(post.DuplicateOf);
         Assert.Equal(PostStatus.Scored, post.Status);
+    }
+
+    [Theory]
+    [InlineData("src_2", "src_2")]   // інший пост із пачки
+    [InlineData("src_1", null)]      // посилання на себе
+    [InlineData("вигаданий", null)]  // id, якого немає в пачці
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void ApplyScore_keeps_DuplicateOf_only_when_it_points_to_another_post_of_the_batch(string? duplicateOf, string? expected)
+    {
+        var post = Unscored("src_1");
+
+        post.ApplyScore(new PostScore("src_1", 5, "T", "R", duplicateOf), Batch);
+
+        Assert.Equal(expected, post.DuplicateOf);
     }
 }

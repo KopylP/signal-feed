@@ -1,7 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Services;
-using PostAgent.Telegram;
 using TL;
 
 namespace PostAgent.Functions;
@@ -10,6 +8,7 @@ namespace PostAgent.Functions;
 public sealed class CollectorFunction(
     TelegramSourceReader reader,
     PostRepository posts,
+    SourceCursors cursors,
     ScoringQueue queue,
     TelegramNotifier notifier,
     IOptions<AgentOptions> options,
@@ -61,7 +60,7 @@ public sealed class CollectorFunction(
 
     private async Task CollectAsync(string username, CancellationToken ct)
     {
-        var batch = await reader.ReadAsync(username, await posts.GetLastPostIdAsync(username, ct), ct);
+        var batch = await reader.ReadAsync(username, await cursors.GetLastPostIdAsync(username, ct), ct);
         var newPosts = PostBuilder.Build(batch.Source, batch.Messages, options.Value);
 
         foreach (var post in newPosts)
@@ -72,7 +71,7 @@ public sealed class CollectorFunction(
         // Порядок важливий: спершу пости й черга, потім LastPostId. Якщо запуск обірветься,
         // наступний прочитає те саме, а Scorer пропустить уже оцінені.
         await queue.EnqueueAsync(newPosts.Select(p => p.ToRef()).ToList(), options.Value.ScoringBatchSize, ct);
-        await posts.SetLastPostIdAsync(username, batch.LastPostId, ct);
+        await cursors.SetLastPostIdAsync(username, batch.LastPostId, ct);
 
         log.LogInformation("@{Source} ({Type}): {Messages} messages, {Posts} posts",
             username, batch.Source.Type, batch.Messages.Count, newPosts.Count);

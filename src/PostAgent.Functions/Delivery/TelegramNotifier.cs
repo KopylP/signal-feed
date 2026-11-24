@@ -1,11 +1,10 @@
 using System.Globalization;
 using Microsoft.Extensions.Options;
-using PostAgent.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace PostAgent.Services;
+namespace PostAgent.Delivery;
 
 /// <summary>Надсилає повідомлення власнику через Telegram Bot API (бібліотека Telegram.Bot).</summary>
 public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> options)

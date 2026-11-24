@@ -1,6 +1,4 @@
 using Microsoft.Azure.Functions.Worker;
-using PostAgent.Models;
-using PostAgent.Services;
 
 namespace PostAgent.Functions;
 

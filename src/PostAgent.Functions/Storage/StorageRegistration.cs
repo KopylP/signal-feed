@@ -4,7 +4,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.Options;
 
-namespace PostAgent.Services;
+namespace PostAgent.Storage;
 
 /// <summary>
 /// Клієнти Table/Queue/Blob. В Azure: identity-based (AzureWebJobsStorage__accountName + managed identity).
@@ -51,7 +51,7 @@ public static class StorageRegistration
 
         var tables = services.GetRequiredService<TableServiceClient>();
         await tables.CreateTableIfNotExistsAsync(PostRepository.PostsTable);
-        await tables.CreateTableIfNotExistsAsync(PostRepository.ChannelStateTable);
+        await tables.CreateTableIfNotExistsAsync(SourceCursors.TableName);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync();
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;

@@ -1,6 +1,5 @@
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Selection;
 
 /// <summary>Вибирає пости для денного дайджесту (чиста функція).</summary>
 public static class DigestBuilder
@@ -9,8 +8,11 @@ public static class DigestBuilder
     /// Доба плюс 2 години запасу: пост, опублікований в останню годину перед минулим дайджестом,
     /// на той момент ще не був оцінений. Повторів немає, бо надіслані пости мають статус Sent.
     /// </summary>
-    public static readonly TimeSpan Window = TimeSpan.FromHours(26);
-    public static readonly TimeSpan FallbackWindow = TimeSpan.FromHours(48);
+    private static readonly TimeSpan Window = TimeSpan.FromHours(26);
+    private static readonly TimeSpan FallbackWindow = TimeSpan.FromHours(48);
+
+    /// <summary>З якого моменту читати пости для дайджесту.</summary>
+    public static DateTimeOffset QueryStart(DateTimeOffset now) => now - FallbackWindow;
 
     public static IReadOnlyList<DigestItem> Build(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now)
     {
@@ -25,7 +27,7 @@ public static class DigestBuilder
             .Where(p => p.DuplicateOf is null)
             .OrderByDescending(p => p.Score)
             .ThenByDescending(p => p.PublishedAt)
-            .Take(Math.Min(options.DigestSize, TelegramMessages.MaxItems))
+            .Take(options.DigestSize)
             .Select(p => new DigestItem(p, p.Score >= options.InterestingThreshold))
             .ToList();
     }

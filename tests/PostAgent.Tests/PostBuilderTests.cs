@@ -1,6 +1,3 @@
-using PostAgent.Models;
-using PostAgent.Services;
-using PostAgent.Telegram;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests;
@@ -53,7 +50,7 @@ public class PostBuilderTests
         Assert.Equal("news_7", post.RowKey);
         Assert.Equal("2026-11-24", post.PartitionKey);
         Assert.Equal(SourceType.Channel, post.SourceType);
-        Assert.Equal(PostKind.Post, post.Kind);
+        Assert.Equal(1, post.MessageCount);
         Assert.Null(post.Author);
         Assert.Equal(PostStatus.New, post.Status);
     }
@@ -64,7 +61,7 @@ public class PostBuilderTests
         var messages = Enumerable.Range(1, 50).Select(i => Message(i));
         var posts = PostBuilder.Build(Channel, messages, Options());
         Assert.Equal(50, posts.Count);
-        Assert.All(posts, p => Assert.Equal(PostKind.Post, p.Kind));
+        Assert.All(posts, p => Assert.Equal(1, p.MessageCount));
     }
 
     [Fact]
@@ -76,7 +73,7 @@ public class PostBuilderTests
 
         Assert.Equal(5, posts.Count);
         Assert.All(posts, p => Assert.Equal("ann", p.Author));
-        Assert.All(posts, p => Assert.Equal(PostKind.Post, p.Kind));
+        Assert.All(posts, p => Assert.Equal(1, p.MessageCount));
     }
 
     [Fact]
@@ -87,7 +84,6 @@ public class PostBuilderTests
         var posts = PostBuilder.Build(Group, messages, Options(o => o.MaxItemsPerGroup = 5));
 
         Assert.Equal(5, posts.Count);
-        Assert.All(posts, p => Assert.Equal(PostKind.Bundle, p.Kind));
         Assert.All(posts, p => Assert.Equal(40, p.MessageCount));
         Assert.Equal(200, posts.Sum(p => p.MessageCount));
     }
@@ -108,13 +104,11 @@ public class PostBuilderTests
             o.MinPostChars = 1;
         })));
 
-        Assert.Equal(PostKind.Bundle, post.Kind);
         Assert.StartsWith("ann: Ключова новина", post.Text);
         Assert.Equal("https://t.me/chat/2", post.Url);
         Assert.Equal("chat_1-3", post.RowKey);
         Assert.Equal(3, post.PostId);
         Assert.Equal(3, post.MessageCount);
-        Assert.Equal(50, post.Engagement);
     }
 
     [Fact]
@@ -145,5 +139,16 @@ public class PostBuilderTests
         })));
 
         Assert.True(post.Text.Length <= 300);
+    }
+
+    [Fact]
+    public void A_single_leftover_message_after_chunking_follows_the_normal_minimum_length_rule()
+    {
+        var messages = Enumerable.Range(1, 6).Select(i => Message(i)).Append(Message(7, "коротко"));
+
+        var posts = PostBuilder.Build(Group, messages, Options(o => o.MaxItemsPerGroup = 5)); // чанки: 2, 2, 2, 1
+
+        Assert.Equal(3, posts.Count);
+        Assert.All(posts, p => Assert.Equal(2, p.MessageCount));
     }
 }

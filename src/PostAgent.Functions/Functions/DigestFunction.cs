@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Services;
 
 namespace PostAgent.Functions;
 
@@ -21,7 +20,7 @@ public sealed class DigestFunction(
     {
         var now = time.GetUtcNow();
 
-        var recent = await posts.GetSinceAsync(now - DigestBuilder.FallbackWindow, now, ct);
+        var recent = await posts.GetSinceAsync(DigestBuilder.QueryStart(now), now, ct);
         var items = DigestBuilder.Build(recent, options.Value, now);
         if (items.Count == 0)
         {
@@ -31,10 +30,8 @@ public sealed class DigestFunction(
 
         await notifier.SendDigestAsync(await SummarizeAsync(items, ct), ct);
 
-        var sent = items.Select(i => i.Post).ToList();
-        sent.ForEach(p => p.MarkSent());
-        await posts.MarkDeliveredAsync(sent, ct);
-        log.LogInformation("Digest sent: {Count} posts", sent.Count);
+        await posts.MarkSentAsync(items.Select(i => i.Post), alertedAt: null, ct);
+        log.LogInformation("Digest sent: {Count} posts", items.Count);
     }
 
     private async Task<DigestReport> SummarizeAsync(IReadOnlyList<DigestItem> items, CancellationToken ct)

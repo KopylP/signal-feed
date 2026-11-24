@@ -1,4 +1,4 @@
-namespace PostAgent.Services;
+namespace PostAgent.Storage;
 
 /// <summary>
 /// Одне очищення даних, що більше не потрібні. CleanupFunction виконує всі зареєстровані в DI задачі,

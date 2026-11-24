@@ -1,7 +1,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace PostAgent.Services;
+namespace PostAgent.Ai;
 
 /// <summary>JSON для повідомлення користувача в запиті до моделі.</summary>
 public static class PromptJson

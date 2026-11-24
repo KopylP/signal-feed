@@ -9,6 +9,13 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="PostAgent.Models" />
+    <Using Include="PostAgent.Selection" />
+    <Using Include="PostAgent.Ai" />
+    <Using Include="PostAgent.Storage" />
+    <Using Include="PostAgent.Delivery" />
+    <Using Include="PostAgent.Telegram" />
+
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PostAgent.Functions\PostAgent.Functions.csproj" />

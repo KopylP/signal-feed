@@ -1,32 +1,16 @@
 using Azure;
 using Azure.Data.Tables;
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Storage;
 
-/// <summary>Таблиці ChannelState (курсор читання джерела) і Posts.</summary>
+/// <summary>Таблиця Posts.</summary>
 public sealed class PostRepository(TableServiceClient tables)
 {
     public const string PostsTable = "Posts";
-    public const string ChannelStateTable = "ChannelState";
 
-    private const string StatePartition = "source";
     private const int MaxTransactionSize = 100;
 
     private readonly TableClient _posts = tables.GetTableClient(PostsTable);
-    private readonly TableClient _state = tables.GetTableClient(ChannelStateTable);
-
-    public async Task<int> GetLastPostIdAsync(string username, CancellationToken ct)
-    {
-        var state = await _state.GetEntityIfExistsAsync<TableEntity>(StatePartition, username, cancellationToken: ct);
-        return state.HasValue ? state.Value!.GetInt32("LastPostId") ?? 0 : 0;
-    }
-
-    public Task SetLastPostIdAsync(string username, int lastPostId, CancellationToken ct) =>
-        _state.UpsertEntityAsync(
-            new TableEntity(StatePartition, username) { ["LastPostId"] = lastPostId },
-            TableUpdateMode.Replace,
-            ct);
 
     /// <summary>Додає пост, якщо його ще немає. Повторний запуск не скидає статус оцінених постів.</summary>
     public async Task AddIfMissingAsync(PostEntity post, CancellationToken ct)
@@ -94,19 +78,20 @@ public sealed class PostRepository(TableServiceClient tables)
         });
 
     /// <summary>
-    /// Позначає пости доставленими: лише Status і AlertedAt, без перевірки ETag. Перехід Scored → Sent
-    /// однобічний і повторюваний, тому конфлікти тут не потрібні. Збій одного поста не зупиняє решту.
+    /// Позначає пости надісланими (дайджестом або алертом): лише Status і, для алерта, AlertedAt, без перевірки ETag.
+    /// Перехід Scored → Sent однобічний і повторюваний, тому конфлікти тут не потрібні.
+    /// Збій одного поста не зупиняє решту.
     /// </summary>
-    public Task MarkDeliveredAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
+    public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) =>
         WriteAllAsync(posts, post =>
         {
             var columns = new TableEntity(post.PartitionKey, post.RowKey)
             {
-                [nameof(PostEntity.Status)] = post.Status.ToString(),
+                [nameof(PostEntity.Status)] = nameof(PostStatus.Sent),
             };
-            if (post.AlertedAt is not null)
+            if (alertedAt is not null)
             {
-                columns[nameof(PostEntity.AlertedAt)] = post.AlertedAt;
+                columns[nameof(PostEntity.AlertedAt)] = alertedAt;
             }
 
             return _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, ct);
@@ -149,7 +134,7 @@ public sealed class PostRepository(TableServiceClient tables)
         foreach (var batch in old.GroupBy(e => e.PartitionKey).SelectMany(g => g.Chunk(MaxTransactionSize)))
         {
             await _posts.SubmitTransactionAsync(
-                batch.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e)),
+                batch.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e, ETag.All)),
                 ct);
         }
 

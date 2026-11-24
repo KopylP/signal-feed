@@ -15,7 +15,6 @@ public sealed class PostEntity : ITableEntity
 
     public string Source { get; set; } = "";
     public SourceType SourceType { get; set; }
-    public PostKind Kind { get; set; }
     public int PostId { get; set; }
     public string? Author { get; set; }
     public string Url { get; set; } = "";
@@ -23,9 +22,8 @@ public sealed class PostEntity : ITableEntity
     public DateTimeOffset PublishedAt { get; set; }
     public PostStatus Status { get; set; } = PostStatus.New;
 
-    /// <summary>Кількість повідомлень у пачці (1 для звичайного посту).</summary>
+    /// <summary>Кількість повідомлень у пачці групи (1 для звичайного посту).</summary>
     public int MessageCount { get; set; } = 1;
-    public int Engagement { get; set; }
 
     public int? Score { get; set; }
     public string? Topic { get; set; }
@@ -38,19 +36,14 @@ public sealed class PostEntity : ITableEntity
 
     public PostRef ToRef() => new(PartitionKey, RowKey);
 
-    public void ApplyScore(PostScore score)
+    /// <summary>Записує оцінку. DuplicateOf лишається лише якщо це інший пост із тієї ж пачки.</summary>
+    public void ApplyScore(PostScore score, IReadOnlySet<string> batchIds)
     {
         Score = Math.Clamp(score.Score, 0, 10);
         Topic = score.Topic;
         Reason = score.Reason;
-        DuplicateOf = string.IsNullOrWhiteSpace(score.DuplicateOf) || score.DuplicateOf == RowKey ? null : score.DuplicateOf;
+        DuplicateOf = score.DuplicateOf is { } id && id != RowKey && batchIds.Contains(id) ? id : null;
         Status = PostStatus.Scored;
-    }
-
-    public void MarkSent(DateTimeOffset? alertedAt = null)
-    {
-        Status = PostStatus.Sent;
-        AlertedAt = alertedAt ?? AlertedAt;
     }
 }
 

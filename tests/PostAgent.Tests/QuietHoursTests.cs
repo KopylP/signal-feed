@@ -1,4 +1,3 @@
-using PostAgent.Services;
 
 namespace PostAgent.Tests;
 
@@ -41,5 +40,34 @@ public class QuietHoursTests
     public void Invalid_spec_throws()
     {
         Assert.Throws<FormatException>(() => QuietHours.IsQuiet("night", Kyiv, Utc(1)));
+    }
+
+    [Theory]
+    [InlineData(19, 59, false)] // 22:59 за літнім часом (UTC+3)
+    [InlineData(20, 0, true)]   // 23:00
+    [InlineData(3, 59, true)]   // 06:59
+    [InlineData(4, 0, false)]   // 07:00
+    public void Summer_time_uses_the_zone_offset_of_that_date(int utcHour, int utcMinute, bool expected)
+    {
+        var summerDay = new DateTimeOffset(2026, 7, 15, utcHour, utcMinute, 0, TimeSpan.Zero);
+
+        Assert.Equal(expected, QuietHours.IsQuiet("23:00-07:00", Kyiv, summerDay));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("23:00-07:00")]
+    public void Validate_accepts_empty_and_correct_settings(string spec)
+    {
+        Assert.Null(QuietHours.Validate(spec, Kyiv));
+    }
+
+    [Theory]
+    [InlineData("night", Kyiv)]
+    [InlineData("23-07-01", Kyiv)]
+    [InlineData("23:00-07:00", "Europe/Nowhere")]
+    public void Validate_describes_what_is_wrong(string spec, string zone)
+    {
+        Assert.NotNull(QuietHours.Validate(spec, zone));
     }
 }

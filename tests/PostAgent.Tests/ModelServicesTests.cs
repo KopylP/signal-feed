@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
-using PostAgent.Models;
-using PostAgent.Services;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests;

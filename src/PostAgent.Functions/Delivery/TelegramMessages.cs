@@ -1,20 +1,14 @@
 using System.Net;
 using System.Text;
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Delivery;
 
 /// <summary>Тексти повідомлень для Telegram (parse_mode HTML, весь динамічний текст екранується).</summary>
 public static class TelegramMessages
 {
     public const string NoPosts = "За добу нових постів не було";
 
-    /// <summary>
-    /// Ліміт записів у одному повідомленні. Запис не перевищує ~450 символів (тема 60, пояснення 200,
-    /// джерело й посилання), підсумок до 400, тож 8 записів вкладаються в 4096 символів Telegram.
-    /// </summary>
-    public const int MaxItems = 8;
-
+    private const int MaxHealthLines = 10;
     private const int MaxTopicChars = 60;
     private const int MaxDetailChars = 200;
     private const int MaxOverviewChars = 400;
@@ -49,8 +43,15 @@ public static class TelegramMessages
         return message.ToString();
     }
 
-    public static string FormatHealth(IReadOnlyList<string> failures) =>
-        "⚠️ <b>Збір не вдався</b>\n" + string.Join('\n', failures.Select(Escape));
+    public static string FormatHealth(IReadOnlyList<string> failures)
+    {
+        var lines = failures.Take(MaxHealthLines).Select(Escape).ToList();
+        if (failures.Count > MaxHealthLines)
+        {
+            lines.Add($"…і ще {failures.Count - MaxHealthLines}");
+        }
+        return "⚠️ <b>Збір не вдався</b>\n" + string.Join('\n', lines);
+    }
 
     private static string Topic(PostEntity post) => (post.Topic ?? "").Truncate(MaxTopicChars, "…");
 

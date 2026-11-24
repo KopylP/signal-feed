@@ -1,5 +1,3 @@
-using PostAgent.Models;
-using PostAgent.Services;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests;
@@ -103,10 +101,22 @@ public class TelegramMessagesTests
         var longPost = Post("a");
         longPost.Topic = new string('т', 500);
         longPost.Reason = new string('р', 500);
-        var items = Enumerable.Range(0, TelegramMessages.MaxItems).Select(_ => new DigestItem(longPost, true, new string('і', 500))).ToList();
+        var items = Enumerable.Range(0, AgentOptions.MaxItemsPerMessage).Select(_ => new DigestItem(longPost, true, new string('і', 500))).ToList();
 
         var html = TelegramMessages.FormatDigest(new DigestReport(new string('о', 2000), items));
 
         Assert.True(html.Length <= 4096, $"Message is {html.Length} chars");
+    }
+
+    [Fact]
+    public void Health_message_shows_only_the_first_failures_and_counts_the_rest()
+    {
+        var failures = Enumerable.Range(1, 15).Select(i => $"@src{i}: error").ToList();
+
+        var html = TelegramMessages.FormatHealth(failures);
+
+        Assert.Contains("@src10: error", html);
+        Assert.DoesNotContain("@src11: error", html);
+        Assert.Contains("…і ще 5", html);
     }
 }

@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Options;
-using PostAgent.Services;
 
 namespace PostAgent.Functions;
 
@@ -34,8 +33,7 @@ public sealed class AlertFunction(
         await notifier.SendAlertAsync(alerts, ct);
 
         // Sent, щоб дайджест не повторював ці пости; AlertedAt для паузи між алертами групи.
-        alerts.ToList().ForEach(p => p.MarkSent(alertedAt: now));
-        await posts.MarkDeliveredAsync(alerts, ct);
+        await posts.MarkSentAsync(alerts, alertedAt: now, ct);
         log.LogInformation("Alert sent: {Count} posts", alerts.Count);
     }
 }

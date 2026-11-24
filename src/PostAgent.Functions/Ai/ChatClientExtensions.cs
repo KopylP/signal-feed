@@ -1,6 +1,6 @@
 using Microsoft.Extensions.AI;
 
-namespace PostAgent.Services;
+namespace PostAgent.Ai;
 
 public static class ChatClientExtensions
 {

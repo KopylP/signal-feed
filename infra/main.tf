@@ -23,32 +23,33 @@ locals {
       # Identity-based підключення до storage: без ключів і рядків підключення.
       AzureWebJobsStorage__accountName = azurerm_storage_account.main.name
 
-      Sources              = var.sources
-      CollectorSchedule    = var.collector_schedule
-      DigestSchedule       = var.digest_schedule
-      AlertSchedule        = var.alert_schedule
-      CleanupSchedule      = var.cleanup_schedule
-      DigestSize           = var.digest_size
-      InterestingThreshold = var.interesting_threshold
-      ScoringBatchSize     = var.scoring_batch_size
-      MaxPostChars         = var.max_post_chars
-      MinPostChars         = var.min_post_chars
-      RetentionDays        = var.retention_days
-      MaxItemsPerGroup     = var.max_items_per_group
-      MaxBundleChars       = var.max_bundle_chars
-      AlertSources         = var.alert_sources
-      AlertWindowHours     = var.alert_window_hours
-      AlertCooldownHours   = var.alert_cooldown_hours
-      AlertThreshold       = var.alert_threshold
-      BurstMinPosts        = var.burst_min_posts
-      AlertMaxPerRun       = var.alert_max_per_run
-      AlertQuietHours      = var.alert_quiet_hours
-      AlertTimeZone        = var.alert_time_zone
-      OpenAIModel          = var.openai_model
-      TelegramChatId       = var.telegram_chat_id
-      TelegramApiId        = var.telegram_api_id
-      TelegramPhone        = var.telegram_phone
-      SessionBlobContainer = var.session_blob_container
+      Sources               = var.sources
+      CollectorSchedule     = var.collector_schedule
+      DigestSchedule        = var.digest_schedule
+      AlertSchedule         = var.alert_schedule
+      CleanupSchedule       = var.cleanup_schedule
+      DigestSize            = var.digest_size
+      InterestingThreshold  = var.interesting_threshold
+      ScoringBatchSize      = var.scoring_batch_size
+      MaxPostChars          = var.max_post_chars
+      MinPostChars          = var.min_post_chars
+      RetentionDays         = var.retention_days
+      FirstRunLookbackHours = var.first_run_lookback_hours
+      MaxItemsPerGroup      = var.max_items_per_group
+      MaxBundleChars        = var.max_bundle_chars
+      AlertSources          = var.alert_sources
+      AlertWindowHours      = var.alert_window_hours
+      AlertCooldownHours    = var.alert_cooldown_hours
+      AlertThreshold        = var.alert_threshold
+      BurstMinPosts         = var.burst_min_posts
+      AlertMaxPerRun        = var.alert_max_per_run
+      AlertQuietHours       = var.alert_quiet_hours
+      AlertTimeZone         = var.alert_time_zone
+      OpenAIModel           = var.openai_model
+      TelegramChatId        = var.telegram_chat_id
+      TelegramApiId         = var.telegram_api_id
+      TelegramPhone         = var.telegram_phone
+      SessionBlobContainer  = var.session_blob_container
     },
     # Секрети: лише посилання на Key Vault, значення в state не потрапляють.
     local.secret_reference,
@@ -85,18 +86,18 @@ resource "azurerm_storage_container" "session" {
 }
 
 resource "azurerm_storage_table" "channel_state" {
-  name                 = "ChannelState"
-  storage_account_name = azurerm_storage_account.main.name
+  name               = "ChannelState"
+  storage_account_id = azurerm_storage_account.main.id
 }
 
 resource "azurerm_storage_table" "posts" {
-  name                 = "Posts"
-  storage_account_name = azurerm_storage_account.main.name
+  name               = "Posts"
+  storage_account_id = azurerm_storage_account.main.id
 }
 
 resource "azurerm_storage_queue" "to_score" {
-  name                 = "to-score"
-  storage_account_name = azurerm_storage_account.main.name
+  name               = "to-score"
+  storage_account_id = azurerm_storage_account.main.id
 }
 
 # ---------- Key Vault (RBAC). Значення секретів Terraform не створює. ----------

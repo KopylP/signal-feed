@@ -1,6 +1,5 @@
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Selection;
 
 /// <summary>
 /// Вибирає пости, про які треба сповістити одразу (чиста функція).
@@ -26,7 +25,7 @@ public static class AlertSelector
             .Select(group => Rank(group).First());
 
         return Rank(bestPerSource)
-            .Take(Math.Min(options.AlertMaxPerRun, TelegramMessages.MaxItems))
+            .Take(options.AlertMaxPerRun)
             .ToList();
     }
 

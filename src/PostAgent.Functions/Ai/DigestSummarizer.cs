@@ -1,7 +1,6 @@
 using Microsoft.Extensions.AI;
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Ai;
 
 /// <summary>Просить модель підсумувати відібрані пости: що головне сьогодні й що цікавого в кожному (prompts/digest.md).</summary>
 public sealed class DigestSummarizer(IChatClient chat)

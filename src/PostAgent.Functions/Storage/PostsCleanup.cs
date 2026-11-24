@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace PostAgent.Services;
+namespace PostAgent.Storage;
 
 /// <summary>
 /// Видаляє з Posts дні старші за RetentionDays. Posts розбита на партиції-дні, тож з RetentionDays = 1

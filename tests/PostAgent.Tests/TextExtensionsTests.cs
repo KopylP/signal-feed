@@ -1,4 +1,3 @@
-using PostAgent.Services;
 
 namespace PostAgent.Tests;
 
@@ -24,5 +23,11 @@ public class TextExtensionsTests
         var result = text.Truncate(3);
 
         Assert.Equal("ab", result);
+    }
+
+    [Fact]
+    public void Suffix_is_added_after_a_cut_that_avoids_the_surrogate_pair()
+    {
+        Assert.Equal("ab…", "ab😀cd".Truncate(3, "…"));
     }
 }

@@ -1,6 +1,5 @@
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Models;
 
 /// <summary>Пост у дайджесті. Insight — пояснення «що саме цікаве» від моделі (може бути відсутнє).</summary>
 public sealed record DigestItem(PostEntity Post, bool IsInteresting, string? Insight = null);

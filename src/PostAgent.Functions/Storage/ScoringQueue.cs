@@ -1,8 +1,7 @@
 using System.Text.Json;
 using Azure.Storage.Queues;
-using PostAgent.Models;
 
-namespace PostAgent.Services;
+namespace PostAgent.Storage;
 
 /// <summary>Черга to-score. Повідомлення містить лише посилання на пости, не тексти (ліміт 64 КБ).</summary>
 public sealed class ScoringQueue(QueueClient queue)
