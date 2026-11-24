@@ -37,7 +37,12 @@ public sealed class RunNowFunction(
         {
             await job.RunAsync(ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException)
+        {
+            // Swallowed too: a host shutdown must not leave the message to reappear and rerun the job.
+            log.LogWarning("Run-now: {Job} was cancelled, it will not be retried", job.Name);
+        }
+        catch (Exception ex)
         {
             // Not rethrown: a retry would send the digest or move the cursors again. The timer does not retry either.
             log.LogError(ex, "Run-now: {Job} failed", job.Name);

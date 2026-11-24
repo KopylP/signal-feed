@@ -26,6 +26,9 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Settings: `ManualRunsEnabled` (default `false`)
   - Limits: it does not wait for the result (read the function logs); a failed job is not retried; `digest` and `alert` send real Telegram messages. See [run a job now](docs/user-guide/configuration.md#run-a-job-now)
 
+### Security
+- Anyone who can write to the `run-now` queue can start a job while `ManualRunsEnabled` is `true`; it is `false` unless you turn it on, and access to the queue is by Azure role only.
+
 ## [raven] - 2026-11-24
 
 ### Setup required

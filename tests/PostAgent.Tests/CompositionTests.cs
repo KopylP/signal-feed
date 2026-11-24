@@ -93,8 +93,9 @@ public class CompositionTests
         using var scope = provider.CreateScope();
         var tool = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "run-now.cs"));
 
-        Assert.Contains($"\"{StorageNames.RunNowQueue}\"", tool);
-        Assert.All(scope.ServiceProvider.GetServices<IJob>(), job => Assert.Contains($"\"{job.Name}\"", tool));
+        var jobsLine = tool.Split('\n').Single(l => l.StartsWith("string[] jobs = ", StringComparison.Ordinal));
+        Assert.Contains($"const string queueName = \"{StorageNames.RunNowQueue}\";", tool);
+        Assert.All(scope.ServiceProvider.GetServices<IJob>(), job => Assert.Contains($"\"{job.Name}\"", jobsLine));
     }
 
     [Fact]

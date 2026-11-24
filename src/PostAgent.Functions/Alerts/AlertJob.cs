@@ -35,7 +35,7 @@ public sealed class AlertJob(
 
         await notifier.SendAsync(AlertMessage.Format(alerts), ct);
 
-        // Sent, щоб дайджест не повторював ці пости; AlertedAt для паузи між алертами групи.
+        // Sent keeps the digest from repeating these posts; AlertedAt is the pause between alerts for a group.
         await posts.MarkSentAsync(alerts, alertedAt: now, ct);
         log.LogInformation("Alert sent: {Count} posts", alerts.Count);
     }

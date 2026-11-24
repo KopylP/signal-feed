@@ -54,11 +54,32 @@ public class RunNowFunctionTests
     }
 
     [Fact]
-    public async Task Lets_cancellation_through()
+    public async Task Does_not_rethrow_cancellation_so_a_shutdown_does_not_rerun_the_job()
     {
         var cancelled = new FakeJob("collect", () => throw new OperationCanceledException());
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            CreateFunction(extra: cancelled).Run("collect", CancellationToken.None));
+        await CreateFunction(extra: cancelled).Run("collect", CancellationToken.None);
+
+        Assert.Equal(1, cancelled.Runs);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Ignores_an_empty_message(string message)
+    {
+        await CreateFunction().Run(message, CancellationToken.None);
+
+        Assert.Equal(0, _digest.Runs + _alert.Runs);
+    }
+
+    [Fact]
+    public async Task Checks_the_switch_before_looking_for_the_job()
+    {
+        var job = new FakeJob("collect");
+
+        await CreateFunction(enabled: false, job).Run("collect", CancellationToken.None);
+
+        Assert.Equal(0, job.Runs);
     }
 }
