@@ -25,7 +25,7 @@ public class TelegramMessagesTests
         post.Reason = "x < y";
         post.Url = "https://t.me/s/1?a=\"q\"&b=2";
 
-        var html = TelegramMessages.FormatDigest([new DigestItem(post, IsInteresting: true)]);
+        var html = TelegramMessages.FormatDigest(DigestReport.Plain([new DigestItem(post, IsInteresting: true)]));
 
         Assert.Contains("A &lt;b&gt;&amp;&lt;/b&gt; B", html);
         Assert.Contains("x &lt; y", html);
@@ -36,10 +36,10 @@ public class TelegramMessagesTests
     [Fact]
     public void Digest_labels_interesting_and_best_of_the_day_posts()
     {
-        var html = TelegramMessages.FormatDigest([
+        var html = TelegramMessages.FormatDigest(DigestReport.Plain([
             new DigestItem(Post("a", score: 9), IsInteresting: true),
             new DigestItem(Post("b", score: 3), IsInteresting: false),
-        ]);
+        ]));
 
         Assert.Contains("🔥 <b>Цікаве</b>", html);
         Assert.Contains("📌 <b>Найкраще за день</b>", html);
@@ -75,5 +75,38 @@ public class TelegramMessagesTests
         Assert.StartsWith("⚠️", html);
         Assert.Contains("@news: &lt;boom&gt; &amp; more", html);
         Assert.Contains("@chat: timeout", html);
+    }
+
+    [Fact]
+    public void Digest_shows_the_overview_and_prefers_the_insight_over_the_reason()
+    {
+        var report = new DigestReport("Головне: <нові> ціни", [new DigestItem(Post("a"), IsInteresting: true, Insight: "Конкретний факт")]);
+
+        var html = TelegramMessages.FormatDigest(report);
+
+        Assert.Contains("Головне: &lt;нові&gt; ціни", html);
+        Assert.Contains("Конкретний факт", html);
+        Assert.DoesNotContain("Причина", html);
+    }
+
+    [Fact]
+    public void Digest_falls_back_to_the_reason_when_there_is_no_insight()
+    {
+        var html = TelegramMessages.FormatDigest(DigestReport.Plain([new DigestItem(Post("a"), IsInteresting: true)]));
+
+        Assert.Contains("Причина", html);
+    }
+
+    [Fact]
+    public void Digest_with_the_maximum_items_fits_into_one_telegram_message()
+    {
+        var longPost = Post("a");
+        longPost.Topic = new string('т', 500);
+        longPost.Reason = new string('р', 500);
+        var items = Enumerable.Range(0, TelegramMessages.MaxItems).Select(_ => new DigestItem(longPost, true, new string('і', 500))).ToList();
+
+        var html = TelegramMessages.FormatDigest(new DigestReport(new string('о', 2000), items));
+
+        Assert.True(html.Length <= 4096, $"Message is {html.Length} chars");
     }
 }

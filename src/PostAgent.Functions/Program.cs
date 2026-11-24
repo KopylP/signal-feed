@@ -30,7 +30,9 @@ builder.Services.AddStorage(builder.Configuration);
 
 builder.Services.AddSingleton<PostRepository>();
 builder.Services.AddSingleton<ScoringQueue>();
+builder.Services.AddSingleton<StructuredChat>();
 builder.Services.AddSingleton<PostScorer>();
+builder.Services.AddSingleton<DigestSummarizer>();
 builder.Services.AddSingleton<ICleanupTask, PostsCleanup>();
 builder.Services.AddScoped<TelegramSourceReader>();
 

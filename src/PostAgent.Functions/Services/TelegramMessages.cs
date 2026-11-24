@@ -10,24 +10,30 @@ public static class TelegramMessages
     public const string NoPosts = "За добу нових постів не було";
 
     /// <summary>
-    /// Ліміт записів у одному повідомленні. Запис не перевищує ~450 символів (тема 60, причина 200,
-    /// джерело й посилання), тож 8 записів гарантовано вкладаються в 4096 символів Telegram.
+    /// Ліміт записів у одному повідомленні. Запис не перевищує ~450 символів (тема 60, пояснення 200,
+    /// джерело й посилання), підсумок до 400, тож 8 записів вкладаються в 4096 символів Telegram.
     /// </summary>
     public const int MaxItems = 8;
 
     private const int MaxTopicChars = 60;
-    private const int MaxReasonChars = 200;
+    private const int MaxDetailChars = 200;
+    private const int MaxOverviewChars = 400;
 
     public static string Escape(string? text) => WebUtility.HtmlEncode(text ?? "");
 
-    public static string FormatDigest(IReadOnlyList<DigestItem> items)
+    public static string FormatDigest(DigestReport report)
     {
         var message = new StringBuilder("📰 <b>Дайджест</b>");
-        foreach (var item in items)
+        if (report.Overview is not null)
+        {
+            message.Append("\n\n").Append(Escape(report.Overview.Truncate(MaxOverviewChars, "…")));
+        }
+
+        foreach (var item in report.Items)
         {
             var label = item.IsInteresting ? "🔥 <b>Цікаве</b>" : "📌 <b>Найкраще за день</b>";
             message.Append("\n\n").Append(label).Append(" · ").Append(Escape(Topic(item.Post)));
-            AppendDetails(message, item.Post);
+            AppendDetails(message, item.Post, item.Insight ?? item.Post.Reason);
         }
         return message.ToString();
     }
@@ -38,7 +44,7 @@ public static class TelegramMessages
         foreach (var post in posts)
         {
             message.Append("\n\n<b>").Append(Escape(Topic(post))).Append("</b>");
-            AppendDetails(message, post);
+            AppendDetails(message, post, post.Reason);
         }
         return message.ToString();
     }
@@ -48,10 +54,10 @@ public static class TelegramMessages
 
     private static string Topic(PostEntity post) => (post.Topic ?? "").Truncate(MaxTopicChars, "…");
 
-    private static void AppendDetails(StringBuilder message, PostEntity post)
+    private static void AppendDetails(StringBuilder message, PostEntity post, string? detail)
     {
         message.Append('\n').Append(SourceLine(post));
-        message.Append('\n').Append(Escape((post.Reason ?? "").Truncate(MaxReasonChars, "…")));
+        message.Append('\n').Append(Escape((detail ?? "").Truncate(MaxDetailChars, "…")));
         message.Append("\n<a href=\"").Append(Escape(post.Url)).Append("\">Читати</a>");
     }
 

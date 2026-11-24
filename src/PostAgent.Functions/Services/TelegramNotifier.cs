@@ -7,8 +7,8 @@ namespace PostAgent.Services;
 /// <summary>Надсилає повідомлення власнику через Telegram Bot API.</summary>
 public sealed class TelegramNotifier(HttpClient http, IOptions<AgentOptions> options)
 {
-    public Task SendDigestAsync(IReadOnlyList<DigestItem> items, CancellationToken ct) =>
-        SendAsync(TelegramMessages.FormatDigest(items), ct);
+    public Task SendDigestAsync(DigestReport report, CancellationToken ct) =>
+        SendAsync(TelegramMessages.FormatDigest(report), ct);
 
     public Task SendNoPostsAsync(CancellationToken ct) => SendAsync(TelegramMessages.NoPosts, ct);
 

@@ -2,8 +2,6 @@ using PostAgent.Models;
 
 namespace PostAgent.Services;
 
-public sealed record DigestItem(PostEntity Post, bool IsInteresting);
-
 /// <summary>Вибирає пости для денного дайджесту (чиста функція).</summary>
 public static class DigestBuilder
 {

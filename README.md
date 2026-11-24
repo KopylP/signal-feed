@@ -18,7 +18,7 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 | `CollectorFunction` | `%CollectorSchedule%` | Читає нові повідомлення джерел через MTProto, зберігає пости, ставить їх у чергу пачками по `ScoringBatchSize` |
 | `ScorerFunction` | черга `to-score` | Оцінює пости через OpenAI (Structured Outputs), пише Score, Topic, Reason, DuplicateOf |
 | `AlertFunction` | `%AlertSchedule%` | Надсилає алерт про сплеск або дуже важливе повідомлення в групах зі списку `AlertSources` |
-| `DigestFunction` | `%DigestSchedule%` | Надсилає дайджест (завжди) |
+| `DigestFunction` | `%DigestSchedule%` | Вибирає найкращі пости, просить модель написати підсумок і надсилає дайджест (завжди) |
 | `CleanupFunction` | `%CleanupSchedule%` | Виконує всі `ICleanupTask`. Зараз це видалення з `Posts` днів старших за `RetentionDays` |
 
 **Канали й групи.** Канали: кожен пост оцінюється окремо. Групи: якщо за запуск прийшло не більше
@@ -32,6 +32,11 @@ Collector (щогодини) ──► Posts (Table) ──► to-score (Queue) 
 сповіщаємо не частіше ніж раз на `AlertCooldownHours`, за один запуск не більше `AlertMaxPerRun` записів.
 У `AlertQuietHours` (наприклад, `23:00-07:00`) алерти не надсилаються, такі пости потрапляють у дайджест.
 Пост, про який вже сповістили, у дайджесті не повторюється.
+
+**Підсумок у дайджесті.** Після вибору постів `DigestSummarizer` робить один додатковий виклик OpenAI за промптом
+[`prompts/digest.md`](prompts/digest.md). Модель повертає короткий огляд дня (що головне й які теми повторюються) і для кожного поста
+пояснення, що саме в ньому цікаве. Посилання модель не пише: їх додає система з даних постів, тож вигадати їх вона не може.
+Якщо OpenAI недоступний або відповідь некоректна, дайджест усе одно приходить без підсумку, з короткими причинами оцінки.
 
 **Очищення даних.** Таблиця `Posts` розбита на дні, тому `CleanupFunction` видаляє цілі дні старші за `RetentionDays`.
 `ChannelState` (курсори читання) не чіпається. Щоб очищати щось нове (іншу таблицю, чергу чи blob), додайте клас, що реалізує
@@ -84,8 +89,8 @@ az functionapp config appsettings set -g <rg> -n <function-app> \
   --settings Sources="channel_one,channel_two,some_group" AlertSources="some_group"
 ```
 
-**Промпт оцінювання.** Файл [`prompts/scoring.md`](prompts/scoring.md) копіюється у збірку, тому після зміни
-потрібен новий деплой (достатньо push у `main`). Заповніть у ньому свої теми замість `{тема 1}`
+**Промпти.** Файли [`prompts/scoring.md`](prompts/scoring.md) (оцінювання) і [`prompts/digest.md`](prompts/digest.md) (підсумок дайджесту) копіюються у збірку, тому після зміни
+потрібен новий деплой (достатньо push у `main`). У `scoring.md` заповніть свої теми замість `{тема 1}`
 і приклади замість `{реальний пост...}`.
 
 ## Локальний запуск з Azurite
