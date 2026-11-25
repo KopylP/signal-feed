@@ -8,6 +8,42 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [cedar] - 2026-11-25
+
+### Setup required
+- **`tg-login` queue**: required before the code deploys
+  - Where: Terraform (`infra/storage.tf`)
+  - Value: none, Terraform creates it
+  - Apply: run the `infra` workflow with apply (or `terraform apply`) before this code merges; without the queue `/login` fails
+- **`telegram_phone` / `TF_TELEGRAM_PHONE`**: optional now (default empty)
+  - Where: Terraform variable / GitHub Secret
+  - Value: keep it to let `/login` sign in only that number; leave it empty to type any number in the bot
+  - Apply: nothing is needed to keep today's behavior; to clear it, empty the secret and run the `infra` workflow
+
+### Contract changes
+- **App Setting `TelegramPhone`: no longer required** (compatible)
+  - Before: required, the phone of the reader account
+  - After: optional; when set, `/login` refuses any other number; Terraform sets it only when `telegram_phone` is not empty
+  - Affects: nothing
+  - Migration: none
+- **Telegram messages: the collection failure for an expired session** (compatible)
+  - Before: `Telegram session is expired. Run TgLogin again.`
+  - After: `Telegram session is expired. Send /login to the bot (or run TgLogin).`
+  - Affects: nothing
+  - Migration: none
+
+### Added
+- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password ([installation, step 4](docs/user-guide/installation.md#step-4-sign-in-to-telegram), ADR-0016)
+  - Enable: on by default for every paired private chat, once the `tg-login` queue exists
+  - Settings: `TelegramPhone` (optional) limits the number that may be signed in
+  - Limits: one sign-in at a time, 5 minutes, 3 wrong answers; a sign-in that Telegram routes to email or sign-up needs `TgLogin`
+
+### Logic
+- **Collecting: which account the session may hold**
+  - Before: the collector compared the session's account with `TelegramPhone` and, on a mismatch, logged the session out and tried to sign in again
+  - After: the collector uses whichever account the session holds and never asks Telegram for a code; an expired session fails the collection with a hint to send `/login`
+  - Effect: no code requests from the hourly collection; the reader account can be changed with `/login` without touching Terraform
+
 ## [v2026.11.25.75-willow] - 2026-11-25
 
 ### Improved

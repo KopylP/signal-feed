@@ -71,6 +71,20 @@ and the answer says so. It does not browse the web.
 - **Before the first digest** the chat works too: the agent has no digest to rely on, so it answers from the stored posts and from its own knowledge and says which. When a digest arrives, it becomes the context of the conversation and replaces what was there.
 - **Clearing the context.** Send `/clear` to forget the earlier questions and answers (the digest stays), or ask the agent («забудь розмову»): it then prepares the action and you confirm it with a button, like a settings change.
 
+## Renewing the Telegram session
+
+The agent reads channels as a Telegram user (the reader account). When Telegram ends that session, every collection fails with «Збір не вдався» and a hint to send `/login`.
+Renew it from the bot, in your paired private chat ([ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md)):
+
+1. Send `/login`. The bot answers «Готую вхід…», then sends «📱 Ввести номер».
+2. The button opens a form inside Telegram. Type the phone number of the reader account (`+380…`).
+3. Telegram sends the login code to that account (the «Telegram» chat in its app), and the bot sends «🔑 Ввести код».
+4. Type the code, and the two-step verification password if the account has one. The bot answers «✅ Сесію оновлено».
+
+Type the code only into the form, never into a chat: Telegram blocks a sign-in whose code was sent as a message.
+A sign-in lasts at most 5 minutes and allows 3 wrong answers; only one runs at a time, and a collection that starts meanwhile is skipped.
+If `TelegramPhone` is set, the bot signs in only that number. The form is accepted only from the paired chat that sent `/login`.
+
 ## Data retention
 
 Posts are kept for `RetentionDays` (1 by default: yesterday and today) and then deleted by day. The read position of each source is never deleted.

@@ -8,7 +8,7 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Login.Infrastructure;
 
-// One blob next to the session, so that only the identities that may read the session can read a code in transit.
+// One blob next to the session, so that only the identities that may read the session can read a code or a password in transit.
 // Every change is a read, a check and a write with the ETag; a lost race is simply retried.
 public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<AgentOptions> options) : ILoginAttemptStore
 {
@@ -50,7 +50,7 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
                 return false;
             }
 
-            var updated = attempt with { Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
+            var updated = attempt with { Phone = submission.Phone, Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
             if (await TryWriteAsync(updated, etag, ct))
             {
                 return true;
@@ -69,14 +69,14 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
                 return null;
             }
 
-            if (attempt.Code is null && attempt.Password is null)
+            if (attempt.Phone is null && attempt.Code is null && attempt.Password is null)
             {
                 return null;
             }
 
-            if (await TryWriteAsync(attempt with { Code = null, Password = null }, etag, ct))
+            if (await TryWriteAsync(attempt with { Phone = null, Code = null, Password = null }, etag, ct))
             {
-                return new LoginSubmission(attempt.Code, attempt.Password);
+                return new LoginSubmission(attempt.Phone, attempt.Code, attempt.Password);
             }
         }
 

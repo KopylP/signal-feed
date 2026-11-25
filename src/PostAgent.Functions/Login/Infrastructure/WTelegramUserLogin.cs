@@ -7,6 +7,7 @@ namespace PostAgent.Login.Infrastructure;
 
 // A sign-in on a new, empty session (a new auth key): the session the collector holds is never touched until this one is complete.
 // WTelegram's Login(string) is a dialogue: each call answers the last question and returns the next one, null when signed in.
+// A wrong code or password returns the same question again; after its third wrong answer WTelegram throws and the sign-in is over.
 public sealed class WTelegramUserLogin : IUserLogin
 {
     private readonly AgentOptions _options;
@@ -22,10 +23,10 @@ public sealed class WTelegramUserLogin : IUserLogin
 
     public string? AccountName => _client.User is { } user ? user.MainUsername ?? $"{user.first_name} {user.last_name}".Trim() : null;
 
-    public async Task<LoginStep> StartAsync(CancellationToken ct)
+    public async Task<LoginStep> StartAsync(string phone, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Map(await _client.Login(_options.TelegramPhone));
+        return Map(await _client.Login(phone));
     }
 
     public async Task<LoginStep> SubmitCodeAsync(string code, CancellationToken ct)

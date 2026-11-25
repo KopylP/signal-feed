@@ -25,6 +25,8 @@ Resources talk to each other with managed identity and RBAC: there are no keys o
 | `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
 | `PairingFunction` | HTTP `POST /api/telegram/webhook` (anonymous) | The bot's webhook: checks the secret token header, binds the chat that sends `/start <TelegramPairingKey>`, and hands every other update (a message or a button press) to the handlers, the settings menu first and then the chat ([ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md)) |
 | `ChatFunction` | queue `chat-messages` | Answers one question about the latest digest with a Microsoft Agent Framework agent and tools ([ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md)) |
+| `LoginFunction` | queue `tg-login` | The waiting side of `/login`: holds the session lock and one MTProto connection, sends the Mini App buttons, takes the phone, the code and the 2FA password from the attempt blob and replaces the session ([ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md)) |
+| `LoginPage`, `LoginSubmit` | HTTP `GET`/`POST /api/telegram/login` (anonymous) | The Mini App page and its form; the form is accepted only with `initData` signed by Telegram for this bot, from the paired chat that started the attempt, with its attempt id |
 | `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`; today it deletes days older than `RetentionDays` from `Posts` |
 | `RunNowFunction` | queue `run-now` | Starts a job by name (`collect`, `digest`, `alert`, `cleanup`) for testing, only when `ManualRunsEnabled` is true. The timer functions and this one call the same `IJob` class, so the logic exists once |
 
@@ -67,11 +69,12 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 | Table | `ChatBinding` | One row per paired chat (`chat`/`<chat id>`; an earlier version's `chat`/`digest` row still counts), at most `TelegramMaxChats`; deleted by the operator to unbind ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)) |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about, chat id); messages live one hour |
+| Queue | `tg-login` | One message per `/login` (attempt id, chat id); lives 10 minutes, never retried |
 | Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
 | Blob | `settings` / `overrides.json` | What the owner set from the bot (values, sources with a verified flag, alert sources, edited prompt sections, the ids of the last handled menu updates); written with an ETag, read by `IEffectiveOptions` ([ADR-0012](../adr/0012-override-settings-from-the-telegram-bot-through-a-blob.md)) |
 | Blob | `settings` / `profile/<chat id>.txt` | What the reader of one chat wrote about themselves, plain text, one blob per chat; the chat adds it to its instructions as data; written by the chat through a confirmed edit ([ADR-0015](../adr/0015-edit-prompt-sections-and-a-reader-profile-from-the-chat.md)) |
 | Blob | `chat-state` / `<chat id>.json` | The conversation of one chat about the latest digest: snapshot of the digest (empty before the first digest, the chat works without it), ids of the last 20 handled updates, serialized agent session (dropped by `/clear`); overwritten by every digest |
-| Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin`, and `collect.lock`, leased for the length of a collection so that two collections never share the session (two connections on one auth key can make Telegram revoke it) |
+| Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin` or by `/login`; `collect.lock`, leased for the length of a collection or a sign-in so that two of them never share the session (two connections on one auth key can make Telegram revoke it); `login-attempt.json`, the sign-in in progress (attempt id, chat, expiry, and the phone, code and password the form sent until `LoginFunction` takes them), deleted when the sign-in ends |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
 
 Every storage name is defined once in `Shared/Infrastructure/StorageNames`.
@@ -122,11 +125,14 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Every deploy is a release with a build-counter version | Traceable versions and simple rollback | [ADR-0005](../adr/0005-release-every-deploy-with-a-build-counter-version.md) |
 | Bind the chat with a pairing key over a webhook | The operator does not have to look up a chat id; the first chat with the secret key wins and the id is stored in a table | [ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md) |
 | Chat about the digest with one conversation blob | A new digest replaces the state, so nothing accumulates; the queue keeps the webhook fast; the agent framework core gives session serialization without durable hosting | [ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md) |
+| Sign in to Telegram from the bot through a Mini App | The session can be renewed from the phone; the code never travels as a Telegram message, and the password is not stored at rest | [ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md) |
 | Fix formatting and validate Terraform in the build job | One pipeline gates the deploy: a broken format or Terraform change cannot reach it | [ADR-0006](../adr/0006-fix-formatting-and-validate-terraform-in-the-build-job.md) |
 
 ## Known gaps
 
 - **The webhook endpoint is public.** It is protected by the secret token header and the pairing key, not by a function key (Telegram cannot send one).
+- **The sign-in page is public.** Its form trusts only `initData` signed with the bot token, so a leaked bot token also lets someone submit a form; they still need the login code Telegram sends to the reader account. Without `TelegramPhone`, any paired chat can sign the reader in as another account.
+- **A login code and the 2FA password pass through storage.** They sit in `login-attempt.json` for the seconds between the form and `LoginFunction` (which clears them at once) and are readable by whoever may read the session blob.
 - **The chat costs money per question and has no per-day limit.** Only the bound private chat reaches it, and a conversation, a reply and the tool calls per question are capped, but there is no daily budget for questions; a question costs up to `ChatMaxToolCalls + 1` model calls.
 - **No network isolation.** Storage and Key Vault are reachable over their public endpoints, protected by RBAC and TLS 1.2. A VNet or private endpoints have a standing cost, so they need an explicit decision.
 - **Anyone with write access to the `run-now` queue can start a job** (the function identity and the deployer; storage keys are not disabled either). The switch `ManualRunsEnabled` is off in Azure by default, so a message does nothing until the operator turns it on.

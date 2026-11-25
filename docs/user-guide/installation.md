@@ -71,7 +71,10 @@ dotnet run --project src/TgLogin -- $(terraform -chdir=infra output -raw storage
 ```
 
 The tool asks for the Telegram code and the two-factor password, then uploads the session to the `tg-session` container using your `az login`
-(Terraform already granted you the Storage Blob Data Contributor role). It ends with `Session uploaded`. When the session expires, repeat this step.
+(Terraform already granted you the Storage Blob Data Contributor role). It ends with `Session uploaded`.
+
+Later, when the session expires, you do not need this tool: send `/login` to the bot from your paired private chat
+(see [Renewing the Telegram session](how-it-works.md#renewing-the-telegram-session)). `TgLogin` stays for the first installation and for a sign-in the bot cannot do.
 
 ## Step 5. Deploy the code
 

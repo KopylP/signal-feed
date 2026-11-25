@@ -8,7 +8,7 @@ Allow about 30 minutes. The Azure resources, the code and the sources stay as th
 | Part | Where it lives | Moves with the owner? |
 |---|---|---|
 | Chat for the digest and alerts | table `ChatBinding`, or `telegram_chat_id` | Always |
-| Reader account (reads channels) | blob in `tg-session`, Key Vault `TelegramApiHash`, `telegram_api_id`, `telegram_phone` | Only if the new owner brings their own account |
+| Reader account (reads channels) | blob in `tg-session`, Key Vault `TelegramApiHash`, `telegram_api_id`, `telegram_phone` (optional) | Only if the new owner brings their own account |
 | Bot | Key Vault `TelegramBotToken` (from @BotFather) | Only if the bot must belong to the new owner |
 | Old posts, read positions, conversation, bot-made settings | tables `Posts`, `ChannelState`, containers `chat-state`, `settings`, queues `to-score`, `chat-messages` | Cleared, so the new owner starts clean |
 
@@ -42,7 +42,7 @@ If you use a fixed chat (`telegram_chat_id` in `terraform.tfvars`, or the `TF_TE
    `read -rsp "Bot token: " V && az keyvault secret set --vault-name $KV --name TelegramBotToken --value "$V" >/dev/null; echo`.
    Revoke the old token in @BotFather if the old owner keeps the old bot.
 2. **Reader account.** The new owner uses a separate Telegram account (not their main one) and takes `api_id` and `api_hash` from [my.telegram.org](https://my.telegram.org).
-   Store the hash in Key Vault as `TelegramApiHash`. Set the new `telegram_api_id` and `telegram_phone` in `terraform.tfvars`
+   Store the hash in Key Vault as `TelegramApiHash`. Set the new `telegram_api_id`, and `telegram_phone` if you keep it, in `terraform.tfvars`
    (or the `TF_TELEGRAM_API_ID` and `TF_TELEGRAM_PHONE` secrets in GitHub) and run `terraform apply` (or the `infra` workflow).
 3. **Session.** Remove the old one and sign in with the new account, as in [installation, step 4](installation.md#step-4-sign-in-to-telegram):
    ```bash
@@ -50,6 +50,8 @@ If you use a fixed chat (`telegram_chat_id` in `terraform.tfvars`, or the `TF_TE
    export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380... AZURE_TOKEN_CREDENTIALS=AzureCliCredential
    dotnet run --project src/TgLogin -- $SA
    ```
+   Or, once the new owner's chat is paired (step 3 below), they send `/login` to the bot and type the new account's number and code: the new session replaces the old one
+   ([Renewing the Telegram session](how-it-works.md#renewing-the-telegram-session)). With `telegram_phone` set, it must be the new number.
 4. The old owner opens Telegram → Settings → Devices and ends the Signal Feed session.
 5. Join the groups that the new account cannot read yet.
 

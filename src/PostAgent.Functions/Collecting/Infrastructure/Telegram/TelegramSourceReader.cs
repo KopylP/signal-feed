@@ -105,8 +105,11 @@ public sealed class TelegramSourceReader(
     {
         "api_id" => options.Value.TelegramApiId.ToString(),
         "api_hash" => options.Value.TelegramApiHash,
-        "phone_number" => options.Value.TelegramPhone,
-        "verification_code" or "password" => throw new InvalidOperationException("Telegram session is expired. Send /login to the bot (or run TgLogin)."),
+        // Whoever signed in owns the session: without this WTelegram compares the account's phone with "phone_number"
+        // and logs the session out on a mismatch, which would throw away a sign-in made with another number.
+        "user_id" => "-1",
+        // Asked only when the session is no longer signed in. The collector never asks Telegram for a code itself.
+        "phone_number" or "verification_code" or "password" => throw new InvalidOperationException("Telegram session is expired. Send /login to the bot (or run TgLogin)."),
         _ => null,
     };
 

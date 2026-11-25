@@ -22,6 +22,25 @@ public class TelegramKeyboardTests
     }
 
     [Fact]
+    public void Maps_a_mini_app_button_to_a_web_app_button_without_callback_data()
+    {
+        var url = new Uri("https://func-signal.azurewebsites.net/api/telegram/login?a=x&s=code");
+
+        var markup = TelegramKeyboard.ToMarkup(new InlineKeyboard([[KeyboardButton.OpenWebApp("Ввести код", url)]]));
+
+        Assert.NotNull(markup);
+        var button = Assert.Single(Assert.Single(markup.InlineKeyboard));
+        Assert.Equal(url.AbsoluteUri, button.WebApp?.Url);
+        Assert.Null(button.CallbackData);
+    }
+
+    [Fact]
+    public void Refuses_a_mini_app_that_is_not_served_over_https()
+    {
+        Assert.Throws<ArgumentException>(() => KeyboardButton.OpenWebApp("x", new Uri("http://example.com/")));
+    }
+
+    [Fact]
     public void Maps_rows_and_buttons_to_telegram_markup()
     {
         var keyboard = new InlineKeyboard([

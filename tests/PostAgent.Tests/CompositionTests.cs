@@ -80,6 +80,25 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<ChatFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Chat.Infrastructure.ChatQueue>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.LoginFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.LoginPageFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.Infrastructure.LoginQueue>(services));
+    }
+
+    [Fact]
+    public void Sign_in_from_the_bot_does_not_need_a_phone_in_the_settings()
+    {
+        using var provider = BuildProvider(s => s.Remove("TelegramPhone"));
+
+        Assert.Equal(string.Empty, provider.GetRequiredService<IOptions<AgentOptions>>().Value.TelegramPhone);
+    }
+
+    [Fact]
+    public void The_host_name_of_the_mini_app_comes_from_the_platform_setting()
+    {
+        using var provider = BuildProvider(s => s["WEBSITE_HOSTNAME"] = "func-signal.azurewebsites.net");
+
+        Assert.Equal("func-signal.azurewebsites.net", provider.GetRequiredService<IOptions<AgentOptions>>().Value.WebsiteHostName);
     }
 
     [Fact]

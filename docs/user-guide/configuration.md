@@ -34,7 +34,8 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
 | `TelegramChatId` | empty | optional fixed chat id; when set it overrides the paired chats, turns pairing off and means exactly one chat |
 | `TelegramMaxChats` | 5 | how many chats can be paired at once (1-20); each gets the digest, alerts and failure messages |
-| `TelegramApiId`, `TelegramPhone` | | account data for reading |
+| `TelegramApiId` | | app id of the reader account (from my.telegram.org) |
+| `TelegramPhone` | empty | optional: when set, `/login` in the bot signs in only this number; empty, the owner types the number in the bot |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
 | `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
 | `RetentionDays` | 1 | how many days back to keep posts: 1 means yesterday's and today's partitions |

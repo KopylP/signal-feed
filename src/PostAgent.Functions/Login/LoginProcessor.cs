@@ -60,22 +60,18 @@ public sealed class LoginProcessor(
     // Returns the message that ends the sign-in.
     private async Task<string> SignInAsync(IUserLogin login, LoginAttempt attempt, CancellationToken ct)
     {
-        var step = await login.StartAsync(ct);
-        if (step != LoginStep.CodeRequired)
-        {
-            return step == LoginStep.Done ? await SaveAsync(login, ct) : LoginTexts.Unsupported;
-        }
-
-        var url = LoginPageUrl.Build(options.Value.WebsiteHostName, attempt.Id);
-        if (url is null)
+        var host = options.Value.WebsiteHostName;
+        if (LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.PhoneStage) is not { } phoneUrl
+            || LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.CodeStage) is not { } codeUrl)
         {
             return LoginTexts.NoHost;
         }
 
-        var keyboard = new InlineKeyboard([[KeyboardButton.OpenWebApp(LoginTexts.Button, url, ButtonStyle.Primary)]]);
-        await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent((int)LoginInbox.AttemptLifetime.TotalMinutes), keyboard, ct);
-        log.LogInformation("Sign-in code requested");
+        var askPhone = Button(LoginTexts.PhoneButton, phoneUrl);
+        var askCode = Button(LoginTexts.CodeButton, codeUrl);
+        await panel.SendAsync(attempt.ChatId, LoginTexts.AskPhone((int)LoginInbox.AttemptLifetime.TotalMinutes), askPhone, ct);
 
+        var step = LoginStep.PhoneRequired;
         var failures = 0;
         while (!attempt.IsExpired(time.GetUtcNow()))
         {
@@ -84,6 +80,37 @@ public sealed class LoginProcessor(
             {
                 await Task.Delay(PollInterval, time, ct);
                 continue;
+            }
+
+            if (step == LoginStep.PhoneRequired)
+            {
+                if (submission.Phone is not { } phone)
+                {
+                    continue;
+                }
+
+                // With TelegramPhone set, the bot may only sign in that account: a bound chat cannot swap the reader for another one.
+                if (options.Value.TelegramPhone is { Length: > 0 } expected && !LoginInput.SamePhone(expected, phone))
+                {
+                    log.LogWarning("Sign-in refused: the phone is not the one in TelegramPhone");
+                    if (++failures >= MaxFailures)
+                    {
+                        return LoginTexts.TooManyTries;
+                    }
+
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.PhoneMismatch, askPhone, ct);
+                    continue;
+                }
+
+                step = await login.StartAsync(phone, ct);
+                if (step == LoginStep.CodeRequired)
+                {
+                    log.LogInformation("Sign-in code requested");
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent(LoginInput.MaskPhone(phone)), askCode, ct);
+                    continue;
+                }
+
+                return step == LoginStep.Done ? await SaveAsync(login, ct) : LoginTexts.Unsupported;
             }
 
             step = await ApplyAsync(login, step, submission, ct);
@@ -96,15 +123,15 @@ public sealed class LoginProcessor(
                 case LoginStep.CodeInvalid or LoginStep.PasswordInvalid when ++failures >= MaxFailures:
                     return LoginTexts.TooManyTries;
                 case LoginStep.CodeInvalid:
-                    await notifier.SendToAsync(attempt.ChatId, LoginTexts.WrongCode, ct);
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.WrongCode, askCode, ct);
                     step = LoginStep.CodeRequired;
                     break;
                 case LoginStep.PasswordInvalid:
-                    await notifier.SendToAsync(attempt.ChatId, LoginTexts.WrongPassword, ct);
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.WrongPassword, askCode, ct);
                     step = LoginStep.PasswordRequired;
                     break;
                 case LoginStep.PasswordRequired when submission.Password is null:
-                    await notifier.SendToAsync(attempt.ChatId, LoginTexts.PasswordNeeded, ct);
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.PasswordNeeded, askCode, ct);
                     break;
             }
         }
@@ -112,6 +139,8 @@ public sealed class LoginProcessor(
         log.LogInformation("Sign-in expired before it was finished");
         return LoginTexts.Expired;
     }
+
+    private static InlineKeyboard Button(string text, Uri url) => new([[KeyboardButton.OpenWebApp(text, url, ButtonStyle.Primary)]]);
 
     // A form may carry the code and the password together: the password is used as soon as Telegram asks for it.
     private static async Task<LoginStep> ApplyAsync(IUserLogin login, LoginStep step, LoginSubmission submission, CancellationToken ct)

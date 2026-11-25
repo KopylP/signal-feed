@@ -3,8 +3,8 @@ namespace PostAgent.Login;
 // One MTProto sign-in on a fresh session, kept on one connection from the first step to the last.
 public interface IUserLogin : IAsyncDisposable
 {
-    // Asks Telegram to send the login code to the reader account.
-    Task<LoginStep> StartAsync(CancellationToken ct);
+    // Asks Telegram to send the login code to the account with this phone number.
+    Task<LoginStep> StartAsync(string phone, CancellationToken ct);
 
     Task<LoginStep> SubmitCodeAsync(string code, CancellationToken ct);
 

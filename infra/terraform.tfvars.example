@@ -14,7 +14,8 @@ alert_sources = "some_group"
 
 # Telegram (non-secret parts)
 telegram_api_id = "1234567"
-telegram_phone  = "+380000000000"
+# Optional: with it, /login in the bot signs in only this number; without it, you type the number in the bot.
+# telegram_phone = "+380000000000"
 # The chat is bound by sending /start <TelegramPairingKey> to the bot. Set this only to override that with a fixed chat id.
 # telegram_chat_id = ""
 

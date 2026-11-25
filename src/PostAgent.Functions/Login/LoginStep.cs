@@ -3,6 +3,7 @@ namespace PostAgent.Login;
 // Where a sign-in stands after a step, as far as the bot needs to know.
 public enum LoginStep
 {
+    PhoneRequired,
     CodeRequired,
     CodeInvalid,
     PasswordRequired,

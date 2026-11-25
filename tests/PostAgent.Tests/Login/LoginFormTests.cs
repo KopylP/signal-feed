@@ -33,8 +33,9 @@ public class LoginFormTests
         _time,
         NullLogger<LoginForm>.Instance);
 
-    private static MemoryStream Body(string? initData = null, string attempt = AttemptId, string? code = "12345", string? password = null) =>
-        new(JsonSerializer.SerializeToUtf8Bytes(new { attempt, initData = initData ?? Sign(Owner, TestData.Now), code, password }));
+    private static MemoryStream Body(
+        string? initData = null, string attempt = AttemptId, string? code = "12345", string? password = null, string? phone = null) =>
+        new(JsonSerializer.SerializeToUtf8Bytes(new { attempt, initData = initData ?? Sign(Owner, TestData.Now), phone, code, password }));
 
     private Task<HttpStatusCode> Post(Stream body) => Form().HandleAsync(body, CancellationToken.None);
 
@@ -45,6 +46,14 @@ public class LoginFormTests
 
         Assert.Equal("12345", _attempts.Current!.Code);
         Assert.Equal("secret", _attempts.Current.Password);
+    }
+
+    [Fact]
+    public async Task Hands_the_phone_to_the_attempt_in_one_form()
+    {
+        Assert.Equal(HttpStatusCode.Accepted, await Post(Body(code: null, phone: "+380 67 123 45 67")));
+
+        Assert.Equal("+380671234567", _attempts.Current!.Phone);
     }
 
     [Fact]
@@ -103,12 +112,13 @@ public class LoginFormTests
     }
 
     [Theory]
-    [InlineData("12a45", null)]
-    [InlineData("", null)]
-    [InlineData(null, null)]
-    public async Task Rejects_input_that_is_not_a_code_or_a_password(string? code, string? password)
+    [InlineData("12a45", null, null)]
+    [InlineData("", null, null)]
+    [InlineData(null, null, null)]
+    [InlineData(null, null, "not a phone")]
+    public async Task Rejects_input_that_is_not_a_phone_a_code_or_a_password(string? code, string? password, string? phone)
     {
-        Assert.Equal(HttpStatusCode.BadRequest, await Post(Body(code: code, password: password)));
+        Assert.Equal(HttpStatusCode.BadRequest, await Post(Body(code: code, password: password, phone: phone)));
     }
 
     [Fact]

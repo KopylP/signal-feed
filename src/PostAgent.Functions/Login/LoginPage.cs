@@ -1,6 +1,6 @@
 namespace PostAgent.Login;
 
-// The Mini App: one form for the code and the 2FA password. It holds no secret; what it sends is checked by LoginForm.
+// The Mini App: a form for the phone (stage "phone") or for the code and the 2FA password (stage "code"). It holds no secret; what it sends is checked by LoginForm.
 public static class LoginPage
 {
     public const string TelegramScript = "https://telegram.org/js/telegram-web-app.js";
@@ -35,13 +35,20 @@ public static class LoginPage
         </head>
         <body>
         <h1>Вхід акаунта-читача</h1>
-        <p>Код прийшов у застосунок акаунта-читача, у чат «Telegram». Пароль потрібен, лише якщо ввімкнено двоетапну перевірку.</p>
+        <p id="hint-phone" hidden>Номер телефону акаунта, яким бот читатиме канали. Telegram надішле на нього код.</p>
+        <p id="hint-code" hidden>Код прийшов у застосунок акаунта-читача, у чат «Telegram». Пароль потрібен, лише якщо ввімкнено двоетапну перевірку.</p>
         <form id="form" autocomplete="off">
-          <label for="code">Код з Telegram</label>
-          <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="12345">
-          <label for="password">Пароль двоетапної перевірки</label>
-          <input id="password" type="password" autocomplete="current-password" maxlength="256">
-          <button id="send" type="submit">Увійти</button>
+          <div id="phone-step" hidden>
+            <label for="phone">Номер телефону</label>
+            <input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="+380…">
+          </div>
+          <div id="code-step" hidden>
+            <label for="code">Код з Telegram</label>
+            <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="12345">
+            <label for="password">Пароль двоетапної перевірки</label>
+            <input id="password" type="password" autocomplete="current-password" maxlength="256">
+          </div>
+          <button id="send" type="submit">Далі</button>
         </form>
         <div id="status" role="status"></div>
         <script nonce="{{nonce}}">
@@ -50,8 +57,12 @@ public static class LoginPage
             var form = document.getElementById('form');
             var status = document.getElementById('status');
             var send = document.getElementById('send');
-            var attempt = new URLSearchParams(location.search).get('a') || '';
+            var query = new URLSearchParams(location.search);
+            var attempt = query.get('a') || '';
+            var phoneStage = query.get('s') !== 'code';
             function say(text) { status.textContent = text; }
+            document.getElementById(phoneStage ? 'phone-step' : 'code-step').hidden = false;
+            document.getElementById(phoneStage ? 'hint-phone' : 'hint-code').hidden = false;
             if (!tg || !tg.initData || !attempt) {
               form.hidden = true;
               say('Відкрийте цю форму кнопкою «Ввести код» у чаті з ботом.');
@@ -61,25 +72,26 @@ public static class LoginPage
             tg.expand();
             form.addEventListener('submit', function (event) {
               event.preventDefault();
-              var code = document.getElementById('code').value;
+              var phone = phoneStage ? document.getElementById('phone').value : '';
+              var code = phoneStage ? '' : document.getElementById('code').value;
               var password = document.getElementById('password');
-              if (!code.trim() && !password.value) { say('Введіть код або пароль.'); return; }
+              if (phoneStage ? !phone.trim() : (!code.trim() && !password.value)) { say(phoneStage ? 'Введіть номер.' : 'Введіть код або пароль.'); return; }
               send.disabled = true;
               say('Надсилаю…');
               fetch(location.pathname, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'omit',
-                body: JSON.stringify({ attempt: attempt, initData: tg.initData, code: code, password: password.value })
+                body: JSON.stringify({ attempt: attempt, initData: tg.initData, phone: phone, code: code, password: phoneStage ? '' : password.value })
               }).then(function (response) {
                 password.value = '';
                 if (response.status === 202) {
-                  say('Надіслано. Результат прийде в чат.');
+                  say(phoneStage ? 'Номер надіслано. Кнопка для коду прийде в чат.' : 'Надіслано. Результат прийде в чат.');
                   setTimeout(function () { tg.close(); }, 1200);
                   return;
                 }
                 send.disabled = false;
-                say(response.status === 400 ? 'Код має бути з цифр. Перевірте його.'
+                say(response.status === 400 ? (phoneStage ? 'Перевірте номер: +, код країни і цифри.' : 'Код має бути з цифр. Перевірте його.')
                   : response.status === 409 ? 'Цю спробу завершено. Почніть знову з /login.'
                   : 'Форма застаріла. Почніть знову з /login.');
               }).catch(function () {

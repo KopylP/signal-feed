@@ -28,7 +28,7 @@ internal sealed class InMemoryLoginAttemptStore : ILoginAttemptStore
             return Task.FromResult(false);
         }
 
-        Current = attempt with { Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
+        Current = attempt with { Phone = submission.Phone, Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
         return Task.FromResult(true);
     }
 
@@ -63,6 +63,7 @@ internal sealed class InMemoryLoginAttemptStore : ILoginAttemptStore
 internal sealed class ScriptedUserLogin : IUserLogin
 {
     public LoginStep FirstStep { get; init; } = LoginStep.CodeRequired;
+    public List<string> Phones { get; } = [];
     public string Code { get; init; } = "12345";
     public string? Password { get; init; }
     public Exception? StartFailure { get; init; }
@@ -74,8 +75,11 @@ internal sealed class ScriptedUserLogin : IUserLogin
 
     public string? AccountName { get; private set; }
 
-    public Task<LoginStep> StartAsync(CancellationToken ct) =>
-        StartFailure is null ? Task.FromResult(FirstStep) : Task.FromException<LoginStep>(StartFailure);
+    public Task<LoginStep> StartAsync(string phone, CancellationToken ct)
+    {
+        Phones.Add(phone);
+        return StartFailure is null ? Task.FromResult(FirstStep) : Task.FromException<LoginStep>(StartFailure);
+    }
 
     public Task<LoginStep> SubmitCodeAsync(string code, CancellationToken ct)
     {

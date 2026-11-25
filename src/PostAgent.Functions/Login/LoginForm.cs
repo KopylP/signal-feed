@@ -8,7 +8,7 @@ using PostAgent.Shared.Settings;
 namespace PostAgent.Login;
 
 // The Mini App's POST (ADR-0016). The endpoint is public, so it trusts nothing but initData signed with the bot token,
-// and it hands the code and the password to the waiting function only for the attempt that this very chat started.
+// and it hands the phone, the code and the password to the waiting function only for the attempt that this very chat started.
 public sealed class LoginForm(
     ILoginAttemptStore attempts,
     ChatResolver resolver,
@@ -37,7 +37,7 @@ public sealed class LoginForm(
             return HttpStatusCode.Unauthorized;
         }
 
-        var submission = LoginInput.Normalize(form.Code, form.Password);
+        var submission = LoginInput.Normalize(form.Phone, form.Code, form.Password);
         if (submission is null || form.Attempt is not { Length: > 0 and <= LoginInput.MaxAttemptIdChars } attemptId)
         {
             return HttpStatusCode.BadRequest;
@@ -61,7 +61,7 @@ public sealed class LoginForm(
             return HttpStatusCode.Conflict;
         }
 
-        // Never the code or the password: only that something arrived.
+        // Never the phone, the code or the password: only that something arrived.
         log.LogInformation("Sign-in form accepted");
         return HttpStatusCode.Accepted;
     }

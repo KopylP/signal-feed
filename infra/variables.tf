@@ -68,8 +68,9 @@ variable "telegram_api_id" {
 }
 
 variable "telegram_phone" {
-  description = "Phone number of the reader account, format +380..."
+  description = "Optional phone number of the reader account, format +380...: when set, /login in the bot signs in only this number. Empty: the owner types the number in the bot."
   type        = string
+  default     = ""
   sensitive   = true # personal data: keep it out of plan output
 }
 

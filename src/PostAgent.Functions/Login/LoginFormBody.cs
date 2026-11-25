@@ -6,5 +6,6 @@ namespace PostAgent.Login;
 public sealed record LoginFormBody(
     [property: JsonPropertyName("attempt")] string? Attempt,
     [property: JsonPropertyName("initData")] string? InitData,
+    [property: JsonPropertyName("phone")] string? Phone,
     [property: JsonPropertyName("code")] string? Code,
     [property: JsonPropertyName("password")] string? Password);

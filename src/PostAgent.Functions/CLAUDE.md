@@ -24,6 +24,8 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 ## Public endpoint
 
 - `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read (the body is passed as a `Stream` for that reason, capped at 64 KB).
+- The `/login` Mini App (`LoginPage`, `LoginSubmit`, ADR-0016) is anonymous too: `LoginForm` trusts only `WebAppInitData` (HMAC with the bot token, fresh `auth_date`), then the attempt id (constant time), the chat that started it and the binding. Never log the phone, a code, a password or `initData`; the waiting `LoginProcessor` clears them from the attempt blob as soon as it reads them and never rethrows.
+- A collection and a sign-in share the Telegram session only through `ISessionLock` (`Shared/TelegramSession`). The collector accepts whichever account owns the session (`user_id` = `-1`) and never asks Telegram for a code.
 - Never reply to a wrong key and never log a key or the secret. Every chat with the right key is added up to `TelegramMaxChats`; `TelegramChatId`, when set, overrides the stored chats and turns pairing off (ADR-0008, ADR-0014).
 
 ## Chat about the digest (ADR-0010)
