@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Digest;
-using PostAgent.Shared.Posts;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
