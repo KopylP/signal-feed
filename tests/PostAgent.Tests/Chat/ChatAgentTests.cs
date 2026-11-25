@@ -7,8 +7,8 @@ using PostAgent.Shared.Chat;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
-using static PostAgent.Tests.TestData;
 using static PostAgent.Tests.Fakes.ScriptedChatClient;
+using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Chat;
 

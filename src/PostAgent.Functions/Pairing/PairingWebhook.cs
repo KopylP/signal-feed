@@ -3,13 +3,18 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Common;
+using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace PostAgent.Pairing;
 
-public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions> options, ILogger<PairingWebhook> log)
+public sealed class PairingWebhook(
+    PairingService pairing,
+    IIncomingMessageHandler incoming,
+    IOptions<AgentOptions> options,
+    ILogger<PairingWebhook> log)
 {
     // A real update is a few hundred bytes; the cap keeps a flood of big bodies from filling the instance's memory.
     public const int MaxBodyBytes = 64 * 1024;
@@ -48,12 +53,21 @@ public sealed class PairingWebhook(PairingService pairing, IOptions<AgentOptions
 
         try
         {
-            await pairing.HandleAsync(message, ct);
+            // The secret token is already checked, so the update is from Telegram. Pairing keeps its own commands;
+            // every other message goes to whoever answers (the chat).
+            if (StartCommand.IsStart(message.Text))
+            {
+                await pairing.HandleAsync(message, ct);
+            }
+            else
+            {
+                await incoming.HandleAsync(update, ct);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // A 5xx makes Telegram resend the same update for a while; the user can simply send /start again.
-            log.LogError(ex, "Pairing failed");
+            // A 5xx makes Telegram resend the same update for a while; the user can simply send the message again.
+            log.LogError(ex, "Handling the Telegram update failed");
         }
 
         return HttpStatusCode.OK;

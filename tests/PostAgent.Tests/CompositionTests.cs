@@ -1,7 +1,7 @@
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using Azure.Storage.Queues;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PostAgent.Alerts;
@@ -77,6 +77,8 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PairingFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<ChatFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Chat.Infrastructure.ChatQueue>(services));
     }
 
     [Fact]

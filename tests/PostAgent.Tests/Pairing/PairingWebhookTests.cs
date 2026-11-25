@@ -17,11 +17,11 @@ public class PairingWebhookTests
     private static string StartUpdate(string key = Key) =>
         $$$"""{"update_id":1,"message":{"message_id":1,"date":1700000000,"chat":{"id":42,"type":"private"},"text":"/start {{{key}}}"}}""";
 
-    private static PairingWebhook Webhook(IChatBindingStore store, RecordingNotifier? notifier = null)
+    private static PairingWebhook Webhook(IChatBindingStore store, RecordingNotifier? notifier = null, IIncomingMessageHandler? incoming = null)
     {
         var options = Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramWebhookSecret = Secret });
         var service = new PairingService(store, notifier ?? new RecordingNotifier(), options, NullLogger<PairingService>.Instance);
-        return new PairingWebhook(service, options, NullLogger<PairingWebhook>.Instance);
+        return new PairingWebhook(service, incoming ?? new RecordingIncomingHandler(), options, NullLogger<PairingWebhook>.Instance);
     }
 
     private static MemoryStream Body(string text) => new(Encoding.UTF8.GetBytes(text));
@@ -117,6 +117,56 @@ public class PairingWebhookTests
         var status = await Webhook(new FailingStore()).HandleAsync(Secret, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
+    }
+
+    private static string PlainUpdate(string text) =>
+        $$$"""{"update_id":7,"message":{"message_id":2,"date":1700000000,"chat":{"id":42,"type":"private"},"text":"{{{text}}}"}}""";
+
+    [Fact]
+    public async Task A_plain_message_goes_to_the_incoming_handler_and_not_to_pairing()
+    {
+        var store = new InMemoryChatBindingStore();
+        var handler = new RecordingIncomingHandler();
+
+        var status = await Webhook(store, incoming: handler).HandleAsync(Secret, Body(PlainUpdate("Розкажи більше")), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        var update = Assert.Single(handler.Handled);
+        Assert.Equal(7, update.Id);
+        Assert.Equal("Розкажи більше", update.Message?.Text);
+        Assert.Null(store.Bound);
+    }
+
+    [Theory]
+    [InlineData("/start wrong-key")]
+    [InlineData("/start")]
+    public async Task A_start_command_never_reaches_the_incoming_handler(string text)
+    {
+        var handler = new RecordingIncomingHandler();
+
+        await Webhook(new InMemoryChatBindingStore(), incoming: handler).HandleAsync(Secret, Body(PlainUpdate(text)), CancellationToken.None);
+
+        Assert.Empty(handler.Handled);
+    }
+
+    [Fact]
+    public async Task An_error_in_the_incoming_handler_does_not_make_telegram_resend_the_update()
+    {
+        var handler = new RecordingIncomingHandler { Fail = true };
+
+        var status = await Webhook(new InMemoryChatBindingStore(), incoming: handler).HandleAsync(Secret, Body(PlainUpdate("hello")), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+    }
+
+    [Fact]
+    public async Task A_plain_message_with_a_wrong_secret_is_not_handled()
+    {
+        var handler = new RecordingIncomingHandler();
+
+        await Webhook(new InMemoryChatBindingStore(), incoming: handler).HandleAsync("wrong", Body(PlainUpdate("hello")), CancellationToken.None);
+
+        Assert.Empty(handler.Handled);
     }
 
     [Fact]
