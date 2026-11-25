@@ -19,6 +19,8 @@ public sealed class MenuController(
     // Writes the "-" the quiet-hours question accepts as "off".
     private const string QuietHoursOff = "-";
 
+    private const string SourcesKey = "Sources";
+
     public async Task HandleCommandAsync(long chatId, string text, CancellationToken ct)
     {
         await editor.UpdateAsync(o => o.Pending is null ? o : o with { Pending = null }, validate: false, ct);
@@ -51,6 +53,11 @@ public sealed class MenuController(
             return false;
         }
 
+        if (pending.Key == SourcesKey)
+        {
+            return await HandleSourceTextAsync(chatId, pending, text, ct);
+        }
+
         if (SettingsCatalog.Find(pending.Key) is not { } definition)
         {
             await editor.SetPendingAsync(null, ct);
@@ -81,7 +88,21 @@ public sealed class MenuController(
 
             case MenuActionKind.OpenGroup when Enum.TryParse<SettingGroup>(action.Arg, out var group):
                 await editor.SetPendingAsync(null, ct);
-                return await GroupAsync(group, null, ct);
+                return group == SettingGroup.Sources ? await SourcesAsync(null, ct) : await GroupAsync(group, null, ct);
+
+            case MenuActionKind.OpenSources:
+                await editor.SetPendingAsync(null, ct);
+                return await SourcesAsync(null, ct);
+
+            case MenuActionKind.AddSource:
+                await editor.SetPendingAsync(new PendingInput(SourcesKey, "add-source", messageId, time.GetUtcNow() + PendingLifetime), ct);
+                return MenuScreens.AskSource(null);
+
+            case MenuActionKind.RemoveSource:
+                return await AfterSourceEditAsync(await editor.RemoveSourceAsync(action.Arg, ct), ct);
+
+            case MenuActionKind.ToggleAlert:
+                return await AfterSourceEditAsync(await editor.ToggleAlertSourceAsync(action.Arg, ct), ct);
 
             case MenuActionKind.OpenChoice when SettingsCatalog.Find(action.Arg) is { Kind: SettingKind.Choice } definition:
                 return MenuScreens.Choice(definition, await effective.GetFreshAsync(ct));
@@ -103,7 +124,7 @@ public sealed class MenuController(
 
             case MenuActionKind.ResetGroup when Enum.TryParse<SettingGroup>(action.Arg, out var group):
                 await editor.ResetGroupAsync(group, ct);
-                return await GroupAsync(group, null, ct);
+                return group == SettingGroup.Sources ? await SourcesAsync(null, ct) : await GroupAsync(group, null, ct);
 
             default:
                 // An unknown key or a value outside the catalog (an old or forged button): nothing changes.
@@ -123,6 +144,37 @@ public sealed class MenuController(
         var options = await effective.GetFreshAsync(ct);
         var overrides = (await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty;
         return MenuScreens.Group(group, options, overrides, note);
+    }
+
+    private async Task<bool> HandleSourceTextAsync(long chatId, PendingInput pending, string text, CancellationToken ct)
+    {
+        if (SourceRules.TryParse(text) is not { } name)
+        {
+            await ShowAsync(chatId, pending.MessageId, MenuScreens.AskSource(SettingsMenuTexts.BadSourceName), ct);
+            return true;
+        }
+
+        var result = await editor.AddSourceAsync(name, ct);
+        if (!result.Ok)
+        {
+            await ShowAsync(chatId, pending.MessageId, MenuScreens.AskSource(result.Error), ct);
+            return true;
+        }
+
+        await editor.SetPendingAsync(null, ct);
+        await ShowAsync(chatId, pending.MessageId, await SourcesAsync(SettingsMenuTexts.SourceAdded, ct), ct);
+        return true;
+    }
+
+    private async Task<Screen> AfterSourceEditAsync(EditResult result, CancellationToken ct) =>
+        await SourcesAsync(result.Ok ? null : "⚠️ " + TelegramHtml.Escape(result.Error ?? string.Empty), ct);
+
+    private async Task<Screen> SourcesAsync(string? note, CancellationToken ct)
+    {
+        var overrides = (await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty;
+        var sources = overrides.Sources ?? app.Value.SourceList.Select(name => new SourceEntry(name, true)).ToList();
+        var alerts = overrides.AlertSources ?? app.Value.AlertSourceSet.ToList();
+        return MenuScreens.Sources(sources, alerts, note);
     }
 
     // The bot's values are ignored when together they make the options invalid (see EffectiveOptions).

@@ -61,6 +61,62 @@ public sealed class SettingsEditor(
             validate: false,
             ct);
 
+    public Task<EditResult> AddSourceAsync(string name, CancellationToken ct) =>
+        UpdateAsync(
+            o => SourcesOf(o).Any(s => s.Name == name) ? o : o with { Sources = [.. SourcesOf(o), new SourceEntry(name, false)] },
+            validate: true,
+            ct);
+
+    public async Task<EditResult> RemoveSourceAsync(string name, CancellationToken ct)
+    {
+        string? refusal = null;
+        var result = await UpdateAsync(
+            o =>
+            {
+                var sources = SourcesOf(o);
+                if (sources.All(s => s.Name != name))
+                {
+                    return o;
+                }
+
+                if (sources.Count == 1)
+                {
+                    refusal = "Не можна видалити останнє джерело.";
+                    return o;
+                }
+
+                var alerts = AlertsOf(o);
+                return o with
+                {
+                    Sources = sources.Where(s => s.Name != name).ToList(),
+                    AlertSources = alerts.Contains(name) ? alerts.Where(a => a != name).ToList() : o.AlertSources,
+                };
+            },
+            validate: true,
+            ct);
+
+        return refusal is null ? result : EditResult.Fail(refusal);
+    }
+
+    public Task<EditResult> ToggleAlertSourceAsync(string name, CancellationToken ct) =>
+        UpdateAsync(
+            o =>
+            {
+                if (SourcesOf(o).All(s => s.Name != name))
+                {
+                    return o;
+                }
+
+                var alerts = AlertsOf(o);
+                return o with { AlertSources = alerts.Contains(name) ? alerts.Where(a => a != name).ToList() : [.. alerts, name] };
+            },
+            validate: false,
+            ct);
+
+    // Sources that were added from the bot and have not been read yet.
+    public async Task<IReadOnlyList<string>> UnverifiedSourcesAsync(CancellationToken ct) =>
+        (await store.LoadAsync(ct))?.Value.Sources?.Where(s => !s.Verified).Select(s => s.Name).ToList() ?? [];
+
     public Task<EditResult> SetPendingAsync(PendingInput? pending, CancellationToken ct) =>
         UpdateAsync(o => o.Pending == pending ? o : o with { Pending = pending }, validate: false, ct);
 
@@ -79,6 +135,12 @@ public sealed class SettingsEditor(
 
         return result.Ok && advanced;
     }
+
+    // Until the bot changes the list, the sources are the App Setting ones, and they count as verified.
+    private List<SourceEntry> SourcesOf(SettingsOverrides o) =>
+        o.Sources?.ToList() ?? app.Value.SourceList.Select(name => new SourceEntry(name, true)).ToList();
+
+    private List<string> AlertsOf(SettingsOverrides o) => o.AlertSources?.ToList() ?? app.Value.AlertSourceSet.ToList();
 
     // The change must return the same instance when there is nothing to write.
     public async Task<EditResult> UpdateAsync(Func<SettingsOverrides, SettingsOverrides> change, bool validate, CancellationToken ct)

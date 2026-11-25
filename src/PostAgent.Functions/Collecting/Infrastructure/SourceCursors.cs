@@ -21,4 +21,21 @@ public sealed class SourceCursors(TableServiceClient tables) : ISourceCursors
             new TableEntity(Partition, username) { ["LastPostId"] = lastPostId },
             TableUpdateMode.Replace,
             ct);
+
+    public async Task DeleteExceptAsync(IReadOnlyCollection<string> keep, CancellationToken ct)
+    {
+        var stale = new List<string>();
+        await foreach (var row in _table.QueryAsync<TableEntity>($"PartitionKey eq '{Partition}'", select: ["RowKey"], cancellationToken: ct))
+        {
+            if (!keep.Contains(row.RowKey))
+            {
+                stale.Add(row.RowKey);
+            }
+        }
+
+        foreach (var username in stale)
+        {
+            await _table.DeleteEntityAsync(Partition, username, cancellationToken: ct);
+        }
+    }
 }

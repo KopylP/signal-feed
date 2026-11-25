@@ -15,11 +15,15 @@ public class CollectorJobTests
     private readonly FakeCollectionLock _lock = new();
     private FakeEffectiveOptions _effective = new(new AgentOptions());
 
+    private InMemoryOverridesStore Overrides { get; } = new();
+
     private CollectorJob CreateJob(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
     {
-        _effective = new FakeEffectiveOptions(new AgentOptions { Sources = sources, ScoringBatchSize = 2 });
-        var collector = new SourceCollector(reader, _repo, cursors, _queue, NullLogger<SourceCollector>.Instance);
-        return new(collector, _lock, _notifier, _effective, NullLogger<CollectorJob>.Instance);
+        var app = new AgentOptions { Sources = sources, ScoringBatchSize = 2 };
+        _effective = new FakeEffectiveOptions(app);
+        var editor = new SettingsEditor(Overrides, Microsoft.Extensions.Options.Options.Create(app), _effective, NullLogger<SettingsEditor>.Instance);
+        var collector = new SourceCollector(reader, _repo, cursors, _queue, editor, NullLogger<SourceCollector>.Instance);
+        return new(collector, _lock, _notifier, _effective, editor, cursors, NullLogger<CollectorJob>.Instance);
     }
 
     private static Func<int, SourceBatch> Channel(string username, params int[] ids) =>
@@ -132,4 +136,73 @@ public class CollectorJobTests
         Assert.Equal(0, cursors.Values["news"]);
         Assert.Contains("@news: queue down", Assert.Single(_notifier.Sent));
     }
+
+    private static Func<int, SourceBatch> Quiet(string username, int lastPostId) =>
+        _ => new SourceBatch(new SourceInfo(username, SourceType.Channel), [], lastPostId);
+
+    [Fact]
+    public async Task Marks_a_source_verified_after_a_read_with_no_new_posts()
+    {
+        Overrides.Seed(SettingsOverrides.Empty with { Sources = [new SourceEntry("fresh", false)] });
+        var reader = new FakeSourceReader(new() { ["fresh"] = Quiet("fresh", 5) });
+
+        await CreateJob("fresh", reader, new FakeSourceCursors()).RunAsync(CancellationToken.None);
+
+        Assert.True(Assert.Single(Overrides.Current!.Sources!).Verified);
+    }
+
+    [Fact]
+    public async Task Does_not_mark_a_source_whose_read_failed()
+    {
+        Overrides.Seed(SettingsOverrides.Empty with { Sources = [new SourceEntry("fresh", false)] });
+        var reader = new FakeSourceReader(new() { ["fresh"] = _ => throw new InvalidOperationException("no such channel") });
+
+        await CreateJob("fresh", reader, new FakeSourceCursors()).RunAsync(CancellationToken.None);
+
+        Assert.False(Assert.Single(Overrides.Current!.Sources!).Verified);
+    }
+
+    [Fact]
+    public async Task A_failed_mark_does_not_fail_the_collection()
+    {
+        Overrides.Seed(SettingsOverrides.Empty with { Sources = [new SourceEntry("fresh", false)] });
+        Overrides.BeforeSave = () => throw new InvalidOperationException("blob is down");
+        var reader = new FakeSourceReader(new() { ["fresh"] = Channel("fresh", 1) });
+        var cursors = new FakeSourceCursors();
+
+        await CreateJob("fresh", reader, cursors).RunAsync(CancellationToken.None);
+
+        Assert.Equal(1, cursors.Values["fresh"]);
+        Assert.Empty(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task Deletes_cursors_of_sources_that_are_no_longer_listed()
+    {
+        var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 2) });
+        var cursors = new FakeSourceCursors(new() { ["news"] = 1, ["removed"] = 9 });
+
+        await CreateJob("news", reader, cursors).RunAsync(CancellationToken.None);
+
+        Assert.DoesNotContain("removed", cursors.Values.Keys);
+        Assert.Equal(2, cursors.Values["news"]);
+    }
+
+    [Fact]
+    public async Task The_failure_message_offers_removal_only_for_unverified_sources()
+    {
+        Overrides.Seed(SettingsOverrides.Empty with { Sources = [new SourceEntry("old", true), new SourceEntry("fresh", false)] });
+        var reader = new FakeSourceReader(new()
+        {
+            ["old"] = _ => throw new InvalidOperationException("boom"),
+            ["fresh"] = _ => throw new InvalidOperationException("boom"),
+        });
+
+        await CreateJob("old,fresh", reader, new FakeSourceCursors()).RunAsync(CancellationToken.None);
+
+        Assert.Equal(["sd:fresh"], MenuCallbacksData(Assert.Single(_notifier.Keyboards)));
+    }
+
+    private static IEnumerable<string> MenuCallbacksData(PostAgent.Shared.Notifications.InlineKeyboard keyboard) =>
+        keyboard.Rows.SelectMany(r => r).Select(b => b.Data);
 }

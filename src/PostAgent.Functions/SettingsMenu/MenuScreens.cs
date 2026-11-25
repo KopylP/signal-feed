@@ -75,10 +75,14 @@ public static class MenuScreens
         return new Screen(html, new InlineKeyboard([[Button("✖ Скасувати", MenuAction.Cancel)]]));
     }
 
-    public static Screen Sources(IReadOnlyList<SourceEntry> sources, IReadOnlyCollection<string> alertSources)
+    public static Screen AskSource(string? error) =>
+        new($"<b>📡 Нове джерело</b>\n{SettingsMenuTexts.AskSource}" + (error is null ? string.Empty : "\n\n⚠️ " + TelegramHtml.Escape(error)),
+            new InlineKeyboard([[Button("✖ Скасувати", MenuAction.Cancel)]]));
+
+    public static Screen Sources(IReadOnlyList<SourceEntry> sources, IReadOnlyCollection<string> alertSources, string? note = null)
     {
         var lines = sources.Select(s => $"{(s.Verified ? "✅" : "⏳")} @{TelegramHtml.Escape(s.Name)}{(alertSources.Contains(s.Name) ? " 🚨" : string.Empty)}");
-        var html = "<b>📡 Джерела</b>\n\n" + string.Join('\n', lines) + "\n\n" + SettingsMenuTexts.SourcesLegend;
+        var html = "<b>📡 Джерела</b>" + (note is null ? string.Empty : "\n" + note) + "\n\n" + string.Join('\n', lines) + "\n\n" + SettingsMenuTexts.SourcesLegend;
 
         List<IReadOnlyList<KeyboardButton>> rows = sources
             .Select(s => (IReadOnlyList<KeyboardButton>)

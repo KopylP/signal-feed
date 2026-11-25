@@ -166,4 +166,73 @@ public class MenuControllerTests
         var sent = Assert.Single(h.Panel.Sent);
         Assert.Contains("g:Alerts", MenuHarness.Buttons(sent.Keyboard));
     }
+
+    [Fact]
+    public async Task Asking_to_add_a_source_stores_a_pending_question()
+    {
+        var h = new MenuHarness();
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AddSource, CancellationToken.None);
+
+        Assert.Equal(new PendingInput("Sources", "add-source", MenuMessage, TestData.Now.AddMinutes(10)), h.Store.Current?.Pending);
+    }
+
+    [Fact]
+    public async Task A_typed_username_is_added_as_not_verified_and_shown_in_the_sources_screen()
+    {
+        var h = new MenuHarness();
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AddSource, CancellationToken.None);
+
+        var handled = await h.Controller.HandleTextAsync(Chat, "https://t.me/Fresh_One", CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(new SourceEntry("fresh_one", false), h.Store.Current?.Sources?[^1]);
+        Assert.Null(h.Store.Current?.Pending);
+        Assert.Contains("⏳ @fresh_one", h.Panel.Edited[^1].Html);
+    }
+
+    [Fact]
+    public async Task Something_that_is_not_a_username_keeps_the_question_open()
+    {
+        var h = new MenuHarness();
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AddSource, CancellationToken.None);
+
+        await h.Controller.HandleTextAsync(Chat, "два слова", CancellationToken.None);
+
+        Assert.NotNull(h.Store.Current?.Pending);
+        Assert.Null(h.Store.Current?.Sources);
+    }
+
+    [Fact]
+    public async Task Removing_the_last_source_is_refused_with_a_note()
+    {
+        var h = new MenuHarness(o => o.Sources = "only");
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.RemoveSource("only"), CancellationToken.None);
+
+        Assert.Null(h.Store.Current);
+        Assert.Contains("⚠️", h.Panel.Edited[^1].Html);
+    }
+
+    [Fact]
+    public async Task Removing_and_toggling_a_source_update_the_screen()
+    {
+        var h = new MenuHarness();
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ToggleAlert("chat"), CancellationToken.None);
+        Assert.Contains("@chat 🚨", h.Panel.Edited[^1].Html);
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.RemoveSource("news"), CancellationToken.None);
+        Assert.DoesNotContain("@news", h.Panel.Edited[^1].Html);
+    }
+
+    [Fact]
+    public async Task The_sources_screen_lists_the_app_setting_sources_as_verified()
+    {
+        var h = new MenuHarness();
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.OpenSources, CancellationToken.None);
+
+        Assert.Contains("✅ @news", h.Panel.Edited[^1].Html);
+    }
 }

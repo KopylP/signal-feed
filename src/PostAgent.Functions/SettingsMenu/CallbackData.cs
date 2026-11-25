@@ -20,7 +20,7 @@ public static class CallbackData
         MenuActionKind.ResetGroup => $"rg:{a.Arg}",
         MenuActionKind.Cancel => "x",
         MenuActionKind.AddSource => "sa",
-        MenuActionKind.RemoveSource => $"sd:{a.Arg}",
+        MenuActionKind.RemoveSource => MenuCallbacks.RemoveSource(a.Arg),
         MenuActionKind.ToggleAlert => $"sl:{a.Arg}",
         _ => throw new ArgumentOutOfRangeException(nameof(a)),
     };
