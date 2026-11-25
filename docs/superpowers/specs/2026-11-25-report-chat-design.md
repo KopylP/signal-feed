@@ -84,3 +84,13 @@ Documentation does not confirm these .NET details, so a small spike must check t
 ## Docs and tests to update
 
 `docs/user-guide/how-it-works.md` and `configuration.md`, `docs/developer-guide/architecture.md` and `code-structure.md`, `src/PostAgent.Functions/CLAUDE.md`, `infra/` (queue and blob container, `infra/CLAUDE.md`), `tools/run-now.cs` if a job name is added, a changelog entry, and tests in `tests/PostAgent.Tests/Chat/` (dedupe, wrong chat ignored, state overwrite, history cap, tools, webhook routing).
+
+## Spike results (2026-11-25)
+
+Package `Microsoft.Agents.AI` 1.28.0 (stable). Checked by compiling and running a scratch console project against a stub `IChatClient`:
+- `chatClient.AsAIAgent(new ChatClientAgentOptions { Name, ChatOptions = new() { Instructions, Tools, MaxOutputTokens }, ChatHistoryProvider = new InMemoryChatHistoryProvider(new InMemoryChatHistoryProviderOptions { ChatReducer = ... }) })` works on a plain `IChatClient`; the agent adds function invocation itself.
+- `await agent.CreateSessionAsync(ct)`, `await agent.RunAsync(text, session, cancellationToken: ct)` (`AgentResponse.Text`), `JsonElement j = await agent.SerializeSessionAsync(session, cancellationToken: ct)`, `await agent.DeserializeSessionAsync(j, cancellationToken: ct)`. The serialized session holds the whole history (`stateBag.InMemoryChatHistoryProvider.messages`), including function call and result messages.
+- `MessageCountingChatReducer` is marked experimental (`MEAI001` is an error here and warnings may not be silenced), so the plan's own reducer implements the stable `IChatReducer` and drops leading tool results after cutting.
+- Function-call cap: wrap the client with `new ChatClientBuilder(client).UseFunctionInvocation(c => c.MaximumIterationsPerRequest = n).Build()` before `AsAIAgent`. With a model that always asks for a tool and `n = 2` the tool ran twice, the client was called 3 times and the reply text was empty: an empty reply must become the short failure message.
+- Tool names: use `AIFunctionFactory.Create(method, name)`; a local function gets a mangled name.
+- Model: `gpt-6.1-terra` is the API id (OpenAI model catalog), $1 / $5 per 1M tokens, cached input $0.05, tools "Functions" supported, 1.05M context. Strict Structured Outputs for tools is not stated on the pages and was not tested (no API key in the sandbox); the chat does not use strict schemas, only function tools. GPT-6.2 exists (`gpt-6.2-sol` $2 / $10, `gpt-6.2-astra` $8 / $40), no 6.2 Terra: Terra stays the default.
