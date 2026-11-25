@@ -19,6 +19,7 @@ locals {
       Sources              = var.sources
       AlertSources         = var.alert_sources
       TelegramApiId        = var.telegram_api_id
+      TelegramPhone        = var.telegram_phone
       SessionBlobContainer = var.session_blob_container
       # Versionless: wrapping uses the current version, each blob names the version that unwraps it (ADR-0017).
       SessionKeyId = azurerm_key_vault_key.session.versionless_id
