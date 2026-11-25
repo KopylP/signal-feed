@@ -14,6 +14,7 @@ using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Shared.TelegramSession;
+using PostAgent.Webhook;
 
 namespace PostAgent;
 
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
             .AddAi()
             .AddPosts()
             .AddNotifications()
+            .AddWebhook()
             .AddPairing()
             .AddLogin()
             .AddSettingsMenu()

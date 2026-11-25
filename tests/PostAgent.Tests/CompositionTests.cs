@@ -17,6 +17,7 @@ using PostAgent.Shared.Ai;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Settings;
+using PostAgent.Webhook;
 
 namespace PostAgent.Tests;
 
@@ -75,7 +76,7 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<AlertFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
-        Assert.NotNull(ActivatorUtilities.CreateInstance<PairingFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<TelegramWebhookFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<ChatFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Chat.Infrastructure.ChatQueue>(services));

@@ -8,6 +8,15 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [alder] - 2026-11-25
+
+### Contract changes
+- **Function `PairingFunction` is now `TelegramWebhookFunction`** (compatible)
+  - Before: the bot's webhook was called `PairingFunction`, and `/start` was handled inside it
+  - After: the same endpoint `POST /api/telegram/webhook` under the name `TelegramWebhookFunction`; `/start` is a handler like the others and is asked first
+  - Affects: queries, alerts or dashboards in Application Insights that filter on the function name `PairingFunction`; the webhook URL, the secret and the bot behavior do not change
+  - Migration: use `TelegramWebhookFunction` in such queries
+
 ## [v2026.11.25.87-sage] - 2026-11-25
 
 ### Fixed

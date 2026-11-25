@@ -8,18 +8,18 @@ using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Tests.Pairing;
 
-public class PairingServiceTests
+public class PairingInboxTests
 {
     private const string Key = "pairing-key-0123456789";
 
     private readonly RecordingNotifier _notifier = new();
 
-    private PairingService Service(InMemoryChatBindingStore store, long configuredChat = 0, int maxChats = 5) =>
+    private PairingInbox Service(InMemoryChatBindingStore store, long configuredChat = 0, int maxChats = 5) =>
         new(store, _notifier, Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramChatId = configuredChat, TelegramMaxChats = maxChats }),
-            NullLogger<PairingService>.Instance);
+            NullLogger<PairingInbox>.Instance);
 
-    private static Message Start(long chatId, string key = Key, ChatType type = ChatType.Private, string? text = null) =>
-        new() { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text ?? $"/start {key}" };
+    private static Update Start(long chatId, string key = Key, ChatType type = ChatType.Private, string? text = null) =>
+        new() { Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text ?? $"/start {key}" } };
 
     [Fact]
     public async Task Binds_the_chat_and_confirms_when_the_key_matches()
@@ -128,8 +128,35 @@ public class PairingServiceTests
     {
         var store = new InMemoryChatBindingStore();
 
-        await Service(store).HandleAsync(new Message { Chat = new Telegram.Bot.Types.Chat { Id = 42, Type = ChatType.Private } }, CancellationToken.None);
+        await Service(store).HandleAsync(
+            new Update { Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = 42, Type = ChatType.Private } } }, CancellationToken.None);
 
         Assert.Empty(store.Bound);
+    }
+
+    [Fact]
+    public async Task Claims_a_start_command_even_when_it_binds_nothing()
+    {
+        var claimed = await Service(new InMemoryChatBindingStore()).HandleAsync(Start(42, key: "wrong-key"), CancellationToken.None);
+
+        Assert.True(claimed);
+    }
+
+    [Theory]
+    [InlineData("hello")]
+    [InlineData("/settings")]
+    public async Task Leaves_a_message_that_is_not_a_start_command_to_the_next_handler(string text)
+    {
+        var claimed = await Service(new InMemoryChatBindingStore()).HandleAsync(Start(42, text: text), CancellationToken.None);
+
+        Assert.False(claimed);
+    }
+
+    [Fact]
+    public async Task Leaves_an_update_without_a_message_to_the_next_handler()
+    {
+        var claimed = await Service(new InMemoryChatBindingStore()).HandleAsync(new Update(), CancellationToken.None);
+
+        Assert.False(claimed);
     }
 }

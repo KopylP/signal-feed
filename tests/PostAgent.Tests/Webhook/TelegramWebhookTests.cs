@@ -6,10 +6,11 @@ using PostAgent.Pairing;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
+using PostAgent.Webhook;
 
-namespace PostAgent.Tests.Pairing;
+namespace PostAgent.Tests.Webhook;
 
-public class PairingWebhookTests
+public class TelegramWebhookTests
 {
     private const string Key = "pairing-key-0123456789";
     private const string Secret = "webhook_secret-token";
@@ -17,11 +18,11 @@ public class PairingWebhookTests
     private static string StartUpdate(string key = Key) =>
         $$$"""{"update_id":1,"message":{"message_id":1,"date":1700000000,"chat":{"id":42,"type":"private"},"text":"/start {{{key}}}"}}""";
 
-    private static PairingWebhook Webhook(IChatBindingStore store, RecordingNotifier? notifier = null, IIncomingMessageHandler? incoming = null)
+    private static TelegramWebhook Webhook(IChatBindingStore store, RecordingNotifier? notifier = null, IIncomingMessageHandler? incoming = null)
     {
         var options = Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramWebhookSecret = Secret });
-        var service = new PairingService(store, notifier ?? new RecordingNotifier(), options, NullLogger<PairingService>.Instance);
-        return new PairingWebhook(service, [incoming ?? new RecordingIncomingHandler()], options, NullLogger<PairingWebhook>.Instance);
+        var pairing = new PairingInbox(store, notifier ?? new RecordingNotifier(), options, NullLogger<PairingInbox>.Instance);
+        return new TelegramWebhook([pairing, incoming ?? new RecordingIncomingHandler()], options, NullLogger<TelegramWebhook>.Instance);
     }
 
     private static MemoryStream Body(string text) => new(Encoding.UTF8.GetBytes(text));
@@ -64,7 +65,7 @@ public class PairingWebhookTests
     {
         var store = new InMemoryChatBindingStore();
         var update = StartUpdate();
-        var padded = update + new string(' ', PairingWebhook.MaxBodyBytes - Encoding.UTF8.GetByteCount(update));
+        var padded = update + new string(' ', TelegramWebhook.MaxBodyBytes - Encoding.UTF8.GetByteCount(update));
 
         var status = await Webhook(store).HandleAsync(Secret, Body(padded), CancellationToken.None);
 
@@ -87,7 +88,7 @@ public class PairingWebhookTests
     public async Task A_body_over_the_limit_is_rejected_without_parsing()
     {
         var store = new InMemoryChatBindingStore();
-        var huge = new MemoryStream(new byte[PairingWebhook.MaxBodyBytes + 1]);
+        var huge = new MemoryStream(new byte[TelegramWebhook.MaxBodyBytes + 1]);
 
         var status = await Webhook(store).HandleAsync(Secret, huge, CancellationToken.None);
 

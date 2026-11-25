@@ -30,7 +30,8 @@ src/PostAgent.Functions/
 ├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
 ├── Login/                 /login (ADR-0016): LoginInbox (the command), LoginProcessor (the waiting side: phone, code, password), LoginForm and LoginPage (the Mini App), WebAppInitData (checks the signature)
 │   └── Infrastructure/    the attempt blob, the session blob, the tg-login queue, the WTelegram sign-in
-├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
+├── Webhook/               the bot's entry point (TelegramWebhookFunction, TelegramWebhook: secret check, parsing, the handler chain)
+├── Pairing/               /start <key> binds the chat (PairingInbox: a handler in the chain, StartCommand)
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)

@@ -6,10 +6,11 @@ using PostAgent.Pairing;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
+using PostAgent.Webhook;
 
-namespace PostAgent.Tests.Pairing;
+namespace PostAgent.Tests.Webhook;
 
-public class PairingWebhookRoutingTests
+public class TelegramWebhookRoutingTests
 {
     private const string Key = "pairing-key-0123456789";
     private const string Secret = "webhook_secret-token";
@@ -20,11 +21,11 @@ public class PairingWebhookRoutingTests
     private const string TextUpdate =
         """{"update_id":3,"message":{"message_id":1,"date":1700000000,"chat":{"id":42,"type":"private"},"text":"hello"}}""";
 
-    private static PairingWebhook Webhook(InMemoryChatBindingStore store, params IIncomingMessageHandler[] handlers)
+    private static TelegramWebhook Webhook(InMemoryChatBindingStore store, params IIncomingMessageHandler[] handlers)
     {
         var options = Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramWebhookSecret = Secret });
-        var service = new PairingService(store, new RecordingNotifier(), options, NullLogger<PairingService>.Instance);
-        return new PairingWebhook(service, handlers, options, NullLogger<PairingWebhook>.Instance);
+        var pairing = new PairingInbox(store, new RecordingNotifier(), options, NullLogger<PairingInbox>.Instance);
+        return new TelegramWebhook([pairing, .. handlers], options, NullLogger<TelegramWebhook>.Instance);
     }
 
     private static MemoryStream Body(string text) => new(Encoding.UTF8.GetBytes(text));

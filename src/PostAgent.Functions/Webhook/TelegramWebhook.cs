@@ -8,13 +8,13 @@ using PostAgent.Shared.Settings;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace PostAgent.Pairing;
+namespace PostAgent.Webhook;
 
-public sealed class PairingWebhook(
-    PairingService pairing,
+// The bot's single entry point: checks the secret, parses the update and offers it to the handlers. It does no work of its own.
+public sealed class TelegramWebhook(
     IEnumerable<IIncomingMessageHandler> handlers,
     IOptions<AgentOptions> options,
-    ILogger<PairingWebhook> log)
+    ILogger<TelegramWebhook> log)
 {
     // A real update is a few hundred bytes; the cap keeps a flood of big bodies from filling the instance's memory.
     public const int MaxBodyBytes = 64 * 1024;
@@ -53,20 +53,13 @@ public sealed class PairingWebhook(
 
         try
         {
-            // The secret token is already checked, so the update is from Telegram. Pairing keeps its own commands;
-            // every other update (a message or a button press) goes to the handlers, the first that claims it wins.
-            if (update.Message is { } message && StartCommand.IsStart(message.Text))
+            // The secret token is already checked, so the update is from Telegram. The handlers are asked in
+            // registration order and the first that claims the update wins (pairing is registered first).
+            foreach (var handler in handlers)
             {
-                await pairing.HandleAsync(message, ct);
-            }
-            else
-            {
-                foreach (var handler in handlers)
+                if (await handler.HandleAsync(update, ct))
                 {
-                    if (await handler.HandleAsync(update, ct))
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
         }

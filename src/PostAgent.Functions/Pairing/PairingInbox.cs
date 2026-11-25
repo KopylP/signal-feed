@@ -7,13 +7,25 @@ using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Pairing;
 
-public sealed class PairingService(
+// /start <key> binds the chat to the bot (ADR-0008). It claims every /start, bound or not, so no other handler sees it.
+public sealed class PairingInbox(
     IChatBindingStore store,
     ITelegramNotifier notifier,
     IOptions<AgentOptions> options,
-    ILogger<PairingService> log)
+    ILogger<PairingInbox> log) : IIncomingMessageHandler
 {
-    public async Task HandleAsync(Message message, CancellationToken ct)
+    public async Task<bool> HandleAsync(Update update, CancellationToken ct)
+    {
+        if (update.Message is not { } message || !StartCommand.IsStart(message.Text))
+        {
+            return false;
+        }
+
+        await BindAsync(message, ct);
+        return true;
+    }
+
+    private async Task BindAsync(Message message, CancellationToken ct)
     {
         var settings = options.Value;
         if (settings.TelegramChatId != 0)
