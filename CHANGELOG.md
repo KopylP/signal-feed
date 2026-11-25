@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [thistle] - 2026-11-25
+## [v2026.11.25.54-thistle] - 2026-11-25
 
 ### Contract changes
 - **Storage: `settings/overrides.json` gets an optional `Proposals` list** (compatible)
