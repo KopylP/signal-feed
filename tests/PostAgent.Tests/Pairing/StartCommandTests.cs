@@ -24,4 +24,27 @@ public class StartCommandTests
     {
         Assert.Null(StartCommand.ParseKey(text));
     }
+
+    [Theory]
+    [InlineData("/start")]
+    [InlineData("/start abc123")]
+    [InlineData("  /start   abc123  ")]
+    [InlineData("/start@signal_feed_bot")]
+    [InlineData("/START abc123")]
+    public void The_start_command_is_recognized_with_or_without_a_key(string text)
+    {
+        Assert.True(StartCommand.IsStart(text));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("hello")]
+    [InlineData("/starting")]
+    [InlineData("/help")]
+    [InlineData("please /start")]
+    public void Other_text_is_not_the_start_command(string? text)
+    {
+        Assert.False(StartCommand.IsStart(text));
+    }
 }

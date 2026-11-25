@@ -19,7 +19,7 @@ public class PairingServiceTests
             NullLogger<PairingService>.Instance);
 
     private static Message Start(long chatId, string key = Key, ChatType type = ChatType.Private, string? text = null) =>
-        new() { Chat = new Chat { Id = chatId, Type = type }, Text = text ?? $"/start {key}" };
+        new() { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text ?? $"/start {key}" };
 
     [Fact]
     public async Task Binds_the_chat_and_confirms_when_the_key_matches()
@@ -106,7 +106,7 @@ public class PairingServiceTests
     {
         var store = new InMemoryChatBindingStore();
 
-        await Service(store).HandleAsync(new Message { Chat = new Chat { Id = 42, Type = ChatType.Private } }, CancellationToken.None);
+        await Service(store).HandleAsync(new Message { Chat = new Telegram.Bot.Types.Chat { Id = 42, Type = ChatType.Private } }, CancellationToken.None);
 
         Assert.Null(store.Bound);
     }

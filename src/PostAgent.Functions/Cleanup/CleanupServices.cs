@@ -8,5 +8,6 @@ public static class CleanupServices
     public static IServiceCollection AddCleanup(this IServiceCollection services) =>
         services
             .AddSingleton<ICleanupTask, PostsCleanup>()
+            .AddSingleton<ICleanupTask, ChatStateCleanup>()
             .AddJob<CleanupJob>();
 }

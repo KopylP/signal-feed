@@ -20,6 +20,7 @@ public static class StorageRegistration
             services.AddSingleton(new TableServiceClient(connectionString));
             services.AddSingleton(new BlobServiceClient(connectionString));
             services.AddSingleton(new QueueClient(connectionString, StorageNames.ScoringQueue, queueOptions));
+            services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(connectionString, StorageNames.ChatQueue, queueOptions));
         }
         else if (!string.IsNullOrEmpty(account))
         {
@@ -28,6 +29,8 @@ public static class StorageRegistration
             services.AddSingleton(new BlobServiceClient(new Uri($"https://{account}.blob.core.windows.net"), credential));
             services.AddSingleton(new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ScoringQueue}"), credential, queueOptions));
+            services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ChatQueue}"), credential, queueOptions));
         }
         else
         {
@@ -50,8 +53,11 @@ public static class StorageRegistration
         await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable, ct);
         await tables.CreateTableIfNotExistsAsync(StorageNames.ChatBindingTable, ct);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
+        await services.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue).CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
-        await services.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(container).CreateIfNotExistsAsync(cancellationToken: ct);
+        var blobs = services.GetRequiredService<BlobServiceClient>();
+        await blobs.GetBlobContainerClient(container).CreateIfNotExistsAsync(cancellationToken: ct);
+        await blobs.GetBlobContainerClient(StorageNames.ChatStateContainer).CreateIfNotExistsAsync(cancellationToken: ct);
     }
 }

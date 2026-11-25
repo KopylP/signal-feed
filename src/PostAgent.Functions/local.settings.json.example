@@ -31,6 +31,7 @@
 
     "OpenAIModel": "gpt-5.4-nano",
     "OpenAIApiKey": "<openai-api-key>",
+    "OpenAIChatModel": "gpt-6.1-terra",
 
     "TelegramBotToken": "<bot-token>",
     "TelegramPairingKey": "<random-key-16-to-64-chars-A-Za-z0-9_->",

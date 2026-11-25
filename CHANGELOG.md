@@ -8,6 +8,35 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [aspen] - 2026-11-25
+
+### Setup required
+- **Terraform apply before the deploy**: required
+  - Where: the `infra` workflow (plan, then apply)
+  - Value: creates the queue `chat-messages` and the blob container `chat-state`; no new variables or secrets
+  - Apply: run `infra` first, then merge. Without the container the chat state cannot be saved: the digest still arrives, but the bot cannot answer questions about it
+
+### Contract changes
+- **Telegram webhook: handles every message, not only `/start`** (compatible)
+  - Before: any message except `/start <key>` was ignored
+  - After: a text message in the bound private chat is queued and answered by the chat; `/start` still pairs
+  - Affects: `setWebhook` already asks for `message` updates, so nothing to change; messages from other chats, groups and non-text messages are still ignored
+  - Migration: none
+- **Storage: new queue `chat-messages` and blob `chat-state/current.json`** (compatible)
+  - Before: none
+  - After: questions wait in `chat-messages` for up to an hour; the blob holds the conversation about the latest digest and is replaced by every digest
+  - Affects: nothing existing
+  - Migration: none
+
+### Added
+- **Chat about the digest**: reply to the bot after a digest to ask more; an AI assistant answers with the digest in mind, can open full posts and search the stored posts, and uses its own knowledge for the rest.
+  - Enable: on by default
+  - Settings: `OpenAIChatModel` (`gpt-6.1-terra`), `ChatMaxMessages` (20), `ChatMaxOutputTokens` (800), `ChatMaxToolCalls` (5), `ChatSearchMaxHits` (8)
+  - Limits: private chat only, no web search, one conversation per digest (a new digest forgets the old one), about 2 cents for a question the digest answers and several times more when the assistant uses tools, no daily limit; see [how it works](docs/user-guide/how-it-works.md#asking-about-the-digest)
+
+### Dependencies
+- Added `Microsoft.Agents.AI` 1.28.0.
+
 ## [v2026.11.25.44-lilac] - 2026-11-25
 
 ### Added
