@@ -1,4 +1,5 @@
 using Azure.Identity;
+using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Shared.TelegramSession;
 
@@ -13,7 +14,7 @@ public static class SessionCipherServices
             return services.AddSingleton<ISessionCipher>(new EnvelopeCipher(new KeyVaultKeyWrapper(keyId, new DefaultAzureCredential())));
         }
 
-        if (!string.IsNullOrEmpty(config["AzureWebJobsStorage"]))
+        if (StorageRegistration.IsLocal(config))
         {
             return services.AddSingleton<ISessionCipher, UnencryptedLocalCipher>();
         }

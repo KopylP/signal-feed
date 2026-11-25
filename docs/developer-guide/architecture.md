@@ -117,7 +117,7 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Deployer (`var.deployer_object_id`) | Key Vault key `tg-session` | Key Vault Crypto Service Encryption User (`TgLogin` encrypts the session) |
 | Whoever runs Terraform | Key Vault | Key Vault Crypto Officer (creates and rotates the `tg-session` key) |
 
-`AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The secrets are App Settings of the form
+`AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. When it is set it wins over any `AzureWebJobsStorage` connection string; the connection string is the local-development path. The secrets are App Settings of the form
 `@Microsoft.KeyVault(SecretUri=.../secrets/<name>/)`. Roles are defined in `infra/roles.tf`.
 
 ## Design decisions
