@@ -1,4 +1,4 @@
-using PostAgent.Chat;
+using PostAgent.Chat.Intake;
 
 namespace PostAgent.Tests.Fakes;
 

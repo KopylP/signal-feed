@@ -1,4 +1,5 @@
 using Azure.Storage.Queues;
+using PostAgent.Chat.Intake;
 using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Chat.Infrastructure;

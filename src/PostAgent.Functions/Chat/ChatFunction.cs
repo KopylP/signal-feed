@@ -1,4 +1,6 @@
 using Microsoft.Azure.Functions.Worker;
+using PostAgent.Chat.Answering;
+using PostAgent.Chat.Intake;
 using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Chat;

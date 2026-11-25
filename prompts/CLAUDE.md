@@ -1,6 +1,6 @@
 # prompts
 
-Prompts for the model: `scoring.md` (scoring posts), `digest.md` (digest summary) and `chat.md` (chat about the digest and about changing settings: free text, no schema, in Ukrainian and plain text, because Telegram shows it literally; tool names in it must match the tools in `Chat/Infrastructure/Tools/`). They are copied into the build, so a change of the files needs a new deploy.
+Prompts for the model: `scoring.md` (scoring posts), `digest.md` (digest summary) and `chat.md` (chat about the digest and about changing settings: free text, no schema, in Ukrainian and plain text, because Telegram shows it literally; tool names in it must match the tools in `Chat/Agent/Tools/`). They are copied into the build, so a change of the files needs a new deploy.
 
 - Editable sections (ADR-0015): wrap a part the owner may tune from the bot in `<!-- editable: id | label -->` ... `<!-- /editable -->` after its heading. Put in a section only wording and taste (interests, scale, style); output fields, limits, tool names and the data rules stay outside. `PromptTemplateTests` checks it. The owner's text replaces the section, so write the default as a complete text.
 

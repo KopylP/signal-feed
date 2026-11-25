@@ -1,5 +1,8 @@
+using PostAgent.Chat.Agent;
+using PostAgent.Chat.Agent.Tools;
+using PostAgent.Chat.Answering;
 using PostAgent.Chat.Infrastructure;
-using PostAgent.Chat.Infrastructure.Tools;
+using PostAgent.Chat.Intake;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Notifications;
 
@@ -16,6 +19,7 @@ public static class ChatServices
             .AddSingleton<IChatQueue, ChatQueue>()
             .AddScoped<IIncomingMessageHandler, ChatInbox>()
             .AddScoped<SettingsProposalSender>()
+            .AddScoped<ChatDelivery>()
             .AddScoped<ChatProcessor>();
 
     // Every IChatTool in the assembly is a tool of the agent: a new tool is a new file, with nothing to register by hand.

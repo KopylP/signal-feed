@@ -1,3 +1,4 @@
+
 namespace PostAgent.Shared.Infrastructure;
 
 // Every Azure Storage resource the app uses, in one place. Shared by the features and by TgLogin,

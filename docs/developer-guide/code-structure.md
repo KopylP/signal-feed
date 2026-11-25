@@ -19,8 +19,12 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
 │   └── Infrastructure/    AI summary and its response schema
-├── Chat/                  questions about the digest (ChatInbox: checks and queues, ChatProcessor: ask, save, send, ChatFunction: the queue trigger)
-│   └── Infrastructure/    agent (Microsoft Agent Framework), tools (every tool is one class in `Tools/`, found by assembly scan; the propose tools only add to a plan), history cap, queue, conversation blob; SettingsProposalSender sends a plan with its buttons
+├── Chat/                  questions about the digest, split by stage (ChatFunction is the queue trigger, ChatTexts the fixed replies)
+│   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)
+│   ├── Answering/         the queue side: ChatProcessor (ask, save, send), ChatDelivery (sends and splits), ChatReplyFormatter, SettingsProposalSender (a plan with its buttons)
+│   ├── Agent/             the model side: IChatAgent and ChatAgent (Microsoft Agent Framework), ChatContext (the digest as data), ChatHistoryReducer, DataBlock
+│   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan; the propose tools only add to a ProposalPlan
+│   └── Infrastructure/    Azure adapters: the queue and the conversation blob
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)

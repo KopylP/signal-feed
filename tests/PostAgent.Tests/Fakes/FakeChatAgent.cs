@@ -1,5 +1,5 @@
 using System.Text.Json;
-using PostAgent.Chat;
+using PostAgent.Chat.Agent;
 using PostAgent.Shared.Chat;
 
 namespace PostAgent.Tests.Fakes;
