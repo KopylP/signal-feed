@@ -8,6 +8,21 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [marlin] - 2026-11-25
+
+### Setup required
+- **`TF_TELEGRAM_PHONE`**: delete it
+  - Where: GitHub Secret
+  - Value: none
+  - Apply: run the `infra` workflow with apply (it removes the `TelegramPhone` App Setting, which no code reads any more), then delete the secret
+
+### Contract changes
+- **Terraform variable `telegram_phone` and App Setting `TelegramPhone`: removed** (breaking)
+  - Before: required, the phone of the reader account
+  - After: gone; the phone is typed in the bot with `/login`
+  - Affects: a `terraform.tfvars` that still sets `telegram_phone` makes Terraform warn about an undeclared variable
+  - Migration: delete `telegram_phone` from `terraform.tfvars`
+
 ## [v2026.11.25.83-quill] - 2026-11-25
 
 ### Fixed
