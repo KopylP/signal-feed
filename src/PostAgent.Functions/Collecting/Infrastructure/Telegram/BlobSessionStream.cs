@@ -21,7 +21,7 @@ public sealed class BlobSessionStream : MemoryStream
         var blob = container.GetBlobClient(StorageNames.SessionBlob);
         if (!await blob.ExistsAsync(ct))
         {
-            throw new InvalidOperationException("Telegram session not found in blob storage. Run TgLogin first.");
+            throw new InvalidOperationException("Telegram session not found in blob storage. Send /login to the bot (or run TgLogin).");
         }
 
         var content = (await blob.DownloadContentAsync(ct)).Value.Content.ToArray();

@@ -4,6 +4,7 @@ using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
+using PostAgent.Login;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
 using PostAgent.SettingsMenu;
@@ -34,6 +35,7 @@ public static class ServiceCollectionExtensions
             .AddPosts()
             .AddNotifications()
             .AddPairing()
+            .AddLogin()
             .AddSettingsMenu()
             .AddChat()
             .AddCollecting()

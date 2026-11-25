@@ -1,6 +1,6 @@
 using Azure.Storage.Blobs.Specialized;
 
-namespace PostAgent.Collecting.Infrastructure.Telegram;
+namespace PostAgent.Shared.TelegramSession;
 
 // A held blob lease that renews itself until it is disposed, then releases it.
 public sealed class RenewedBlobLease : IAsyncDisposable
@@ -30,14 +30,14 @@ public sealed class RenewedBlobLease : IAsyncDisposable
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    // The run goes on: the lease still has time left, and the next renewal may succeed.
-                    _log.LogWarning(ex, "Could not renew the collection lock");
+                    // The work goes on: the lease still has time left, and the next renewal may succeed.
+                    _log.LogWarning(ex, "Could not renew the Telegram session lock");
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            // Disposed: the run is over.
+            // Disposed: the work is over.
         }
     }
 
@@ -53,7 +53,7 @@ public sealed class RenewedBlobLease : IAsyncDisposable
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _log.LogWarning(ex, "Could not release the collection lock, it expires on its own");
+            _log.LogWarning(ex, "Could not release the Telegram session lock, it expires on its own");
         }
     }
 }

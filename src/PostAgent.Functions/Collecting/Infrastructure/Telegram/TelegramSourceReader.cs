@@ -106,7 +106,7 @@ public sealed class TelegramSourceReader(
         "api_id" => options.Value.TelegramApiId.ToString(),
         "api_hash" => options.Value.TelegramApiHash,
         "phone_number" => options.Value.TelegramPhone,
-        "verification_code" or "password" => throw new InvalidOperationException("Telegram session is expired. Run TgLogin again."),
+        "verification_code" or "password" => throw new InvalidOperationException("Telegram session is expired. Send /login to the bot (or run TgLogin)."),
         _ => null,
     };
 

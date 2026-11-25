@@ -5,15 +5,15 @@ using Microsoft.Extensions.Options;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Settings;
 
-namespace PostAgent.Collecting.Infrastructure.Telegram;
+namespace PostAgent.Shared.TelegramSession;
 
 // A lease on a lock blob next to the session. A finite lease that is renewed while the run lasts:
-// if the instance dies, the lease expires on its own and the next run is not blocked for good.
-public sealed class BlobCollectionLock(
+// if the instance dies, the lease expires on its own and the next user is not blocked for good.
+public sealed class BlobSessionLock(
     BlobServiceClient blobs,
     IOptions<AgentOptions> options,
     TimeProvider time,
-    ILogger<BlobCollectionLock> log) : ICollectionLock
+    ILogger<BlobSessionLock> log) : ISessionLock
 {
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan RenewInterval = TimeSpan.FromSeconds(20);
@@ -32,7 +32,7 @@ public sealed class BlobCollectionLock(
         }
         catch (RequestFailedException ex) when (ex.Status == 409)
         {
-            return null; // another collection holds the lease
+            return null; // a collection or a sign-in holds the lease
         }
 
         return new RenewedBlobLease(lease, RenewInterval, time, log);
