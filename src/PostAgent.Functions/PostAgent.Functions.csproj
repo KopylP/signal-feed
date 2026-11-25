@@ -2,6 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <!-- OPENAI001: the OpenAI SDK marks its Responses client experimental. It is the only API that allows function tools together with
+         reasoning (Chat Completions answers HTTP 400), so AiServices.CreateChatClient uses it knowingly; ADR-0011 records the decision. -->
+    <NoWarn>$(NoWarn);OPENAI001</NoWarn>
     <RootNamespace>PostAgent</RootNamespace>
   </PropertyGroup>
   <ItemGroup>

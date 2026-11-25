@@ -133,7 +133,8 @@ public class CompositionTests
 
         Assert.Equal("gpt-6.1-terra", options.OpenAIChatModel);
         Assert.Equal(20, options.ChatMaxMessages);
-        Assert.Equal(800, options.ChatMaxOutputTokens);
+        Assert.Equal(4000, options.ChatMaxOutputTokens);
+        Assert.Equal("medium", options.ChatReasoningEffort);
         Assert.Equal(5, options.ChatMaxToolCalls);
         Assert.Equal(8, options.ChatSearchMaxHits);
     }
