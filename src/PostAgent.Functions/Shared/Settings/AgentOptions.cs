@@ -60,6 +60,8 @@ public sealed class AgentOptions
     [RegularExpression("(?i)^(none|low|medium|high)$")] public string ChatReasoningEffort { get; set; } = "medium";
     [Range(1, 20)] public int ChatMaxToolCalls { get; set; } = 5;
     [Range(1, 200)] public int ChatSearchMaxHits { get; set; } = 8;
+    // Shows the answer as it is written (a Telegram message draft). Off: the answer arrives at once, as before.
+    public bool ChatStreamEnabled { get; set; } = true;
 
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = string.Empty;

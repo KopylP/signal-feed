@@ -8,6 +8,18 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [bramble] - 2026-11-25
+
+### Setup required
+- **`ChatStreamEnabled`**: optional (default `true`)
+  - Where: App Setting (`app_settings`)
+  - Value: `false` turns off the live answer in the chat
+  - Apply: nothing is needed; if the live answer misbehaves, set it to `false` in `app_settings` and run the `infra` workflow
+
+### Added
+- **Live answer in the chat**: while the assistant writes, Telegram shows the text so far as a draft («Thinking…» first); the finished message replaces it
+- **Colored buttons**: «✅ Застосувати» is green, «✖ Скасувати» and «🗑 Видалити» are red
+
 ## [v2026.11.25.64-clover] - 2026-11-25
 
 ### Added

@@ -36,6 +36,7 @@
     "TelegramBotToken": "<bot-token>",
     "TelegramPairingKey": "<random-key-16-to-64-chars-A-Za-z0-9_->",
     "TelegramMaxChats": "5",
+    "ChatStreamEnabled": "true",
     "TelegramWebhookSecret": "<random-token-A-Za-z0-9_->",
     "TelegramApiId": "<api-id>",
     "TelegramApiHash": "<api-hash>",

@@ -11,7 +11,7 @@ public static class SettingsProposalMessage
         "⚙️ <b>Агент пропонує змінити налаштування</b>\n\n" + Lines(proposal, current) + "\n\nЗастосувати?";
 
     public static InlineKeyboard Keyboard(SettingsProposal proposal) =>
-        new([[new KeyboardButton("✅ Застосувати", MenuCallbacks.ApplyProposal(proposal.Id)), new KeyboardButton("✖ Скасувати", MenuCallbacks.DeclineProposal(proposal.Id))]]);
+        new([[new KeyboardButton("✅ Застосувати", MenuCallbacks.ApplyProposal(proposal.Id), ButtonStyle.Success), new KeyboardButton("✖ Скасувати", MenuCallbacks.DeclineProposal(proposal.Id), ButtonStyle.Danger)]]);
 
     public static string Applied(SettingsProposal proposal) => "✅ <b>Застосовано</b>\n\n" + Lines(proposal, current: null);
 

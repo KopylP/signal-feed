@@ -86,4 +86,14 @@ public class ClearContextTests
         Assert.Contains("Очистити контекст розмови", html);
         Assert.Contains("дайджест лишається", html);
     }
+
+    [Fact]
+    public void The_confirmation_buttons_are_green_for_apply_and_red_for_cancel()
+    {
+        var proposal = new SettingsProposal("7", [new SettingChange(SettingChangeKind.ClearContext, "context")], TestData.Now.AddMinutes(30), Chat);
+
+        var buttons = SettingsProposalMessage.Keyboard(proposal).Rows.Single();
+
+        Assert.Equal([PostAgent.Shared.Notifications.ButtonStyle.Success, PostAgent.Shared.Notifications.ButtonStyle.Danger], buttons.Select(b => b.Style));
+    }
 }

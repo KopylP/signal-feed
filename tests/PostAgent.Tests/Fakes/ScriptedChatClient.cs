@@ -32,9 +32,29 @@ internal sealed class ScriptedChatClient(params Func<IReadOnlyList<ChatMessage>,
         return Task.FromResult(script[Math.Min(Calls.Count - 1, script.Length - 1)](Calls[^1]));
     }
 
-    public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-        IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
+    // The same scripted response as GetResponseAsync, text in one update per word, so that a test sees the text grow.
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+        IEnumerable<ChatMessage> messages, ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var response = await GetResponseAsync(messages, options, cancellationToken);
+        foreach (var message in response.Messages)
+        {
+            foreach (var content in message.Contents)
+            {
+                if (content is TextContent text)
+                {
+                    foreach (var word in text.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        yield return new ChatResponseUpdate(message.Role, word + " ");
+                    }
+                }
+                else
+                {
+                    yield return new ChatResponseUpdate(message.Role, [content]);
+                }
+            }
+        }
+    }
 
     public object? GetService(Type serviceType, object? serviceKey = null) => null;
 
