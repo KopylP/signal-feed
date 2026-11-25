@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [lilac] - 2026-11-25
+## [v2026.11.25.44-lilac] - 2026-11-25
 
 ### Added
 - **Warning about unscored posts**: when posts are still unscored two hours after publication (scoring failed, for example an expired OpenAI key), the digest is followed by «⚠️ Не оцінено N постів» with a hint to check `to-score-poison` and Application Insights. When nothing was scored at all, this message replaces «За добу нових постів не було», which used to make a broken scorer look like a quiet day.
