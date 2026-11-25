@@ -25,6 +25,15 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read (the body is passed as a `Stream` for that reason, capped at 64 KB).
 - Never reply to a wrong key and never log a key or the secret. The first pairing wins; `TelegramChatId`, when set, overrides the stored chat and turns pairing off (ADR-0008).
 
+## Chat about the digest (ADR-0010)
+
+- The webhook routes `/start` to pairing and every other message to `IIncomingMessageHandler` (`Shared/Notifications`); `Pairing`, `Digest`, `Chat` and `Cleanup` never reference each other, they share only types in `Shared/` (`Shared/Chat`).
+- The conversation is one blob (`chat-state/current.json`): `Digest` overwrites it with a snapshot after the digest is sent, `Cleanup` deletes it when stale. Keep it that way: no history of old conversations.
+- `ChatProcessor` order is ask the model, save with the blob ETag, then send. Never send before the save succeeds. A turn whose digest changed is dropped, not redelivered.
+- Dedupe handled updates by the set in `ChatState.ProcessedUpdateIds`, never by a watermark. A chat queue message that cannot be parsed is dropped, not retried.
+- Anything a channel wrote (the snapshot, tool results) goes to the model through `DataBlock.Wrap`, never into the instructions. A tool gets a cap on its output (`ChatSearchMaxHits`).
+- `ChatMaxToolCalls`, `ChatMaxOutputTokens` and `ChatMaxMessages` bound the cost of a turn; the chat model is `OpenAIChatModel` (keyed `IChatClient`, `AiServices.ChatClientKey`), scoring and the digest use `OpenAIModel`.
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

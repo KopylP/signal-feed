@@ -19,6 +19,8 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
 │   └── Infrastructure/    AI summary and its response schema
+├── Chat/                  questions about the digest (ChatInbox: checks and queues, ChatProcessor: ask, save, send, ChatFunction: the queue trigger)
+│   └── Infrastructure/    agent (Microsoft Agent Framework), tools, history cap, queue, conversation blob
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
@@ -26,6 +28,7 @@ src/PostAgent.Functions/
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram, ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
@@ -39,7 +42,7 @@ tests/PostAgent.Tests/     xUnit, same folders; Fakes/ holds the fake dependenci
 Directory.Packages.props   versions of all NuGet packages in one place
 infra/                     Terraform: storage, keyvault, function, monitoring, roles, budget
                            (main.tf: resource group and names; variables, outputs, providers)
-prompts/                   scoring.md (scoring) and digest.md (digest summary)
+prompts/                   scoring.md (scoring), digest.md (digest summary) and chat.md (chat about the digest)
 docs/                      this documentation (user-guide, developer-guide, adr)
 .claude/                   project skills and the commit guard hook
 .github/workflows/         deploy.yml (format, build, test, code deploy), infra.yml (manual terraform plan/apply)

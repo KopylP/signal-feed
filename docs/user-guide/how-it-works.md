@@ -62,10 +62,24 @@ The digest is always sent, even when nothing stood out.
 Posts that are still unscored two hours after they were published (scoring failed, see [troubleshooting](troubleshooting.md)) cannot be in the digest.
 The digest then adds a separate message «⚠️ Не оцінено N постів», and sends it instead of «За добу нових постів не було» when nothing was scored, so a broken OpenAI key does not look like a quiet day.
 
+## Asking about the digest
+
+After a digest arrives, reply to the bot in the same private chat to ask more: «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?».
+An AI assistant answers in Ukrainian, plain text, using the digest you received. If the digest is not enough, it can open the full text of a post and
+search the posts stored for the last `RetentionDays` days (for example «що ще писали про це вчора?»). A question the posts do not cover is answered from the model's own knowledge,
+and the answer says so. It does not browse the web.
+
+- **One conversation per digest.** A new digest starts a new conversation and the old one is forgotten, so answers never mix two digests. Alerts do not reset it.
+- **Private chat only.** The bot answers in the private chat with it. If `TelegramChatId` points to a group, the digest still goes there, but questions in the group are not answered.
+- **Bounds.** A conversation keeps the last `ChatMaxMessages` messages; a question is cut at 2000 characters; a question that waited in the queue for more than an hour is dropped.
+- **Cost.** Every question is one model call (about 2 cents with the default `OpenAIChatModel`, see [configuration](configuration.md#settings)).
+- Before the first digest the bot answers «Ще немає дайджесту, про який можна поговорити. Напишіть після наступного дайджесту.»
+
 ## Data retention
 
 Posts are kept for `RetentionDays` (1 by default: yesterday and today) and then deleted by day. The read position of each source is never deleted.
 The digest can look back 48 hours only within the data that remains, so with the default it covers yesterday and today.
+The conversation about the latest digest is deleted by the same cleanup once its digest is older than `RetentionDays`.
 
 ## Next
 

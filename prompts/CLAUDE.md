@@ -1,6 +1,6 @@
 # prompts
 
-Prompts for the model: `scoring.md` (scoring posts) and `digest.md` (digest summary). They are copied into the build, so a change needs a new deploy.
+Prompts for the model: `scoring.md` (scoring posts), `digest.md` (digest summary) and `chat.md` (chat about the digest: free text, no schema, in Ukrainian and plain text, because Telegram shows it literally). They are copied into the build, so a change needs a new deploy.
 
 - The prompts are written in English, but the text the model returns (`topic`, `reason`, and the digest texts) goes to the end user, so each prompt says it must be Ukrainian.
   Structure: role, what to return, rules, limits.
