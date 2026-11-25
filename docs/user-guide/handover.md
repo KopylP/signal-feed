@@ -48,6 +48,7 @@ If you use a fixed chat (`telegram_chat_id` in `terraform.tfvars`, or the `TF_TE
    ```bash
    az storage blob delete-batch --account-name $SA --auth-mode login -s tg-session
    export TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_PHONE=+380... AZURE_TOKEN_CREDENTIALS=AzureCliCredential
+   export SESSION_KEY_ID=$(terraform -chdir=infra output -raw session_key_id)
    dotnet run --project src/TgLogin -- $SA
    ```
    Or, once the new owner's chat is paired (step 3 below), they send `/login` to the bot and type the new account's number and code: the new session replaces the old one

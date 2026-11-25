@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.TelegramSession;
 using TL;
 using WTelegram;
 
@@ -11,7 +12,9 @@ namespace PostAgent.Collecting.Infrastructure.Telegram;
 public sealed class TelegramSourceReader(
     IOptions<AgentOptions> options,
     BlobServiceClient blobs,
-    TimeProvider time) : ISourceReader
+    ISessionCipher cipher,
+    TimeProvider time,
+    ILogger<TelegramSourceReader> log) : ISourceReader
 {
     private const int PageSize = 100;
     private const int FloodRetryThresholdSeconds = 60;
@@ -94,7 +97,11 @@ public sealed class TelegramSourceReader(
     private async Task<Client> ConnectAsync(CancellationToken ct)
     {
         var container = blobs.GetBlobContainerClient(options.Value.SessionBlobContainer);
-        _session = await BlobSessionStream.LoadAsync(container, ct);
+        _session = await BlobSessionStream.LoadAsync(container, cipher, ct);
+        if (_session.WasUnencrypted)
+        {
+            log.LogWarning("The Telegram session was stored in clear; it is now encrypted with SessionKeyId");
+        }
 
         var client = new Client(ConfigValue, _session) { FloodRetryThreshold = FloodRetryThresholdSeconds };
         await client.LoginUserIfNeeded();

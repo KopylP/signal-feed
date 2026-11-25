@@ -13,6 +13,7 @@ using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent;
 
@@ -30,6 +31,7 @@ public static class ServiceCollectionExtensions
 
         return services
             .AddStorage(config)
+            .AddSessionCipher(config)
             .AddSettings()
             .AddAi()
             .AddPosts()

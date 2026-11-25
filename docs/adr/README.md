@@ -39,3 +39,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0014](0014-serve-several-chats-with-shared-settings.md) | Serve several Telegram chats with shared settings | Accepted |
 | [0015](0015-edit-prompt-sections-and-a-reader-profile-from-the-chat.md) | Edit prompt sections and keep a reader profile through the chat | Accepted |
 | [0016](0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md) | Sign in to Telegram from the bot through a Mini App | Accepted |
+| [0017](0017-encrypt-the-telegram-session-with-a-key-vault-key.md) | Encrypt the Telegram session with a Key Vault key | Accepted |

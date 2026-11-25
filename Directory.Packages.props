@@ -5,6 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Azure.Data.Tables" Version="12.13.0" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
+    <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.10.2" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.2" />
     <PackageVersion Include="Azure.Storage.Queues" Version="12.28.2" />
     <!-- Worker.ApplicationInsights залежить від v2 SDK і несумісний з 3.x, тому тут 2.23.0 -->

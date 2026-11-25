@@ -39,7 +39,7 @@ src/PostAgent.Functions/
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob, SettingsProposal and SettingsProposalMessage (the agent's plan and its text, ADR-0013)
-│   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once
+│   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once; ISessionCipher, EnvelopeCipher and SessionEnvelope: the session and the sign-in are encrypted with the Key Vault key (KeyVaultKeyWrapper, ADR-0017)
 │   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs

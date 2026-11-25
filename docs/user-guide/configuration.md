@@ -36,6 +36,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `TelegramMaxChats` | 5 | how many chats can be paired at once (1-20); each gets the digest, alerts and failure messages |
 | `TelegramApiId` | | app id of the reader account (from my.telegram.org) |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
+| `SessionKeyId` | set by Terraform | versionless id of the Key Vault key that encrypts the session and the sign-in in progress ([ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md)); required in Azure, empty only locally against Azurite |
 | `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
 | `RetentionDays` | 1 | how many days back to keep posts: 1 means yesterday's and today's partitions |
 | `FirstRunLookbackHours` | 24 | how many hours of history to read on the first run for a new source |

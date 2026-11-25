@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Azure;
 using Azure.Storage.Blobs;
@@ -5,13 +6,14 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent.Login.Infrastructure;
 
-// One blob next to the session, so that only the identities that may read the session can read a code in transit.
+// One blob next to the session, encrypted with the Key Vault key (ADR-0017): storage access alone does not reveal a phone or a code in transit.
 // It never holds the 2FA password: only the SRP proof computed on the phone, which is single-use.
 // Every change is a read, a check and a write with the ETag; a lost race is simply retried.
-public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<AgentOptions> options) : ILoginAttemptStore
+public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, ISessionCipher cipher, IOptions<AgentOptions> options) : ILoginAttemptStore
 {
     private const int MaxRetries = 3;
     private static readonly LoginAttempt Unreadable = new(string.Empty, 0, DateTimeOffset.MinValue);
@@ -137,14 +139,16 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
 
         try
         {
-            var attempt = JsonSerializer.Deserialize<LoginAttempt>(content.Content.ToMemory().Span);
+            var json = await cipher.UnprotectAsync(content.Content.ToArray(), StorageNames.LoginAttemptBlob, ct);
+            var attempt = JsonSerializer.Deserialize<LoginAttempt>(json);
             if (attempt is not null)
             {
                 return (attempt, content.Details.ETag);
             }
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or CryptographicException)
         {
+            // Not ours to read (not encrypted, or with another key): treated like any unreadable attempt below.
         }
 
         // A blob that cannot be read is treated as an expired attempt, so the next start replaces it instead of being blocked by it.
@@ -158,7 +162,8 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
             : new BlobRequestConditions { IfNoneMatch = ETag.All };
         try
         {
-            await Blob.UploadAsync(BinaryData.FromObjectAsJson(attempt), new BlobUploadOptions { Conditions = conditions }, ct);
+            var sealedAttempt = await cipher.ProtectAsync(JsonSerializer.SerializeToUtf8Bytes(attempt), StorageNames.LoginAttemptBlob, ct);
+            await Blob.UploadAsync(BinaryData.FromBytes(sealedAttempt), new BlobUploadOptions { Conditions = conditions }, ct);
             return true;
         }
         catch (RequestFailedException ex) when (ex.Status is 409 or 412)

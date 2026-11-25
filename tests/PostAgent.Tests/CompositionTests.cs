@@ -85,6 +85,34 @@ public class CompositionTests
     }
 
     [Fact]
+    public void Keeps_the_session_unencrypted_only_for_local_storage()
+    {
+        using var provider = BuildProvider();
+
+        Assert.IsType<PostAgent.Shared.TelegramSession.UnencryptedLocalCipher>(provider.GetRequiredService<PostAgent.Shared.TelegramSession.ISessionCipher>());
+    }
+
+    [Fact]
+    public void Encrypts_the_session_with_the_key_vault_key_when_it_is_set()
+    {
+        using var provider = BuildProvider(s => s["SessionKeyId"] = "https://kv-signal.vault.azure.net/keys/tg-session");
+
+        Assert.IsType<PostAgent.Shared.TelegramSession.EnvelopeCipher>(provider.GetRequiredService<PostAgent.Shared.TelegramSession.ISessionCipher>());
+    }
+
+    [Fact]
+    public void Refuses_to_start_in_azure_without_the_session_key()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() => BuildProvider(s =>
+        {
+            s.Remove("AzureWebJobsStorage");
+            s["AzureWebJobsStorage:accountName"] = "stsignal";
+        }));
+
+        Assert.Contains("SessionKeyId", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void The_host_name_of_the_mini_app_comes_from_the_platform_setting()
     {
         using var provider = BuildProvider(s => s["WEBSITE_HOSTNAME"] = "func-signal.azurewebsites.net");

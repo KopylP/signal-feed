@@ -14,3 +14,16 @@ locals {
   secret_names     = ["OpenAIApiKey", "TelegramBotToken", "TelegramApiHash", "TelegramPairingKey", "TelegramWebhookSecret"]
   secret_reference = { for name in local.secret_names : name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${name}/)" }
 }
+
+# The key that encrypts the Telegram session and the sign-in in progress (ADR-0017). Key Vault generates it and the private
+# part never leaves the vault, so nothing secret reaches the state. The app only wraps and unwraps data keys with it.
+# Deleting it makes the stored session unreadable: sign in again with /login or TgLogin.
+resource "azurerm_key_vault_key" "session" {
+  name         = "tg-session"
+  key_vault_id = azurerm_key_vault.main.id
+  key_type     = "RSA"
+  key_size     = 3072
+  key_opts     = ["wrapKey", "unwrapKey"]
+
+  depends_on = [azurerm_role_assignment.terraform_keys]
+}

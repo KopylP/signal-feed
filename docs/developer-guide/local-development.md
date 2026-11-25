@@ -55,6 +55,7 @@ python3 -m unittest discover -s .github/scripts                         # the ch
 ```
 
 Storage code (`PostRepository`, `BlobLoginAttemptStore`) is not covered by `dotnet test`. Check it by hand against Azurite after changing it.
+Locally `SessionKeyId` stays empty, so the session in Azurite is not encrypted (`UnencryptedLocalCipher`); set it to a real key id to test encryption (your `az login` needs the key role).
 The tests of the `/login` Mini App run its JavaScript (the SRP proof of the 2FA password) under Node.js, so `node` must be on the PATH.
 
 ## Before opening a pull request

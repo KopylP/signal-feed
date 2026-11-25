@@ -11,6 +11,14 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ## [cedar] - 2026-11-25
 
 ### Setup required
+- **Key Vault key `tg-session` and `SessionKeyId`**: required before the code deploys
+  - Where: Terraform (`infra/keyvault.tf`, `infra/roles.tf`, `infra/function.tf`)
+  - Value: none, Key Vault generates the key; Terraform grants the roles and sets the App Setting
+  - Apply: run the `infra` workflow with apply before this code merges (rerun it if the key creation fails with 403 while the new role propagates); without `SessionKeyId` the app does not start
+- **`SESSION_KEY_ID` for `TgLogin`**: required to run `TgLogin` against Azure
+  - Where: your shell
+  - Value: `$(terraform -chdir=infra output -raw session_key_id)`
+  - Apply: export it before `dotnet run --project src/TgLogin`
 - **`tg-login` queue**: required before the code deploys
   - Where: Terraform (`infra/storage.tf`)
   - Value: none, Terraform creates it
@@ -37,6 +45,10 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Enable: on by default for every paired private chat, once the `tg-login` queue exists
   - Settings: none
   - Limits: one sign-in at a time, 5 minutes, 3 wrong answers; a sign-in that Telegram routes to email or sign-up needs `TgLogin`
+- **Encrypted Telegram session**: the session and the sign-in in progress are stored encrypted with a Key Vault key, so access to the storage account alone no longer reveals them ([ADR-0017](docs/adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md))
+  - Enable: on in Azure once `SessionKeyId` is set; a session stored in clear is encrypted on the first collection
+  - Settings: `SessionKeyId` (set by Terraform)
+  - Limits: the function and the deployer can still read it; deleting the key makes the session unreadable (sign in again)
 
 ### Logic
 - **Collecting: which account the session may hold**
