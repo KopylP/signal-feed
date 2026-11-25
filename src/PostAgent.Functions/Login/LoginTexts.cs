@@ -11,7 +11,6 @@ public static class LoginTexts
     public const string NoHost = "Вхід через бота тут недоступний: невідома адреса Function App. Увійдіть через TgLogin.";
     public const string PhoneButton = "📱 Ввести номер";
     public const string CodeButton = "🔑 Ввести код";
-    public const string PhoneMismatch = "Цей номер не збігається з номером акаунта-читача в налаштуваннях (TelegramPhone). Натисніть «Ввести номер» і введіть правильний.";
     public const string WrongCode = "Код не підійшов. Натисніть «Ввести код» ще раз.";
     public const string PasswordNeeded = "Потрібен пароль двоетапної перевірки. Натисніть «Ввести код» і введіть пароль.";
     public const string WrongPassword = "Пароль не підійшов. Натисніть «Ввести код» і введіть його ще раз.";
@@ -27,8 +26,13 @@ public static class LoginTexts
         $"🔑 Telegram надіслав код входу для {TelegramHtml.Escape(maskedPhone)} у застосунок цього акаунта (чат «Telegram»).\n"
         + "Натисніть кнопку і введіть код, а якщо в акаунті є двоетапна перевірка, то й пароль. Не пересилайте код повідомленням.";
 
-    public static string Done(string? account) =>
-        $"✅ Сесію оновлено{(account is null ? string.Empty : $" ({TelegramHtml.Escape(account)})")}. Наступний збір прочитає канали з нею.";
+    // Goes to every paired chat, so that a swap of the reader account is seen by all of them.
+    public static string Replaced(string? account, string maskedPhone)
+    {
+        var who = string.Join(", ", new[] { account, maskedPhone }.Where(s => !string.IsNullOrEmpty(s)).Select(s => TelegramHtml.Escape(s)));
+        return $"✅ Сесію акаунта-читача оновлено{(who.Length == 0 ? string.Empty : $": {who}")}. Тепер канали читає цей акаунт. "
+            + "Якщо це не ви, надішліть /login і увійдіть своїм акаунтом.";
+    }
 
     public static string Failed(string? reason) =>
         $"Не вдалося увійти{(reason is null ? string.Empty : $": <code>{TelegramHtml.Escape(reason)}</code>")}. Спробуйте /login ще раз або TgLogin.";

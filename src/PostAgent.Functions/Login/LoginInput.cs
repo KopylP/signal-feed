@@ -19,10 +19,6 @@ public static class LoginInput
         return digits.Length is >= 7 and <= 15 && digits.All(char.IsAsciiDigit) ? "+" + digits : null;
     }
 
-    // The same number however it is written: the phone of the account is compared by its digits.
-    public static bool SamePhone(string a, string b) =>
-        NormalizePhone(a) is { } left && NormalizePhone(b) is { } right && left == right;
-
     // "+380•••••45": enough to recognize the number in a chat message, not enough to read it.
     public static string MaskPhone(string phone) =>
         phone.Length <= 5 ? "•••" : phone[..4] + new string('•', phone.Length - 6) + phone[^2..];

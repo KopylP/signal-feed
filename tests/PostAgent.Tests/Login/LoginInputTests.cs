@@ -37,15 +37,6 @@ public class LoginInputTests
         Assert.Null(LoginInput.Normalize(null, "12345", new string('x', LoginInput.MaxPasswordChars + 1)));
     }
 
-    [Theory]
-    [InlineData("+380671234567", "380 67 123 45 67", true)]
-    [InlineData("+380671234567", "+380671234568", false)]
-    [InlineData("", "+380671234567", false)]
-    public void Compares_phones_by_their_digits(string a, string b, bool expected)
-    {
-        Assert.Equal(expected, LoginInput.SamePhone(a, b));
-    }
-
     [Fact]
     public void Masks_all_but_the_country_code_and_the_last_two_digits()
     {

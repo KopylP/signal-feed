@@ -79,11 +79,12 @@ Renew it from the bot, in your paired private chat ([ADR-0016](../adr/0016-sign-
 1. Send `/login`. The bot answers «Готую вхід…», then sends «📱 Ввести номер».
 2. The button opens a form inside Telegram. Type the phone number of the reader account (`+380…`).
 3. Telegram sends the login code to that account (the «Telegram» chat in its app), and the bot sends «🔑 Ввести код».
-4. Type the code, and the two-step verification password if the account has one. The bot answers «✅ Сесію оновлено».
+4. Type the code, and the two-step verification password if the account has one. Every paired chat gets «✅ Сесію акаунта-читача оновлено» with the account's name and masked number.
 
 Type the code only into the form, never into a chat: Telegram blocks a sign-in whose code was sent as a message.
 A sign-in lasts at most 5 minutes and allows 3 wrong answers; only one runs at a time, and a collection that starts meanwhile is skipped.
-If `TelegramPhone` is set, the bot signs in only that number. The form is accepted only from the paired chat that sent `/login`.
+The form is accepted only from the paired chat that sent `/login`. Any paired chat may sign in any account, which is why every chat is told who reads the channels now:
+if you did not expect the message, send `/login` and sign in with your own account.
 
 ## Data retention
 

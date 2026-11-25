@@ -15,7 +15,6 @@ public class OverridesApplierTests
             TelegramWebhookSecret = "webhook_secret-token",
             TelegramApiId = 1,
             TelegramApiHash = "hash",
-            TelegramPhone = "+000",
         };
         configure?.Invoke(options);
         return options;

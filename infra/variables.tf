@@ -67,13 +67,6 @@ variable "telegram_api_id" {
   sensitive   = true # tied to the owner's Telegram account: keep it out of plan output
 }
 
-variable "telegram_phone" {
-  description = "Optional phone number of the reader account, format +380...: when set, /login in the bot signs in only this number. Empty: the owner types the number in the bot."
-  type        = string
-  default     = ""
-  sensitive   = true # personal data: keep it out of plan output
-}
-
 variable "alert_sources" {
   description = "Groups that can trigger an alert (comma-separated usernames). Channels never trigger alerts."
   type        = string

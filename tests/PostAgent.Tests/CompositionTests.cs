@@ -34,7 +34,6 @@ public class CompositionTests
         ["TelegramWebhookSecret"] = "webhook_secret-token",
         ["TelegramApiId"] = "12345",
         ["TelegramApiHash"] = "hash",
-        ["TelegramPhone"] = "+380000000000",
         ["DigestSize"] = "6",
     };
 
@@ -83,14 +82,6 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.LoginFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.LoginPageFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.Login.Infrastructure.LoginQueue>(services));
-    }
-
-    [Fact]
-    public void Sign_in_from_the_bot_does_not_need_a_phone_in_the_settings()
-    {
-        using var provider = BuildProvider(s => s.Remove("TelegramPhone"));
-
-        Assert.Equal(string.Empty, provider.GetRequiredService<IOptions<AgentOptions>>().Value.TelegramPhone);
     }
 
     [Fact]

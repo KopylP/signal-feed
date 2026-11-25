@@ -13,7 +13,7 @@
 | `/login` says «Вхід через бота тут недоступний» | The app does not know its own host name (`WEBSITE_HOSTNAME`), for example when it runs locally | Sign in with `TgLogin` |
 | `/login` says «Зараз іде збір, сесія зайнята» | A collection held the session for over two minutes | Send `/login` again in a minute |
 | The form says «Форма застаріла» or «Цю спробу завершено» | The sign-in expired (5 minutes), was finished, or the form was opened from another account or chat | Send `/login` again and use the newest button |
-| The bot says the number does not match `TelegramPhone` | `TelegramPhone` is set to another number | Type that number, or clear `telegram_phone` (`TF_TELEGRAM_PHONE`) and run `infra` with apply |
+| «Сесію акаунта-читача оновлено» arrives and you did not sign in | Someone in another paired chat signed in with `/login` | If the account is not yours, send `/login` and sign in with your account; unbind chats you do not trust ([installation, step 6](installation.md#step-6-connect-your-chat)) |
 | `/login` ends with «Telegram просить те, чого бот не вміє» | Telegram wants a sign-up or a login email for this account | Sign in with `TgLogin` |
 | One group or channel never appears | The reading account cannot see it | Join it with the reading account |
 | A new busy group is skipped on the first run | Reading a day of history means many requests, and Telegram answered `FLOOD_WAIT` | Nothing: the source is skipped and retried on the next run |

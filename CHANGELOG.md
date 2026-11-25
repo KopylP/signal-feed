@@ -15,17 +15,17 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Where: Terraform (`infra/storage.tf`)
   - Value: none, Terraform creates it
   - Apply: run the `infra` workflow with apply (or `terraform apply`) before this code merges; without the queue `/login` fails
-- **`telegram_phone` / `TF_TELEGRAM_PHONE`**: optional now (default empty)
-  - Where: Terraform variable / GitHub Secret
-  - Value: keep it to let `/login` sign in only that number; leave it empty to type any number in the bot
-  - Apply: nothing is needed to keep today's behavior; to clear it, empty the secret and run the `infra` workflow
+- **`TF_TELEGRAM_PHONE`**: no longer used
+  - Where: GitHub Secret
+  - Value: none
+  - Apply: delete the secret after the `infra` workflow ran; the `infra` apply removes the `TelegramPhone` App Setting
 
 ### Contract changes
-- **App Setting `TelegramPhone`: no longer required** (compatible)
+- **Terraform variable `telegram_phone` and App Setting `TelegramPhone`: removed** (breaking)
   - Before: required, the phone of the reader account
-  - After: optional; when set, `/login` refuses any other number; Terraform sets it only when `telegram_phone` is not empty
-  - Affects: nothing
-  - Migration: none
+  - After: gone; the phone is typed in the bot with `/login` (`TgLogin` still reads `TELEGRAM_PHONE` from its own environment)
+  - Affects: a `terraform.tfvars` that still sets `telegram_phone` makes Terraform warn about an undeclared variable
+  - Migration: delete `telegram_phone` from `terraform.tfvars` and the `TF_TELEGRAM_PHONE` secret from GitHub
 - **Telegram messages: the collection failure for an expired session** (compatible)
   - Before: `Telegram session is expired. Run TgLogin again.`
   - After: `Telegram session is expired. Send /login to the bot (or run TgLogin).`
@@ -33,9 +33,9 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Migration: none
 
 ### Added
-- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password ([installation, step 4](docs/user-guide/installation.md#step-4-sign-in-to-telegram), ADR-0016)
+- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password, and every paired chat is told which account reads the channels now ([Renewing the Telegram session](docs/user-guide/how-it-works.md#renewing-the-telegram-session), ADR-0016)
   - Enable: on by default for every paired private chat, once the `tg-login` queue exists
-  - Settings: `TelegramPhone` (optional) limits the number that may be signed in
+  - Settings: none
   - Limits: one sign-in at a time, 5 minutes, 3 wrong answers; a sign-in that Telegram routes to email or sign-up needs `TgLogin`
 
 ### Logic

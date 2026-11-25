@@ -17,12 +17,11 @@ public class LoginProcessorTests
     private readonly InMemoryLoginAttemptStore _attempts = new();
     private readonly FakeSessionLock _lock = new();
     private readonly RecordingSessionStore _sessions = new();
-    private readonly RecordingNotifier _notifier = new();
+    private RecordingNotifier _notifier = new();
     private readonly RecordingPanel _panel = new();
     private readonly FakeTimeProvider _time = new(TestData.Now);
     private ScriptedUserLogin _login = new();
     private string _host = Host;
-    private string _expectedPhone = string.Empty;
 
     private readonly LoginAttempt _attempt;
 
@@ -34,7 +33,7 @@ public class LoginProcessorTests
 
     private LoginProcessor Processor()
     {
-        var options = Options.Create(new AgentOptions { WebsiteHostName = _host, TelegramPhone = _expectedPhone });
+        var options = Options.Create(new AgentOptions { WebsiteHostName = _host });
         return new LoginProcessor(
             _attempts, new ScriptedUserLoginFactory(_login), _lock, _sessions, _notifier, _panel, options, _time, NullLogger<LoginProcessor>.Instance);
     }
@@ -83,7 +82,8 @@ public class LoginProcessorTests
         Assert.DoesNotContain(Phone, Prompts[1], StringComparison.Ordinal);
 
         Assert.Equal([[1, 2, 3]], _sessions.Saved);
-        Assert.Equal([LoginTexts.Done("reader")], _notifier.Replies);
+        Assert.Equal([LoginTexts.Replaced("reader", "+380•••••••67")], _notifier.Sent);
+        Assert.Empty(_notifier.Replies);
         Assert.True(_login.Disposed);
         Assert.Equal(1, _lock.Released);
         Assert.Null(_attempts.Current);
@@ -103,28 +103,28 @@ public class LoginProcessorTests
     }
 
     [Fact]
-    public async Task Signs_in_only_the_number_in_telegram_phone_when_it_is_set()
+    public async Task Tells_every_paired_chat_which_account_reads_the_channels_now()
     {
-        _expectedPhone = "+380 67 123 45 67";
-        Forms(PhoneForm("+380501112233"), PhoneForm(), CodeForm("12345"));
+        Forms(PhoneForm(), CodeForm("12345"));
 
         await RunAsync();
 
-        Assert.Equal([Phone], _login.Phones);
-        Assert.Contains(LoginTexts.PhoneMismatch, Prompts);
-        Assert.Single(_sessions.Saved);
+        var announcement = Assert.Single(_notifier.Sent);
+        Assert.Contains("reader", announcement, StringComparison.Ordinal);
+        Assert.Contains("+380•••••••67", announcement, StringComparison.Ordinal);
+        Assert.DoesNotContain(Phone, announcement, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Gives_up_after_too_many_wrong_numbers()
+    public async Task Still_tells_the_chat_that_signed_in_when_the_announcement_fails()
     {
-        _expectedPhone = Phone;
-        Forms(PhoneForm("+380501112233"), PhoneForm("+380501112234"), PhoneForm("+380501112235"), PhoneForm());
+        _notifier = new RecordingNotifier { FailBroadcasts = true };
+        Forms(PhoneForm(), CodeForm("12345"));
 
         await RunAsync();
 
-        Assert.Empty(_login.Phones);
-        Assert.Equal([LoginTexts.TooManyTries], _notifier.Replies);
+        Assert.Single(_sessions.Saved);
+        Assert.Equal([LoginTexts.Replaced("reader", "+380•••••••67")], _notifier.Replies);
     }
 
     [Fact]

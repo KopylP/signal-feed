@@ -23,8 +23,6 @@ locals {
     },
     # Optional override: without it the chat is bound by sending /start <TelegramPairingKey> to the bot.
     var.telegram_chat_id == "" ? {} : { TelegramChatId = var.telegram_chat_id },
-    # Optional guard: with it, /login signs in only this number (ADR-0016).
-    var.telegram_phone == "" ? {} : { TelegramPhone = var.telegram_phone },
     { for name, value in local.schedules : name => lookup(var.app_settings, name, value) },
     # Secrets: Key Vault references only, the values never reach the state.
     local.secret_reference,

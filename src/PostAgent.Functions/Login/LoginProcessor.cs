@@ -43,7 +43,10 @@ public sealed class LoginProcessor(
             }
 
             await using var login = logins.Create();
-            await notifier.SendToAsync(attempt.ChatId, await SignInAsync(login, attempt, ct), ct);
+            if (await SignInAsync(login, attempt, ct) is { } result)
+            {
+                await notifier.SendToAsync(attempt.ChatId, result, ct);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -57,8 +60,8 @@ public sealed class LoginProcessor(
         }
     }
 
-    // Returns the message that ends the sign-in.
-    private async Task<string> SignInAsync(IUserLogin login, LoginAttempt attempt, CancellationToken ct)
+    // Returns the message that ends a sign-in that did not replace the session (a replaced one is announced to every chat).
+    private async Task<string?> SignInAsync(IUserLogin login, LoginAttempt attempt, CancellationToken ct)
     {
         var host = options.Value.WebsiteHostName;
         if (LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.PhoneStage) is not { } phoneUrl
@@ -73,6 +76,7 @@ public sealed class LoginProcessor(
 
         var step = LoginStep.PhoneRequired;
         var failures = 0;
+        var maskedPhone = string.Empty;
         while (!attempt.IsExpired(time.GetUtcNow()))
         {
             var submission = await attempts.TakeSubmissionAsync(attempt.Id, ct);
@@ -89,35 +93,23 @@ public sealed class LoginProcessor(
                     continue;
                 }
 
-                // With TelegramPhone set, the bot may only sign in that account: a bound chat cannot swap the reader for another one.
-                if (options.Value.TelegramPhone is { Length: > 0 } expected && !LoginInput.SamePhone(expected, phone))
-                {
-                    log.LogWarning("Sign-in refused: the phone is not the one in TelegramPhone");
-                    if (++failures >= MaxFailures)
-                    {
-                        return LoginTexts.TooManyTries;
-                    }
-
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.PhoneMismatch, askPhone, ct);
-                    continue;
-                }
-
                 step = await login.StartAsync(phone, ct);
+                maskedPhone = LoginInput.MaskPhone(phone);
                 if (step == LoginStep.CodeRequired)
                 {
                     log.LogInformation("Sign-in code requested");
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent(LoginInput.MaskPhone(phone)), askCode, ct);
+                    await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent(maskedPhone), askCode, ct);
                     continue;
                 }
 
-                return step == LoginStep.Done ? await SaveAsync(login, ct) : LoginTexts.Unsupported;
+                return step == LoginStep.Done ? await SaveAsync(login, maskedPhone, ct) : LoginTexts.Unsupported;
             }
 
             step = await ApplyAsync(login, step, submission, ct);
             switch (step)
             {
                 case LoginStep.Done:
-                    return await SaveAsync(login, ct);
+                    return await SaveAsync(login, maskedPhone, ct);
                 case LoginStep.Unsupported:
                     return LoginTexts.Unsupported;
                 case LoginStep.CodeInvalid or LoginStep.PasswordInvalid when ++failures >= MaxFailures:
@@ -160,12 +152,25 @@ public sealed class LoginProcessor(
             : step;
     }
 
-    private async Task<string> SaveAsync(IUserLogin login, CancellationToken ct)
+    // Any paired chat may sign in any account, so every paired chat hears which account reads the channels now:
+    // a swap of the reader account never goes unnoticed. The chat that signed in gets the same message.
+    private async Task<string?> SaveAsync(IUserLogin login, string maskedPhone, CancellationToken ct)
     {
         var account = login.AccountName;
         await sessions.SaveAsync(await login.ExportSessionAsync(ct), ct);
         log.LogInformation("Sign-in finished, the Telegram session was replaced");
-        return LoginTexts.Done(account);
+        var text = LoginTexts.Replaced(account, maskedPhone);
+        try
+        {
+            await notifier.SendAsync(text, ct);
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The session is saved: the sign-in succeeded even if the announcement did not reach every chat.
+            log.LogWarning(ex, "The new session could not be announced to every chat");
+            return text;
+        }
     }
 
     // A collection holds the lock for a minute or two; the sign-in waits for it rather than asking the owner to retry.

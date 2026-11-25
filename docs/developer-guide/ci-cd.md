@@ -97,7 +97,6 @@ Personal data goes into **Secrets** (same page, Secrets tab), not Variables: thi
 | Secret | Value |
 |---|---|
 | `TF_BUDGET_ALERT_EMAIL` | `budget_alert_email` |
-| `TF_TELEGRAM_PHONE` (optional) | `telegram_phone`: when set, `/login` signs in only this number |
 | `TF_TELEGRAM_API_ID` | `telegram_api_id` |
 | `TF_TELEGRAM_CHAT_ID` (optional) | override of the paired chat; leave unset to bind the chat with `/start` |
 

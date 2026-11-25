@@ -12,6 +12,9 @@ internal sealed class RecordingNotifier : ITelegramNotifier
     // The 1-based number of the call that fails (0: none), to test what happens when a later message cannot be sent.
     public int FailOnCall { get; init; }
 
+    // Makes every message to all chats fail, while a message to one chat still goes through.
+    public bool FailBroadcasts { get; init; }
+
     // Messages sent to one chat, in order (the answers and the pairing replies).
     public List<(long ChatId, string Html)> SentTo { get; } = [];
 
@@ -33,7 +36,7 @@ internal sealed class RecordingNotifier : ITelegramNotifier
 
     public Task SendAsync(string html, InlineKeyboard keyboard, CancellationToken ct)
     {
-        if (Sent.Count + SentTo.Count + 1 == FailOnCall)
+        if (FailBroadcasts || Sent.Count + SentTo.Count + 1 == FailOnCall)
         {
             throw new InvalidOperationException("Telegram is down");
         }
