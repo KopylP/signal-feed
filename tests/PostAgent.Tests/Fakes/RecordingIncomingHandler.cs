@@ -9,9 +9,12 @@ internal sealed class RecordingIncomingHandler : IIncomingMessageHandler
 
     public bool Fail { get; init; }
 
-    public Task HandleAsync(Update update, CancellationToken ct)
+    // What HandleAsync returns: whether this handler claims the update.
+    public bool Claims { get; init; } = true;
+
+    public Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
         Handled.Add(update);
-        return Fail ? throw new InvalidOperationException("handler is down") : Task.CompletedTask;
+        return Fail ? throw new InvalidOperationException("handler is down") : Task.FromResult(Claims);
     }
 }

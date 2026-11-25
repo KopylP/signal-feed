@@ -12,7 +12,7 @@ namespace PostAgent.Pairing;
 
 public sealed class PairingWebhook(
     PairingService pairing,
-    IIncomingMessageHandler incoming,
+    IEnumerable<IIncomingMessageHandler> handlers,
     IOptions<AgentOptions> options,
     ILogger<PairingWebhook> log)
 {
@@ -46,7 +46,7 @@ public sealed class PairingWebhook(
             return HttpStatusCode.BadRequest;
         }
 
-        if (update?.Message is not { } message)
+        if (update is null || (update.Message is null && update.CallbackQuery is null))
         {
             return HttpStatusCode.OK;
         }
@@ -54,14 +54,20 @@ public sealed class PairingWebhook(
         try
         {
             // The secret token is already checked, so the update is from Telegram. Pairing keeps its own commands;
-            // every other message goes to whoever answers (the chat).
-            if (StartCommand.IsStart(message.Text))
+            // every other update (a message or a button press) goes to the handlers, the first that claims it wins.
+            if (update.Message is { } message && StartCommand.IsStart(message.Text))
             {
                 await pairing.HandleAsync(message, ct);
             }
             else
             {
-                await incoming.HandleAsync(update, ct);
+                foreach (var handler in handlers)
+                {
+                    if (await handler.HandleAsync(update, ct))
+                    {
+                        break;
+                    }
+                }
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

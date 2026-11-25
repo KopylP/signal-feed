@@ -21,7 +21,7 @@ public class PairingWebhookTests
     {
         var options = Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramWebhookSecret = Secret });
         var service = new PairingService(store, notifier ?? new RecordingNotifier(), options, NullLogger<PairingService>.Instance);
-        return new PairingWebhook(service, incoming ?? new RecordingIncomingHandler(), options, NullLogger<PairingWebhook>.Instance);
+        return new PairingWebhook(service, [incoming ?? new RecordingIncomingHandler()], options, NullLogger<PairingWebhook>.Instance);
     }
 
     private static MemoryStream Body(string text) => new(Encoding.UTF8.GetBytes(text));

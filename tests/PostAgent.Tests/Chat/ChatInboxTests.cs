@@ -56,10 +56,29 @@ public class ChatInboxTests
     {
         var inbox = await Create();
 
-        await inbox.HandleAsync(Incoming(text, chatId, type), CancellationToken.None);
+        var handled = await inbox.HandleAsync(Incoming(text, chatId, type), CancellationToken.None);
 
+        Assert.False(handled);
         Assert.Empty(_queue.Enqueued);
         Assert.Empty(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task Reports_that_it_handled_a_queued_question()
+    {
+        var inbox = await Create();
+
+        Assert.True(await inbox.HandleAsync(Incoming("питання"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Chat_inbox_does_not_handle_a_callback_query()
+    {
+        var inbox = await Create();
+        var update = new Update { Id = 6, CallbackQuery = new CallbackQuery { Id = "cb", Data = "m" } };
+
+        Assert.False(await inbox.HandleAsync(update, CancellationToken.None));
+        Assert.Empty(_queue.Enqueued);
     }
 
     [Fact]
