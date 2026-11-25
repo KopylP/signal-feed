@@ -8,6 +8,11 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [quill] - 2026-11-25
+
+### Fixed
+- **The app did not start when a storage connection string without a key sat next to `AzureWebJobsStorage__accountName`**: the worker stopped at startup with «Connection string has keyword 'AccountKey' with empty value» and no function ran. The identity-based account name now always wins; the connection string is used only for local development
+
 ## [v2026.11.25.80-cedar] - 2026-11-25
 
 ### Setup required

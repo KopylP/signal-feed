@@ -15,7 +15,7 @@ public static class StorageRegistration
         var account = config["AzureWebJobsStorage:accountName"];
         var queueOptions = new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 };
 
-        if (!string.IsNullOrEmpty(connectionString))
+        if (IsLocal(config))
         {
             services.AddSingleton(new TableServiceClient(connectionString));
             services.AddSingleton(new BlobServiceClient(connectionString));
@@ -44,9 +44,14 @@ public static class StorageRegistration
         return services;
     }
 
+    // The identity-based account name wins: the platform can leave a connection string with an empty AccountKey
+    // next to it, and building a client from that string stops the worker at startup.
+    public static bool IsLocal(IConfiguration config) =>
+        string.IsNullOrEmpty(config["AzureWebJobsStorage:accountName"]) && !string.IsNullOrEmpty(config["AzureWebJobsStorage"]);
+
     public static async Task EnsureLocalResourcesAsync(this IServiceProvider services, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(services.GetRequiredService<IConfiguration>()["AzureWebJobsStorage"]))
+        if (!IsLocal(services.GetRequiredService<IConfiguration>()))
         {
             return;
         }
