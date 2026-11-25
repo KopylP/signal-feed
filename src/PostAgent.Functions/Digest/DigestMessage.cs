@@ -10,6 +10,10 @@ public static class DigestMessage
 {
     public const string NoPosts = "За добу нових постів не було";
 
+    public static string Unscored(int count) =>
+        $"⚠️ <b>Не оцінено {count} {PostWord(count)}</b>\n"
+        + "Оцінювання не вдалося, тож у дайджест вони не потрапили. Перевірте чергу to-score-poison і Application Insights.";
+
     // Telegram allows 4096 characters. The text is cut per field first, then packed into messages with a margin.
     private const int MaxMessageChars = 3800;
     private const int MaxOverviewChars = 500;

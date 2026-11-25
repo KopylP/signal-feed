@@ -128,4 +128,18 @@ public class DigestSelectorTests
 
         Assert.Equal(["late", "fresh"], items.Select(i => i.Post.RowKey));
     }
+
+    [Fact]
+    public void Counts_as_unscored_only_new_posts_past_the_scoring_grace_and_inside_the_digest_window()
+    {
+        var posts = new[]
+        {
+            Post("stuck", score: null, hoursAgo: 3, status: PostStatus.New),
+            Post("just_collected", score: null, hoursAgo: 1, status: PostStatus.New),
+            Post("before_last_digest", score: null, hoursAgo: 30, status: PostStatus.New),
+            Post("scored", score: 5, hoursAgo: 3),
+        };
+
+        Assert.Equal(1, DigestSelector.CountUnscored(posts, Now));
+    }
 }

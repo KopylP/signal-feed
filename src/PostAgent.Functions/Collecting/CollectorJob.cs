@@ -8,6 +8,7 @@ namespace PostAgent.Collecting;
 
 public sealed class CollectorJob(
     SourceCollector collector,
+    ICollectionLock collectionLock,
     ITelegramNotifier notifier,
     IOptions<AgentOptions> options,
     ILogger<CollectorJob> log) : IJob
@@ -20,6 +21,13 @@ public sealed class CollectorJob(
 
     public async Task RunAsync(CancellationToken ct)
     {
+        await using var held = await collectionLock.TryAcquireAsync(ct);
+        if (held is null)
+        {
+            log.LogWarning("Collection skipped: another collection is using the Telegram session");
+            return;
+        }
+
         var failures = new List<string>();
         foreach (var (index, username) in options.Value.SourceList.Index())
         {

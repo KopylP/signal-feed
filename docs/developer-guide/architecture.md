@@ -61,7 +61,7 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 | Table | `ChatBinding` | One row (`chat`/`digest`) with the paired chat id; inserted once, deleted by the operator to rebind |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
-| Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin` |
+| Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin`, and `collect.lock`, leased for the length of a collection so that two collections never share the session (two connections on one auth key can make Telegram revoke it) |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
 
 Every storage name is defined once in `Shared/Infrastructure/StorageNames`.
@@ -161,7 +161,7 @@ graph LR
 - **The webhook endpoint is public.** It is protected by the secret token header and the pairing key, not by a function key (Telegram cannot send one).
 - **No network isolation.** Storage and Key Vault are reachable over their public endpoints, protected by RBAC and TLS 1.2. A VNet or private endpoints have a standing cost, so they need an explicit decision.
 - **Anyone with write access to the `run-now` queue can start a job** (the function identity and the deployer; storage keys are not disabled either). The switch `ManualRunsEnabled` is off in Azure by default, so a message does nothing until the operator turns it on.
-- **The poison queue is not monitored.** No alert fires on `to-score-poison`.
+- **The poison queue is not monitored.** No Azure alert fires on `to-score-poison`; the digest only reports how many posts are left unscored («⚠️ Не оцінено N постів»).
 - **Single region, LRS.** Acceptable because posts are disposable and retention is short.
 - **Blob Data Owner** for the function is required by Flex Consumption for the deployment container and is broader than the table and queue roles.
 - **The budget covers Azure only,** not OpenAI, which is the main real cost.

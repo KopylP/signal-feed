@@ -52,3 +52,30 @@ internal sealed class FakeScoringQueue : IScoringQueue
         return Task.CompletedTask;
     }
 }
+
+internal sealed class FakeCollectionLock : ICollectionLock
+{
+    public bool Busy { get; set; }
+    public int Acquired { get; private set; }
+    public int Released { get; private set; }
+
+    public Task<IAsyncDisposable?> TryAcquireAsync(CancellationToken ct)
+    {
+        if (Busy)
+        {
+            return Task.FromResult<IAsyncDisposable?>(null);
+        }
+
+        Acquired++;
+        return Task.FromResult<IAsyncDisposable?>(new Handle(this));
+    }
+
+    private sealed class Handle(FakeCollectionLock owner) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            owner.Released++;
+            return ValueTask.CompletedTask;
+        }
+    }
+}

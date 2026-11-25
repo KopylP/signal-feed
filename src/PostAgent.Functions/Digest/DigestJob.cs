@@ -22,9 +22,10 @@ public sealed class DigestJob(
 
         var recent = await posts.GetSinceAsync(DigestSelector.QueryStart(now), now, ct);
         var items = DigestSelector.Build(recent, options.Value, now);
+        var unscored = DigestSelector.CountUnscored(recent, now);
         if (items.Count == 0)
         {
-            await notifier.SendAsync(DigestMessage.NoPosts, ct);
+            await notifier.SendAsync(unscored > 0 ? DigestMessage.Unscored(unscored) : DigestMessage.NoPosts, ct);
             return;
         }
 
@@ -39,6 +40,13 @@ public sealed class DigestJob(
 
         await posts.MarkSentAsync(items.Select(i => i.Post), alertedAt: null, ct);
         log.LogInformation("Digest sent: {Count} posts", items.Count);
+
+        // After the digest and the marks, so that a failed warning cannot make the next run repeat the digest.
+        if (unscored > 0)
+        {
+            log.LogWarning("{Count} posts were left unscored", unscored);
+            await notifier.SendAsync(DigestMessage.Unscored(unscored), ct);
+        }
     }
 
     private async Task<DigestReport> SummarizeAsync(IReadOnlyList<DigestItem> items, CancellationToken ct)

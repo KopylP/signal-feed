@@ -11,6 +11,9 @@ public static class DigestSelector
     private static readonly TimeSpan Window = TimeSpan.FromHours(26);
     private static readonly TimeSpan FallbackWindow = TimeSpan.FromHours(48);
 
+    // Collection runs hourly and scoring takes minutes, so a post still unscored after this has failed scoring.
+    private static readonly TimeSpan ScoringGrace = TimeSpan.FromHours(2);
+
     // З якого моменту читати пости для дайджесту.
     public static DateTimeOffset QueryStart(DateTimeOffset now) => now - FallbackWindow;
 
@@ -31,6 +34,11 @@ public static class DigestSelector
         var duplicates = left.Count(p => p.DuplicateOf is not null);
         return new DigestSkipped(duplicates, left.Count - duplicates);
     }
+
+    // Posts whose scoring failed (the message went to the poison queue): without this count
+    // a broken model key would look like a quiet day.
+    public static int CountUnscored(IEnumerable<PostEntity> posts, DateTimeOffset now) =>
+        posts.Count(p => p.Status == PostStatus.New && p.PublishedAt >= now - Window && p.PublishedAt < now - ScoringGrace);
 
     private static List<PostEntity> Candidates(IEnumerable<PostEntity> posts, DateTimeOffset now)
     {

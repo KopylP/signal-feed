@@ -56,8 +56,11 @@ It arrives in sections (a section with nothing in it is left out):
 The model never writes links, channels or dates: the agent adds them from the post data, so they cannot be invented. A long digest is split into several Telegram messages,
 and a section that continues in the next message repeats its header.
 
-If OpenAI is unavailable or its answer is invalid, the digest still arrives, as a plain list of the posts with the short scoring reasons.
+If OpenAI is unavailable or its answer is invalid (including an answer that names none of the selected posts), the digest still arrives, as a plain list of the posts with the short scoring reasons.
 The digest is always sent, even when nothing stood out.
+
+Posts that are still unscored two hours after they were published (scoring failed, see [troubleshooting](troubleshooting.md)) cannot be in the digest.
+The digest then adds a separate message «⚠️ Не оцінено N постів», and sends it instead of «За добу нових постів не було» when nothing was scored, so a broken OpenAI key does not look like a quiet day.
 
 ## Data retention
 

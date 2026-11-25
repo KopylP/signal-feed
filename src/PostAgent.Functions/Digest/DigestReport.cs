@@ -59,6 +59,8 @@ public sealed record DigestReport(
             new DigestSkipped(Duplicates: 0, Other: notShown));
     }
 
+    public bool HasEntries => Headlines.Count + ForMarketplace.Count + Notable.Count + Recommended.Count > 0;
+
     public DigestReport WithSkipped(DigestSkipped more) => this with { Skipped = Skipped.Add(more) };
 
     private static List<DigestEntry> Entries<T>(
