@@ -96,7 +96,7 @@ public class SettingsEditorTests
         {
             if (conflicts-- > 0)
             {
-                _store.Seed(SettingsOverrides.Empty with { LastUpdateId = 5 });
+                _store.Seed(SettingsOverrides.Empty with { HandledUpdateIds = [5L] });
             }
         };
 
@@ -104,7 +104,7 @@ public class SettingsEditorTests
 
         Assert.True(result.Ok);
         Assert.Equal("9", _store.Current?.Values["DigestSize"]);
-        Assert.Equal(5, _store.Current?.LastUpdateId);
+        Assert.Equal([5L], _store.Current?.HandledUpdateIds);
     }
 
     [Fact]

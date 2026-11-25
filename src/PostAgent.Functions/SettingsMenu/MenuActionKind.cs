@@ -11,6 +11,7 @@ public enum MenuActionKind
     AskText,
     Reset,
     ResetGroup,
+    ResetAll,
     Cancel,
     AddSource,
     RemoveSource,

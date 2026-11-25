@@ -235,4 +235,41 @@ public class MenuControllerTests
 
         Assert.Contains("✅ @news", h.Panel.Edited[^1].Html);
     }
+
+    [Fact]
+    public async Task Resetting_the_sources_group_hands_both_lists_back_to_the_app_settings()
+    {
+        var h = new MenuHarness();
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ToggleAlert("chat"), CancellationToken.None);
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.RemoveSource("news"), CancellationToken.None);
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ResetGroup(SettingGroup.Sources), CancellationToken.None);
+
+        Assert.Null(h.Store.Current?.Sources);
+        Assert.Null(h.Store.Current?.AlertSources);
+        Assert.Contains("✅ @news", h.Panel.Edited[^1].Html);
+    }
+
+    [Fact]
+    public async Task Reset_all_replaces_an_unreadable_blob_and_shows_the_main_screen()
+    {
+        var h = new MenuHarness();
+        h.Store.SeedUnreadable();
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ResetAll, CancellationToken.None);
+
+        Assert.False(h.Store.Unreadable);
+        Assert.DoesNotContain("прочитати", h.Panel.Edited[^1].Html);
+    }
+
+    [Fact]
+    public async Task The_main_screen_says_when_the_stored_settings_cannot_be_read()
+    {
+        var h = new MenuHarness();
+        h.Store.SeedUnreadable();
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.Main, CancellationToken.None);
+
+        Assert.Contains("прочитати", h.Panel.Edited[^1].Html);
+    }
 }

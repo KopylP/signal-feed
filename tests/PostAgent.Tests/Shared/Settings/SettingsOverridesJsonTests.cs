@@ -13,7 +13,7 @@ public class SettingsOverridesJsonTests
             [new SourceEntry("news", true), new SourceEntry("fresh", false)],
             ["news"],
             new PendingInput("Sources", "add", 42, expires),
-            1234);
+            [1L, 2L, 3L]);
 
         Assert.True(SettingsOverridesJson.TryRead(SettingsOverridesJson.Write(original), out var read));
 
@@ -21,7 +21,7 @@ public class SettingsOverridesJsonTests
         Assert.Equal([new SourceEntry("news", true), new SourceEntry("fresh", false)], read.Sources);
         Assert.Equal(["news"], read.AlertSources);
         Assert.Equal(new PendingInput("Sources", "add", 42, expires), read.Pending);
-        Assert.Equal(1234, read.LastUpdateId);
+        Assert.Equal([1L, 2L, 3L], read.HandledUpdateIds);
     }
 
     [Fact]

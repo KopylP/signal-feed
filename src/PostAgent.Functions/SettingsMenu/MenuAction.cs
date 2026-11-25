@@ -9,6 +9,7 @@ public sealed record MenuAction(MenuActionKind Kind, string Arg = "", int Number
     public static readonly MenuAction OpenSources = new(MenuActionKind.OpenSources);
     public static readonly MenuAction Cancel = new(MenuActionKind.Cancel);
     public static readonly MenuAction AddSource = new(MenuActionKind.AddSource);
+    public static readonly MenuAction ResetAll = new(MenuActionKind.ResetAll);
 
     public static MenuAction OpenGroup(SettingGroup group) => new(MenuActionKind.OpenGroup, group.ToString());
 

@@ -85,4 +85,25 @@ public class MenuScreensTests
         Assert.Contains("m", MenuHarness.Buttons(group.Keyboard));
         Assert.Contains("g:Chat", MenuHarness.Buttons(choice.Keyboard));
     }
+
+    [Fact]
+    public void The_sources_screen_offers_a_reset_and_says_the_app_setting_is_ignored_when_the_list_is_set_from_the_bot()
+    {
+        var fromBot = MenuScreens.Sources([new SourceEntry("news_one", true)], [], fromBot: true);
+        var fromApp = MenuScreens.Sources([new SourceEntry("news_one", true)], [], fromBot: false);
+
+        Assert.Contains("rg:Sources", MenuHarness.Buttons(fromBot.Keyboard));
+        Assert.Contains("App Settings", fromBot.Html);
+        Assert.DoesNotContain("rg:Sources", MenuHarness.Buttons(fromApp.Keyboard));
+    }
+
+    [Fact]
+    public void The_main_screen_offers_a_reset_of_everything_when_the_stored_settings_cannot_be_read()
+    {
+        var screen = MenuScreens.Home(overridesIgnored: true, unreadable: true);
+
+        Assert.Contains("ra", MenuHarness.Buttons(screen.Keyboard));
+        Assert.Contains("прочитати", screen.Html);
+        Assert.DoesNotContain("ra", MenuHarness.Buttons(MenuScreens.Home(overridesIgnored: false).Keyboard));
+    }
 }

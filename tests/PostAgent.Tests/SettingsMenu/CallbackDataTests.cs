@@ -17,6 +17,7 @@ public class CallbackDataTests
         MenuAction.Reset("DigestSize"),
         MenuAction.ResetGroup(SettingGroup.Digest),
         MenuAction.Cancel,
+        MenuAction.ResetAll,
         MenuAction.AddSource,
         MenuAction.RemoveSource("some_channel"),
         MenuAction.ToggleAlert("some_channel"),

@@ -10,6 +10,7 @@ public sealed class SettingsEditor(
     ILogger<SettingsEditor> log)
 {
     private const int MaxAttempts = 3;
+    private const int MaxHandledIds = 30;
 
     public async Task<EditResult> SetValueAsync(string key, string value, CancellationToken ct)
     {
@@ -36,12 +37,20 @@ public sealed class SettingsEditor(
 
     // Reset is never validated: it is the way out when a value from the bot turned out to be a problem.
     public Task<EditResult> ResetAsync(string key, CancellationToken ct) =>
-        UpdateAsync(o => o with { Values = o.Values.Where(v => v.Key != key).ToDictionary() }, validate: false, ct);
+        UpdateCoreAsync(o => o with { Values = o.Values.Where(v => v.Key != key).ToDictionary() }, validate: false, replaceUnreadable: true, ct);
+
+    // Everything the bot set goes back to the App Settings. The way out when the stored settings cannot be read.
+    public Task<EditResult> ResetAllAsync(CancellationToken ct) =>
+        UpdateCoreAsync(
+            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Pending = null },
+            validate: false,
+            replaceUnreadable: true,
+            ct);
 
     public Task<EditResult> ResetGroupAsync(SettingGroup group, CancellationToken ct)
     {
         var keys = SettingsCatalog.InGroup(group).Select(d => d.Key).ToHashSet();
-        return UpdateAsync(
+        return UpdateCoreAsync(
             o => o with
             {
                 Values = o.Values.Where(v => !keys.Contains(v.Key)).ToDictionary(),
@@ -49,6 +58,7 @@ public sealed class SettingsEditor(
                 AlertSources = group == SettingGroup.Sources ? null : o.AlertSources,
             },
             validate: false,
+            replaceUnreadable: true,
             ct);
     }
 
@@ -120,20 +130,21 @@ public sealed class SettingsEditor(
     public Task<EditResult> SetPendingAsync(PendingInput? pending, CancellationToken ct) =>
         UpdateAsync(o => o.Pending == pending ? o : o with { Pending = pending }, validate: false, ct);
 
-    // True when the id is newer than the last one handled and was recorded. False for a resent update (or when it could not be recorded).
-    public async Task<bool> TryAdvanceUpdateIdAsync(long updateId, CancellationToken ct)
+    // True when the id was recorded as handled. False for a resent update, or when it could not be recorded.
+    // A set of recent ids, not a watermark: Telegram delivers in parallel and may restart the numbering.
+    public async Task<bool> TryMarkHandledAsync(long updateId, CancellationToken ct)
     {
-        var advanced = false;
+        var marked = false;
         var result = await UpdateAsync(
             o =>
             {
-                advanced = updateId > o.LastUpdateId;
-                return advanced ? o with { LastUpdateId = updateId } : o;
+                marked = !o.HandledUpdateIds.Contains(updateId);
+                return marked ? o with { HandledUpdateIds = o.HandledUpdateIds.Append(updateId).TakeLast(MaxHandledIds).ToList() } : o;
             },
             validate: false,
             ct);
 
-        return result.Ok && advanced;
+        return result.Ok && marked;
     }
 
     // Until the bot changes the list, the sources are the App Setting ones, and they count as verified.
@@ -143,7 +154,11 @@ public sealed class SettingsEditor(
     private List<string> AlertsOf(SettingsOverrides o) => o.AlertSources?.ToList() ?? app.Value.AlertSourceSet.ToList();
 
     // The change must return the same instance when there is nothing to write.
-    public async Task<EditResult> UpdateAsync(Func<SettingsOverrides, SettingsOverrides> change, bool validate, CancellationToken ct)
+    public Task<EditResult> UpdateAsync(Func<SettingsOverrides, SettingsOverrides> change, bool validate, CancellationToken ct) =>
+        UpdateCoreAsync(change, validate, replaceUnreadable: false, ct);
+
+    private async Task<EditResult> UpdateCoreAsync(
+        Func<SettingsOverrides, SettingsOverrides> change, bool validate, bool replaceUnreadable, CancellationToken ct)
     {
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
@@ -153,6 +168,11 @@ public sealed class SettingsEditor(
             if (ReferenceEquals(updated, current))
             {
                 return EditResult.Success;
+            }
+
+            if (handle is { Unreadable: true } && !replaceUnreadable)
+            {
+                return EditResult.Fail("Збережені налаштування не вдалося прочитати. Скинь їх у головному меню.");
             }
 
             if (validate && OverridesApplier.Check(OverridesApplier.Apply(app.Value, updated)) is { Count: > 0 } errors)

@@ -12,6 +12,7 @@ public sealed class SettingsInbox(
     SettingsEditor editor,
     MenuController controller,
     ITelegramPanel panel,
+    TimeProvider time,
     ILogger<SettingsInbox> log) : IIncomingMessageHandler
 {
     public async Task<bool> HandleAsync(Update update, CancellationToken ct)
@@ -28,24 +29,39 @@ public sealed class SettingsInbox(
             return update.CallbackQuery is not null;
         }
 
-        var state = (await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty;
+        OverridesHandle? handle;
+        try
+        {
+            handle = await store.LoadAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The chat must keep working when the settings storage is down.
+            log.LogWarning(ex, "Settings could not be loaded, the update is left to the others");
+            return false;
+        }
+
+        var state = handle?.Value ?? SettingsOverrides.Empty;
 
         // Telegram resends an update that it thinks was lost: ours were already done, and a resent answer must not become a chat question.
-        if (update.Id <= state.LastUpdateId)
+        // Only ids the menu claimed are in the set, so an ordinary chat question is never mistaken for a replay.
+        if (state.HandledUpdateIds.Contains(update.Id))
         {
             return true;
         }
 
+        // An unreadable blob cannot record anything; the menu still has to open so that the owner can reset it.
+        var canRecord = handle is not { Unreadable: true };
         return update.CallbackQuery is { } query
-            ? await HandleCallbackAsync(update.Id, query, chat.Id, ct)
-            : await HandleMessageAsync(update, state, chat.Id, ct);
+            ? await HandleCallbackAsync(update.Id, query, chat.Id, canRecord, ct)
+            : await HandleMessageAsync(update, state, chat.Id, canRecord, ct);
     }
 
-    private async Task<bool> HandleCallbackAsync(long updateId, CallbackQuery query, long chatId, CancellationToken ct)
+    private async Task<bool> HandleCallbackAsync(long updateId, CallbackQuery query, long chatId, bool canRecord, CancellationToken ct)
     {
         await panel.AnswerCallbackAsync(query.Id, null, ct);
 
-        if (!await editor.TryAdvanceUpdateIdAsync(updateId, ct) || query.Message is not { } message)
+        if (!await ClaimAsync(updateId, canRecord, ct) || query.Message is not { } message)
         {
             return true;
         }
@@ -62,7 +78,7 @@ public sealed class SettingsInbox(
         return true;
     }
 
-    private async Task<bool> HandleMessageAsync(Update update, SettingsOverrides state, long chatId, CancellationToken ct)
+    private async Task<bool> HandleMessageAsync(Update update, SettingsOverrides state, long chatId, bool canRecord, CancellationToken ct)
     {
         var text = update.Message?.Text;
         if (string.IsNullOrWhiteSpace(text))
@@ -74,7 +90,7 @@ public sealed class SettingsInbox(
         {
             if (MenuController.CommandName(text) is "/settings" or "/cancel")
             {
-                if (await editor.TryAdvanceUpdateIdAsync(update.Id, ct))
+                if (await ClaimAsync(update.Id, canRecord, ct))
                 {
                     await controller.HandleCommandAsync(chatId, text, ct);
                 }
@@ -91,11 +107,21 @@ public sealed class SettingsInbox(
             return false;
         }
 
-        if (state.Pending is null || !await editor.TryAdvanceUpdateIdAsync(update.Id, ct))
+        if (state.Pending is not { } pending)
         {
             return false;
         }
 
-        return await controller.HandleTextAsync(chatId, text, ct);
+        // An abandoned question must not cost a blob write for every chat message from now on.
+        if (pending.ExpiresAt <= time.GetUtcNow())
+        {
+            await editor.SetPendingAsync(null, ct);
+            return false;
+        }
+
+        return await ClaimAsync(update.Id, canRecord, ct) && await controller.HandleTextAsync(chatId, text, ct);
     }
+
+    private async Task<bool> ClaimAsync(long updateId, bool canRecord, CancellationToken ct) =>
+        !canRecord || await editor.TryMarkHandledAsync(updateId, ct);
 }

@@ -33,7 +33,7 @@ internal sealed class MenuHarness
         Editor = new SettingsEditor(Store, options, Effective, NullLogger<SettingsEditor>.Instance);
         Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
         var resolver = new ChatResolver(options, new InMemoryChatBindingStore(bound));
-        Inbox = new SettingsInbox(resolver, Store, Editor, Controller, Panel, NullLogger<SettingsInbox>.Instance);
+        Inbox = new SettingsInbox(resolver, Store, Editor, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
     }
 
     public static Update Callback(string data, int updateId = 1, long chatId = BoundChat, ChatType type = ChatType.Private, int messageId = 7) =>

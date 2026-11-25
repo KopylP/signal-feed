@@ -31,7 +31,7 @@ public sealed class MenuController(
             return;
         }
 
-        var screen = MenuScreens.Home(await IgnoredAsync(ct));
+        var screen = await HomeAsync(ct);
         await panel.SendAsync(chatId, screen.Html, screen.Keyboard, ct);
     }
 
@@ -84,7 +84,11 @@ public sealed class MenuController(
             case MenuActionKind.Main:
             case MenuActionKind.Cancel:
                 await editor.SetPendingAsync(null, ct);
-                return MenuScreens.Home(await IgnoredAsync(ct));
+                return await HomeAsync(ct);
+
+            case MenuActionKind.ResetAll:
+                await editor.ResetAllAsync(ct);
+                return await HomeAsync(ct);
 
             case MenuActionKind.OpenGroup when Enum.TryParse<SettingGroup>(action.Arg, out var group):
                 await editor.SetPendingAsync(null, ct);
@@ -174,12 +178,17 @@ public sealed class MenuController(
         var overrides = (await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty;
         var sources = overrides.Sources ?? app.Value.SourceList.Select(name => new SourceEntry(name, true)).ToList();
         var alerts = overrides.AlertSources ?? app.Value.AlertSourceSet.ToList();
-        return MenuScreens.Sources(sources, alerts, note);
+        return MenuScreens.Sources(sources, alerts, note, fromBot: overrides.Sources is not null || overrides.AlertSources is not null);
     }
 
-    // The bot's values are ignored when together they make the options invalid (see EffectiveOptions).
-    private async Task<bool> IgnoredAsync(CancellationToken ct) =>
-        await store.LoadAsync(ct) is { } handle && OverridesApplier.Check(OverridesApplier.Apply(app.Value, handle.Value)).Count > 0;
+    // The bot's values are ignored when the blob cannot be read, or when together they make the options invalid (see EffectiveOptions).
+    private async Task<Screen> HomeAsync(CancellationToken ct)
+    {
+        var handle = await store.LoadAsync(ct);
+        var unreadable = handle is { Unreadable: true };
+        var ignored = unreadable || (handle is not null && OverridesApplier.Check(OverridesApplier.Apply(app.Value, handle.Value)).Count > 0);
+        return MenuScreens.Home(ignored, unreadable);
+    }
 
     // The menu message may be gone or older than 48 hours: then the screen goes out as a new message.
     private async Task ShowAsync(long chatId, int messageId, Screen screen, CancellationToken ct)

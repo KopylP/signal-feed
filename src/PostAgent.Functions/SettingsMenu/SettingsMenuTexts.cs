@@ -5,6 +5,8 @@ public static class SettingsMenuTexts
 {
     public const string MainTitle = "⚙️ <b>Налаштування</b>";
     public const string OverridesIgnored = "⚠️ Значення з бота зараз ігноруються: разом вони недійсні. Скинь змінене в групах.";
+    public const string OverridesUnreadable = "⚠️ Збережені налаштування не вдалося прочитати, тому зараз діють налаштування застосунку. Скинь збережене кнопкою нижче.";
+    public const string SourcesFromBot = "Список заданий у боті: значення <code>Sources</code> в App Settings зараз не використовується.";
     public const string NotOnTheList = "Цієї моделі немає в списку, вона задана в налаштуваннях застосунку й лишається, поки не обереш іншу.";
     public const string AskValue = "Надішли нове значення повідомленням.";
     public const string AskQuietHours = "Надішли години у форматі <code>23:00-07:00</code>, а щоб вимкнути, надішли <code>-</code>.";

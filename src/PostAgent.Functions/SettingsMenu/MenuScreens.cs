@@ -15,11 +15,17 @@ public static class MenuScreens
         (SettingGroup.Models, "🧠 Моделі"),
     ];
 
-    public static Screen Home(bool overridesIgnored)
+    public static Screen Home(bool overridesIgnored, bool unreadable = false)
     {
-        var html = SettingsMenuTexts.MainTitle + (overridesIgnored ? "\n\n" + SettingsMenuTexts.OverridesIgnored : string.Empty);
+        var warning = unreadable ? SettingsMenuTexts.OverridesUnreadable : overridesIgnored ? SettingsMenuTexts.OverridesIgnored : null;
+        var html = SettingsMenuTexts.MainTitle + (warning is null ? string.Empty : "\n\n" + warning);
         List<IReadOnlyList<KeyboardButton>> rows = [[Button("📡 Джерела", MenuAction.OpenSources)]];
         rows.AddRange(Groups.Chunk(2).Select(pair => (IReadOnlyList<KeyboardButton>)pair.Select(g => Button(g.Title, MenuAction.OpenGroup(g.Group))).ToList()));
+        if (warning is not null)
+        {
+            rows.Add([Button("↺ Скинути збережене", MenuAction.ResetAll)]);
+        }
+
         return new Screen(html, new InlineKeyboard(rows));
     }
 
@@ -79,10 +85,11 @@ public static class MenuScreens
         new($"<b>📡 Нове джерело</b>\n{SettingsMenuTexts.AskSource}" + (error is null ? string.Empty : "\n\n⚠️ " + TelegramHtml.Escape(error)),
             new InlineKeyboard([[Button("✖ Скасувати", MenuAction.Cancel)]]));
 
-    public static Screen Sources(IReadOnlyList<SourceEntry> sources, IReadOnlyCollection<string> alertSources, string? note = null)
+    public static Screen Sources(IReadOnlyList<SourceEntry> sources, IReadOnlyCollection<string> alertSources, string? note = null, bool fromBot = false)
     {
         var lines = sources.Select(s => $"{(s.Verified ? "✅" : "⏳")} @{TelegramHtml.Escape(s.Name)}{(alertSources.Contains(s.Name) ? " 🚨" : string.Empty)}");
-        var html = "<b>📡 Джерела</b>" + (note is null ? string.Empty : "\n" + note) + "\n\n" + string.Join('\n', lines) + "\n\n" + SettingsMenuTexts.SourcesLegend;
+        var html = "<b>📡 Джерела</b>" + (note is null ? string.Empty : "\n" + note) + "\n\n" + string.Join('\n', lines) + "\n\n" + SettingsMenuTexts.SourcesLegend
+            + (fromBot ? "\n" + SettingsMenuTexts.SourcesFromBot : string.Empty);
 
         List<IReadOnlyList<KeyboardButton>> rows = sources
             .Select(s => (IReadOnlyList<KeyboardButton>)
@@ -92,6 +99,11 @@ public static class MenuScreens
             ])
             .ToList();
         rows.Add([Button("➕ Додати", MenuAction.AddSource)]);
+        if (fromBot)
+        {
+            rows.Add([Button("↺ Повернути список з App Settings", MenuAction.ResetGroup(SettingGroup.Sources))]);
+        }
+
         rows.Add([Button("⬅ Назад", MenuAction.Main)]);
         return new Screen(html, new InlineKeyboard(rows));
     }

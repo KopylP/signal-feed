@@ -40,7 +40,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - A parameter the bot may change goes into `SettingsCatalog` (ranges come from the `Range` attributes); secrets, schedules and infrastructure values never do.
 - A job reads `IEffectiveOptions.GetAsync` once at the start of a run and passes the snapshot down; never hold `AgentOptions` in a singleton field. Secrets and infrastructure values keep `IOptions<AgentOptions>`.
 - Every write to `settings/overrides.json` goes through `SettingsEditor` (ETag, up to 3 retries, validated as a whole); reset is never refused. A button's `callback_data` is at most 64 bytes and carries the target value, not a step.
-- The menu answers only the bound private chat and records `LastUpdateId`; a resent update is claimed and ignored. Models are chosen from a fixed list, the model is set per request by `ModelSelectingChatClient`.
+- The menu answers only the bound private chat and records the ids of the updates it claimed (the last 30, a set, never a watermark: ids can restart and arrive out of order); a resent one is claimed and ignored, an ordinary chat question is never recorded. A blob that cannot be read is never overwritten except by "reset all". Models are chosen from a fixed list, the model is set per request by `ModelSelectingChatClient`.
 
 ## Data and queues
 

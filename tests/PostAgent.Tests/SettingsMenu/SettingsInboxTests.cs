@@ -82,6 +82,65 @@ public class SettingsInboxTests
     }
 
     [Fact]
+    public async Task A_lower_update_id_after_a_higher_one_is_still_handled()
+    {
+        var h = new MenuHarness();
+        await h.Inbox.HandleAsync(MenuHarness.Callback("n:DigestSize:9", updateId: 101), CancellationToken.None);
+
+        await h.Inbox.HandleAsync(MenuHarness.Callback("n:InterestingThreshold:6", updateId: 100), CancellationToken.None);
+
+        Assert.Equal("6", h.Store.Current?.Values["InterestingThreshold"]);
+    }
+
+    [Fact]
+    public async Task A_chat_question_with_a_lower_id_than_the_last_menu_update_still_reaches_the_chat()
+    {
+        var h = new MenuHarness();
+        await h.Inbox.HandleAsync(MenuHarness.Callback("n:DigestSize:9", updateId: 9000), CancellationToken.None);
+
+        Assert.False(await h.Inbox.HandleAsync(MenuHarness.Text("питання про дайджест", updateId: 12), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task An_expired_pending_question_is_cleared_and_the_text_goes_to_the_chat()
+    {
+        var h = new MenuHarness();
+        await h.Inbox.HandleAsync(MenuHarness.Callback("t:AlertQuietHours", updateId: 1), CancellationToken.None);
+        h.Time.Advance(TimeSpan.FromMinutes(11));
+        var saves = h.Store.Saves;
+
+        var handled = await h.Inbox.HandleAsync(MenuHarness.Text("не відповідь, а питання", updateId: 2), CancellationToken.None);
+
+        Assert.False(handled);
+        Assert.Null(h.Store.Current?.Pending);
+        Assert.Equal(saves + 1, h.Store.Saves);
+    }
+
+    [Fact]
+    public async Task The_menu_still_opens_when_the_blob_is_unreadable_and_offers_a_reset()
+    {
+        var h = new MenuHarness();
+        h.Store.SeedUnreadable();
+
+        var handled = await h.Inbox.HandleAsync(MenuHarness.Text("/settings"), CancellationToken.None);
+
+        Assert.True(handled);
+        var sent = Assert.Single(h.Panel.Sent);
+        Assert.Contains("ra", MenuHarness.Buttons(sent.Keyboard));
+        Assert.Contains("прочитати", sent.Html);
+        Assert.True(h.Store.Unreadable);
+    }
+
+    [Fact]
+    public async Task A_failing_blob_read_leaves_the_update_to_the_chat()
+    {
+        var h = new MenuHarness();
+        h.Store.FailLoad = true;
+
+        Assert.False(await h.Inbox.HandleAsync(MenuHarness.Text("питання"), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Ignores_a_replayed_update_id()
     {
         var h = new MenuHarness();

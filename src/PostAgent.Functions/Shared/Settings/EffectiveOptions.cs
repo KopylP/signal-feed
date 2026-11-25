@@ -28,7 +28,7 @@ public sealed class EffectiveOptions(
 
     public async Task<AgentOptions> GetFreshAsync(CancellationToken ct)
     {
-        var value = Resolve(await store.LoadAsync(ct));
+        var value = Resolve(await TryLoadAsync(ct));
         lock (_gate)
         {
             _cached = (value, time.GetUtcNow() + CacheFor);
@@ -42,6 +42,20 @@ public sealed class EffectiveOptions(
         lock (_gate)
         {
             _cached = null;
+        }
+    }
+
+    // A storage error must not stop a job: the App Settings are always a valid answer.
+    private async Task<OverridesHandle?> TryLoadAsync(CancellationToken ct)
+    {
+        try
+        {
+            return await store.LoadAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "Settings overrides could not be loaded, using the App Settings");
+            return null;
         }
     }
 

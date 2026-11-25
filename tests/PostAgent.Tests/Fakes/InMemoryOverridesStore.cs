@@ -12,6 +12,12 @@ public sealed class InMemoryOverridesStore : IOverridesStore
 
     public SettingsOverrides? Current { get; private set; }
 
+    // A blob that exists but cannot be read: Load returns empty overrides flagged as unreadable, the next save replaces it.
+    public bool Unreadable { get; private set; }
+
+    // Makes Load throw, like a storage error that is not "not found".
+    public bool FailLoad { get; set; }
+
     public int Saves { get; private set; }
 
     public void Seed(SettingsOverrides overrides)
@@ -20,8 +26,17 @@ public sealed class InMemoryOverridesStore : IOverridesStore
         _version++;
     }
 
+    public void SeedUnreadable()
+    {
+        Current = SettingsOverrides.Empty;
+        Unreadable = true;
+        _version++;
+    }
+
     public Task<OverridesHandle?> LoadAsync(CancellationToken ct) =>
-        Task.FromResult(Current is null ? null : new OverridesHandle(Current, _version.ToString()));
+        FailLoad
+            ? throw new InvalidOperationException("storage is down")
+            : Task.FromResult(Current is null ? null : new OverridesHandle(Current, _version.ToString(), Unreadable));
 
     public Task<bool> TrySaveAsync(OverridesHandle? current, SettingsOverrides updated, CancellationToken ct)
     {
@@ -33,6 +48,7 @@ public sealed class InMemoryOverridesStore : IOverridesStore
         }
 
         Current = updated;
+        Unreadable = false;
         _version++;
         Saves++;
         return Task.FromResult(true);
