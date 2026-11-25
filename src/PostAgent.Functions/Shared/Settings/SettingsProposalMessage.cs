@@ -1,3 +1,4 @@
+using PostAgent.Shared.Ai;
 using PostAgent.Shared.Notifications;
 
 namespace PostAgent.Shared.Settings;
@@ -50,9 +51,29 @@ public static class SettingsProposalMessage
             case SettingChangeKind.ToggleAlertSource:
                 return $"Перемкнути алерти для <b>@{target}</b>";
 
+            case SettingChangeKind.EditPrompt:
+                var label = Shipped.Value.FindSection(change.Target)?.Label ?? change.Target;
+                return $"Промпт «{TelegramHtml.Escape(label)}»:\n{Diff(change)}";
+
+            case SettingChangeKind.ResetPrompt:
+                return $"Промпт «{TelegramHtml.Escape(Shipped.Value.FindSection(change.Target)?.Label ?? change.Target)}»: повернути стандартний текст";
+
+            case SettingChangeKind.EditProfile:
+                return $"Профіль «про мене»:\n{Diff(change)}";
+
             default:
                 return target;
         }
+    }
+
+    // The exact fragments, built from the stored change and never from the model's words. The sections of the shipped prompts are fixed, so the label comes from them.
+    private static readonly Lazy<PromptLibrary> Shipped = new(() => new PromptLibrary());
+
+    private static string Diff(SettingChange change)
+    {
+        var before = string.IsNullOrWhiteSpace(change.Before) ? null : $"− <code>{TelegramHtml.Escape(change.Before.Trim())}</code>";
+        var after = string.IsNullOrWhiteSpace(change.Value) ? "+ (видалити)" : $"+ <code>{TelegramHtml.Escape(change.Value.Trim())}</code>";
+        return (before ?? "(додати в кінець)") + "\n" + after;
     }
 
     private static string GroupTitle(string group) => group switch

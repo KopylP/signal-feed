@@ -13,18 +13,17 @@ namespace PostAgent.Chat.Infrastructure;
 // plus the questions and answers; the session is serialized after every turn and stored with the snapshot.
 public sealed class ChatAgent(
     [FromKeyedServices(AiServices.ChatClientKey)] IChatClient chat,
-    ChatTools tools,
-    SettingsToolsFactory settingsTools,
+    ChatToolFactory toolFactory,
+    IPromptProvider prompts,
+    IProfileStore profile,
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
-    private readonly string _instructions = Prompts.Load("chat.md");
-
-    public async Task<ChatReply> AskAsync(ChatState state, string userText, CancellationToken ct)
+    public async Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, CancellationToken ct)
     {
         var settings = await options.GetAsync(ct);
         var draft = new List<SettingChange>();
-        var agent = CreateAgent(settings, settingsTools.Create(draft));
+        var agent = CreateAgent(settings, toolFactory.Create(draft, chatId), await InstructionsAsync(chatId, ct));
 
         var (session, hasHistory) = await OpenSessionAsync(agent, state.Session, ct);
         var messages = new List<ChatMessage>();
@@ -47,7 +46,15 @@ public sealed class ChatAgent(
         return new ChatReply(response.Text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
     }
 
-    private AIAgent CreateAgent(AgentOptions settings, SettingsTools settingTools)
+    // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question: a profile edit applies at once, a prompt edit within the cache time of the provider.
+    private async Task<string> InstructionsAsync(long chatId, CancellationToken ct)
+    {
+        var instructions = await prompts.GetAsync("chat.md", ct);
+        var about = (await profile.LoadAsync(chatId, ct))?.Text;
+        return string.IsNullOrWhiteSpace(about) ? instructions : instructions + "\n\n## About the reader\n" + DataBlock.Wrap("about_me", about.Trim());
+    }
+
+    private AIAgent CreateAgent(AgentOptions settings, IReadOnlyList<AIFunction> functions, string instructions)
     {
         var client = new ChatClientBuilder(chat)
             .UseFunctionInvocation(configure: c => c.MaximumIterationsPerRequest = settings.ChatMaxToolCalls)
@@ -58,7 +65,7 @@ public sealed class ChatAgent(
             Name = "chat",
             ChatOptions = new ChatOptions
             {
-                Instructions = _instructions,
+                Instructions = instructions,
                 MaxOutputTokens = settings.ChatMaxOutputTokens,
                 // The conversation is ours (the blob), not OpenAI's: without this the Responses API returns a response id that the agent framework
                 // takes for server-side history and refuses to combine with our own. With nothing stored on their side, the hidden reasoning
@@ -71,15 +78,7 @@ public sealed class ChatAgent(
                 Reasoning = new ReasoningOptions { Effort = Enum.Parse<ReasoningEffort>(settings.ChatReasoningEffort, ignoreCase: true) },
                 Tools =
                 [
-                    AIFunctionFactory.Create(tools.GetPost, "get_post"),
-                    AIFunctionFactory.Create(tools.SearchPosts, "search_posts"),
-                    AIFunctionFactory.Create(settingTools.GetSettings, "get_settings"),
-                    AIFunctionFactory.Create(settingTools.ProposeSet, "propose_set_setting"),
-                    AIFunctionFactory.Create(settingTools.ProposeReset, "propose_reset_setting"),
-                    AIFunctionFactory.Create(settingTools.ProposeResetGroup, "propose_reset_group"),
-                    AIFunctionFactory.Create(settingTools.ProposeAddSource, "propose_add_source"),
-                    AIFunctionFactory.Create(settingTools.ProposeRemoveSource, "propose_remove_source"),
-                    AIFunctionFactory.Create(settingTools.ProposeToggleAlertSource, "propose_toggle_alert_source"),
+                    .. functions,
                 ],
             },
             ChatHistoryProvider = new InMemoryChatHistoryProvider(

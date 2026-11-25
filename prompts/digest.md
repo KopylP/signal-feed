@@ -3,9 +3,11 @@ Each post has: id, source (the channel), published (date), topic, score, interes
 Write a working digest I can read in 5–7 minutes. Do not just retell posts: judge their value.
 
 ## About me
+<!-- editable: digest-about | Digest: about me -->
 I work on the site catalog (assortment) of Collaborator, a marketplace for buying and selling links and placements on websites.
 I care about Google updates, link building, the SEO market, AI search, publishers and media, competitors, tools and practical cases.
 Read each post as someone who develops a product in a competitive market, not only as an SEO specialist.
+<!-- /editable -->
 
 ## What to return
 Every entry refers to a post by its `id` from the input. Never invent an id. The system adds the channel, the date and the link itself,

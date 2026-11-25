@@ -15,9 +15,12 @@ internal sealed class FakeChatAgent(Func<ChatState, string, Task<ChatReply>> ask
 
     public static JsonElement Session() => JsonDocument.Parse("{}").RootElement.Clone();
 
-    public Task<ChatReply> AskAsync(ChatState state, string userText, CancellationToken ct)
+    public long? LastChatId { get; private set; }
+
+    public Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, CancellationToken ct)
     {
         Calls++;
+        LastChatId = chatId;
         return ask(state, userText);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using PostAgent.Shared.Ai;
 
 namespace PostAgent.Shared.Settings;
 
@@ -7,6 +8,8 @@ public sealed class SettingsEditor(
     IOverridesStore store,
     IOptions<AgentOptions> app,
     IEffectiveOptions effective,
+    PromptLibrary prompts,
+    IProfileStore profile,
     ILogger<SettingsEditor> log)
 {
     private const int MaxAttempts = 3;
@@ -24,7 +27,7 @@ public sealed class SettingsEditor(
     // Everything the bot set goes back to the App Settings. The way out when the stored settings cannot be read.
     public Task<EditResult> ResetAllAsync(CancellationToken ct) =>
         UpdateCoreAsync(
-            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Pending = null },
+            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Pending = null, PromptSections = null, Proposals = null },
             validate: false,
             replaceUnreadable: true,
             ct);
@@ -58,7 +61,7 @@ public sealed class SettingsEditor(
     }
 
     // A dry run for a plan the agent wants to propose: nothing is saved.
-    public async Task<EditResult> CheckAsync(IReadOnlyList<SettingChange> changes, CancellationToken ct)
+    public async Task<EditResult> CheckAsync(IReadOnlyList<SettingChange> changes, long chatId, CancellationToken ct)
     {
         var handle = await store.LoadAsync(ct);
         if (handle is { Unreadable: true })
@@ -66,7 +69,48 @@ public sealed class SettingsEditor(
             return EditResult.Fail(UnreadableMessage);
         }
 
-        return TryApplyAll(handle?.Value ?? SettingsOverrides.Empty, changes, out _, out var error) ? EditResult.Success : EditResult.Fail(error!);
+        if (!TryApplyAll(handle?.Value ?? SettingsOverrides.Empty, changes, out _, out var error))
+        {
+            return EditResult.Fail(error!);
+        }
+
+        return await TryEditProfileAsync(changes, chatId, ct) is { Error: { } profileError } ? EditResult.Fail(profileError) : EditResult.Success;
+    }
+
+    // A storage error is reported like a lost race: the proposal is already taken out, so the owner must hear that nothing was changed.
+    private async Task<bool> TrySaveProfileAsync(long chatId, ProfileHandle? handle, string text, CancellationToken ct)
+    {
+        try
+        {
+            return await profile.TrySaveAsync(chatId, handle, text, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogError(ex, "The reader profile could not be saved");
+            return false;
+        }
+    }
+
+    // What the profile becomes with the profile edits of a plan, checked against the text as it is now.
+    public async Task<(string? Text, string? Error, ProfileHandle? Handle)> TryEditProfileAsync(IReadOnlyList<SettingChange> changes, long chatId, CancellationToken ct)
+    {
+        var edits = changes.Where(c => c.Kind == SettingChangeKind.EditProfile).ToList();
+        if (edits.Count == 0)
+        {
+            return (null, null, null);
+        }
+
+        var handle = await profile.LoadAsync(chatId, ct);
+        var text = handle?.Text ?? string.Empty;
+        foreach (var edit in edits)
+        {
+            if (!TextEdit.TryApply(text, edit.Before, edit.Value, out text, out var error))
+            {
+                return (null, error, handle);
+            }
+        }
+
+        return (text, null, handle);
     }
 
     public Task<EditResult> ProposeAsync(SettingsProposal proposal, CancellationToken ct) =>
@@ -80,6 +124,17 @@ public sealed class SettingsEditor(
     {
         SettingsProposal? found = null;
         string? error = null;
+
+        // A profile edit is written after the proposal is taken out, so a tap never applies it twice. It is checked first: a stale edit changes nothing.
+        var planned = (await store.LoadAsync(ct))?.Value.Proposals?.FirstOrDefault(p => p.Id == id && p.IsFor(chatId));
+        (string? Text, string? Error, ProfileHandle? Handle) profileEdit = planned is null || planned.ExpiresAt <= now
+            ? (null, null, null)
+            : await TryEditProfileAsync(planned.Changes, chatId, ct);
+        if (profileEdit.Error is not null)
+        {
+            return new ProposalOutcome(ProposalStatus.Failed, planned, profileEdit.Error);
+        }
+
         var result = await UpdateAsync(
             o =>
             {
@@ -87,6 +142,13 @@ public sealed class SettingsEditor(
                 error = null;
                 if (found is null || found.ExpiresAt <= now)
                 {
+                    return o;
+                }
+
+                // The proposal was replaced between the check of the profile edit and this write: the text we hold is for the old one.
+                if (profileEdit.Text is not null && planned is not null && !found.Changes.SequenceEqual(planned.Changes))
+                {
+                    error = "Пропозиція змінилась. Попроси агента ще раз.";
                     return o;
                 }
 
@@ -110,6 +172,8 @@ public sealed class SettingsEditor(
             null => new ProposalOutcome(ProposalStatus.Gone),
             _ when found.ExpiresAt <= now => new ProposalOutcome(ProposalStatus.Expired, found),
             _ when error is not null => new ProposalOutcome(ProposalStatus.Failed, found, error),
+            _ when profileEdit.Text is not null && !await TrySaveProfileAsync(chatId, profileEdit.Handle, profileEdit.Text, ct) =>
+                new ProposalOutcome(ProposalStatus.Failed, found, "Не вдалося зберегти профіль, попроси агента ще раз."),
             _ => new ProposalOutcome(ProposalStatus.Applied, found),
         };
     }
@@ -181,6 +245,18 @@ public sealed class SettingsEditor(
     {
         updated = current;
         error = null;
+        if (changes.Count(c => c.Kind is SettingChangeKind.EditPrompt or SettingChangeKind.EditProfile) > TextEdit.MaxEditsPerPlan)
+        {
+            error = $"Забагато правок тексту в одному плані (до {TextEdit.MaxEditsPerPlan}).";
+            return false;
+        }
+
+        if (changes.Any(c => c.Kind == SettingChangeKind.EditProfile) && changes.Any(c => c.Kind != SettingChangeKind.EditProfile))
+        {
+            error = "Профіль змінюється окремим планом, без інших змін.";
+            return false;
+        }
+
         foreach (var change in changes)
         {
             updated = Transform(updated, change, out error);
@@ -190,8 +266,9 @@ public sealed class SettingsEditor(
             }
         }
 
-        var onlyResets = changes.All(c => c.Kind is SettingChangeKind.Reset or SettingChangeKind.ResetGroup);
-        if (!onlyResets && OverridesApplier.Check(OverridesApplier.Apply(app.Value, updated)) is { Count: > 0 } errors)
+        // Only a step that changes the options is checked against them: a text edit must not fail on an unrelated rule, and a reset is the way out.
+        var touchesOptions = changes.Any(c => c.Kind is SettingChangeKind.Set or SettingChangeKind.AddSource or SettingChangeKind.RemoveSource or SettingChangeKind.ToggleAlertSource);
+        if (touchesOptions && OverridesApplier.Check(OverridesApplier.Apply(app.Value, updated)) is { Count: > 0 } errors)
         {
             error = string.Join('\n', errors);
             return false;
@@ -236,11 +313,58 @@ public sealed class SettingsEditor(
                 var alerts = AlertsOf(o);
                 return o with { AlertSources = alerts.Contains(change.Target) ? alerts.Where(a => a != change.Target).ToList() : [.. alerts, change.Target] };
 
+            case SettingChangeKind.EditPrompt:
+                return EditPrompt(o, change, out error);
+
+            case SettingChangeKind.ResetPrompt:
+                return o.PromptSections is { } sections && sections.ContainsKey(change.Target)
+                    ? o with { PromptSections = WithoutEmpty(sections.Where(s => s.Key != change.Target).ToDictionary()) }
+                    : o;
+
+            case SettingChangeKind.EditProfile:
+                // The profile is its own blob, written by ApplyProposalAsync.
+                return o;
+
             default:
                 error = "Невідома зміна.";
                 return o;
         }
     }
+
+    private SettingsOverrides EditPrompt(SettingsOverrides o, SettingChange change, out string? error)
+    {
+        error = null;
+        if (prompts.FindSection(change.Target) is not { } section)
+        {
+            error = "Невідома секція промпта.";
+            return o;
+        }
+
+        if (!TextEdit.TryApply(prompts.Text(section.Id, o.PromptSections), change.Before, change.Value, out var text, out error))
+        {
+            return o;
+        }
+
+        if (TextEdit.CheckSection(text) is { } problem)
+        {
+            error = problem;
+            return o;
+        }
+
+        var sections = new Dictionary<string, string>(o.PromptSections ?? new Dictionary<string, string>());
+        if (text == section.Default)
+        {
+            sections.Remove(section.Id);
+        }
+        else
+        {
+            sections[section.Id] = text;
+        }
+
+        return o with { PromptSections = WithoutEmpty(sections) };
+    }
+
+    private static Dictionary<string, string>? WithoutEmpty(Dictionary<string, string> sections) => sections.Count == 0 ? null : sections;
 
     private static SettingsOverrides SetValue(SettingsOverrides o, string key, string value, out string? error)
     {

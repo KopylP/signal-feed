@@ -4,13 +4,11 @@ using PostAgent.Shared.Posts;
 
 namespace PostAgent.Scoring.Infrastructure;
 
-public sealed class PostScorer(IChatClient chat) : IPostScorer
+public sealed class PostScorer(IChatClient chat, IPromptProvider prompts) : IPostScorer
 {
-    private readonly string _systemPrompt = Prompts.Load("scoring.md");
-
     public async Task<IReadOnlyList<string>> ScoreAsync(IReadOnlyList<PostEntity> posts, CancellationToken ct)
     {
-        var scored = await chat.AskAsync<ScoredPosts>(_systemPrompt, ToUserMessage(posts), ct);
+        var scored = await chat.AskAsync<ScoredPosts>(await prompts.GetAsync("scoring.md", ct), ToUserMessage(posts), ct);
         return ScoreApplier.Apply(posts, scored.Posts);
     }
 
