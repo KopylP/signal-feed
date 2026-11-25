@@ -258,5 +258,7 @@ public class ChatProcessorTests
             Attempts++;
             throw new TaskCanceledException("timed out");
         }
+
+        public Task SendAsync(string html, PostAgent.Shared.Notifications.InlineKeyboard keyboard, CancellationToken ct) => SendAsync(html, ct);
     }
 }
