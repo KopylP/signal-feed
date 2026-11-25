@@ -61,6 +61,25 @@ public sealed class SettingsEditor(
             validate: false,
             ct);
 
+    public Task<EditResult> SetPendingAsync(PendingInput? pending, CancellationToken ct) =>
+        UpdateAsync(o => o.Pending == pending ? o : o with { Pending = pending }, validate: false, ct);
+
+    // True when the id is newer than the last one handled and was recorded. False for a resent update (or when it could not be recorded).
+    public async Task<bool> TryAdvanceUpdateIdAsync(long updateId, CancellationToken ct)
+    {
+        var advanced = false;
+        var result = await UpdateAsync(
+            o =>
+            {
+                advanced = updateId > o.LastUpdateId;
+                return advanced ? o with { LastUpdateId = updateId } : o;
+            },
+            validate: false,
+            ct);
+
+        return result.Ok && advanced;
+    }
+
     // The change must return the same instance when there is nothing to write.
     public async Task<EditResult> UpdateAsync(Func<SettingsOverrides, SettingsOverrides> change, bool validate, CancellationToken ct)
     {

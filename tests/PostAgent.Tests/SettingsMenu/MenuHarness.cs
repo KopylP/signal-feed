@@ -1,0 +1,55 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
+using PostAgent.SettingsMenu;
+using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Settings;
+using PostAgent.Tests.Fakes;
+using PostAgent.Tests.Shared.Settings;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+
+namespace PostAgent.Tests.SettingsMenu;
+
+// Real editor, effective options and controller over in-memory fakes: only Telegram and the blob are replaced.
+internal sealed class MenuHarness
+{
+    public const long BoundChat = 42;
+
+    public InMemoryOverridesStore Store { get; } = new();
+    public FakeTimeProvider Time { get; } = new(TestData.Now);
+    public RecordingPanel Panel { get; } = new();
+    public AgentOptions App { get; }
+    public EffectiveOptions Effective { get; }
+    public SettingsEditor Editor { get; }
+    public MenuController Controller { get; }
+    public SettingsInbox Inbox { get; }
+
+    public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
+    {
+        App = OverridesApplierTests.ValidApp(configure);
+        var options = Options.Create(App);
+        Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
+        Editor = new SettingsEditor(Store, options, Effective, NullLogger<SettingsEditor>.Instance);
+        Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
+        var resolver = new ChatResolver(options, new InMemoryChatBindingStore(bound));
+        Inbox = new SettingsInbox(resolver, Store, Editor, Controller, Panel, NullLogger<SettingsInbox>.Instance);
+    }
+
+    public static Update Callback(string data, int updateId = 1, long chatId = BoundChat, ChatType type = ChatType.Private, int messageId = 7) =>
+        new()
+        {
+            Id = updateId,
+            CallbackQuery = new CallbackQuery
+            {
+                Id = $"cb{updateId}",
+                Data = data,
+                Message = new Message { Id = messageId, Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type } },
+            },
+        };
+
+    public static Update Text(string text, int updateId = 1, long chatId = BoundChat, ChatType type = ChatType.Private) =>
+        new() { Id = updateId, Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text } };
+
+    public static IEnumerable<string> Buttons(InlineKeyboard keyboard) => keyboard.Rows.SelectMany(r => r).Select(b => b.Data);
+}
