@@ -8,7 +8,7 @@ using PostAgent.Shared.Settings;
 namespace PostAgent.Login;
 
 // The Mini App's POST (ADR-0016). The endpoint is public, so it trusts nothing but initData signed with the bot token,
-// and it hands the phone, the code and the password to the waiting function only for the attempt that this very chat started.
+// and it hands the phone, the code and the password proof to the waiting function only for the attempt that this very chat started.
 public sealed class LoginForm(
     ILoginAttemptStore attempts,
     ChatResolver resolver,
@@ -17,11 +17,12 @@ public sealed class LoginForm(
     ILogger<LoginForm> log)
 {
     public const int MaxBodyBytes = 8 * 1024;
+    public const string ChallengeAction = "challenge";
 
     // initData is created when the Mini App opens; an older one is a replay, not someone typing a code.
     public static readonly TimeSpan MaxInitDataAge = TimeSpan.FromMinutes(10);
 
-    public async Task<HttpStatusCode> HandleAsync(Stream body, CancellationToken ct)
+    public async Task<LoginFormResult> HandleAsync(Stream body, CancellationToken ct)
     {
         var form = await ReadAsync(body, ct);
         if (form is null)
@@ -37,8 +38,14 @@ public sealed class LoginForm(
             return HttpStatusCode.Unauthorized;
         }
 
-        var submission = LoginInput.Normalize(form.Phone, form.Code, form.Password);
-        if (submission is null || form.Attempt is not { Length: > 0 and <= LoginInput.MaxAttemptIdChars } attemptId)
+        if (form.Attempt is not { Length: > 0 and <= LoginInput.MaxAttemptIdChars } attemptId)
+        {
+            return HttpStatusCode.BadRequest;
+        }
+
+        var wantsChallenge = form.Action == ChallengeAction;
+        var submission = wantsChallenge ? null : LoginInput.Normalize(form.Phone, form.Code, form.SrpA, form.SrpM1);
+        if (!wantsChallenge && submission is null)
         {
             return HttpStatusCode.BadRequest;
         }
@@ -55,13 +62,19 @@ public sealed class LoginForm(
             return HttpStatusCode.Forbidden;
         }
 
-        if (!await attempts.TrySubmitAsync(attempt.Id, submission, time.GetUtcNow(), ct))
+        if (wantsChallenge)
+        {
+            // Public values only; without a challenge the sign-in is not at the password step.
+            return attempt.Challenge is { } challenge ? new LoginFormResult(HttpStatusCode.OK, challenge) : HttpStatusCode.Conflict;
+        }
+
+        if (submission is null || !await attempts.TrySubmitAsync(attempt.Id, submission, time.GetUtcNow(), ct))
         {
             log.LogWarning("Sign-in form rejected: the attempt is over or used up");
             return HttpStatusCode.Conflict;
         }
 
-        // Never the phone, the code or the password: only that something arrived.
+        // Never the phone, the code or the proof: only that something arrived.
         log.LogInformation("Sign-in form accepted");
         return HttpStatusCode.Accepted;
     }

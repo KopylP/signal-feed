@@ -11,9 +11,10 @@ public static class LoginTexts
     public const string NoHost = "Вхід через бота тут недоступний: невідома адреса Function App. Увійдіть через TgLogin.";
     public const string PhoneButton = "📱 Ввести номер";
     public const string CodeButton = "🔑 Ввести код";
+    public const string PasswordButton = "🔒 Ввести пароль";
     public const string WrongCode = "Код не підійшов. Натисніть «Ввести код» ще раз.";
-    public const string PasswordNeeded = "Потрібен пароль двоетапної перевірки. Натисніть «Ввести код» і введіть пароль.";
-    public const string WrongPassword = "Пароль не підійшов. Натисніть «Ввести код» і введіть його ще раз.";
+    public const string PasswordNeeded = "Потрібен пароль двоетапної перевірки. Натисніть «Ввести пароль». Форма перевіряє його на вашому телефоні: сам пароль нікуди не надсилається і ніде не зберігається.";
+    public const string WrongPassword = "Пароль не підійшов. Натисніть «Ввести пароль» і введіть його ще раз.";
     public const string TooManyTries = "Забагато невдалих спроб. Почніть знову з /login.";
     public const string Expired = "Час на вхід вийшов. Почніть знову з /login.";
     public const string Unsupported = "Telegram просить те, чого бот не вміє (реєстрацію або пошту для входу). Увійдіть через TgLogin.";
@@ -24,7 +25,7 @@ public static class LoginTexts
 
     public static string CodeSent(string maskedPhone) =>
         $"🔑 Telegram надіслав код входу для {TelegramHtml.Escape(maskedPhone)} у застосунок цього акаунта (чат «Telegram»).\n"
-        + "Натисніть кнопку і введіть код, а якщо в акаунті є двоетапна перевірка, то й пароль. Не пересилайте код повідомленням.";
+        + "Натисніть кнопку і введіть код. Не пересилайте код повідомленням.";
 
     // Goes to every paired chat, so that a swap of the reader account is seen by all of them.
     public static string Replaced(string? account, string maskedPhone)

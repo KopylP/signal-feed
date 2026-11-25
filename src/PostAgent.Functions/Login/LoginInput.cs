@@ -2,7 +2,6 @@ namespace PostAgent.Login;
 
 public static class LoginInput
 {
-    public const int MaxPasswordChars = 256;
     public const int MaxAttemptIdChars = 64;
 
     // Separators people type or paste in a phone number.
@@ -24,27 +23,45 @@ public static class LoginInput
         phone.Length <= 5 ? "•••" : phone[..4] + new string('•', phone.Length - 6) + phone[^2..];
 
     // Null when the input is not a plausible submission. Spaces in the code are dropped: people copy "12 345".
-    public static LoginSubmission? Normalize(string? phone, string? code, string? password)
+    public static LoginSubmission? Normalize(string? phone, string? code, string? srpA, string? srpM1)
     {
         var number = string.IsNullOrWhiteSpace(phone) ? null : NormalizePhone(phone);
         var digits = string.IsNullOrWhiteSpace(code) ? null : new string(code.Where(c => !char.IsWhiteSpace(c)).ToArray());
-        var secret = string.IsNullOrEmpty(password) ? null : password;
 
-        if (!string.IsNullOrWhiteSpace(phone) && number is null)
+        if ((!string.IsNullOrWhiteSpace(phone) && number is null) || (digits is not null && !IsCode(digits)))
         {
             return null;
         }
 
-        if (number is null && digits is null && secret is null)
+        PasswordProof? proof = null;
+        if (srpA is not null || srpM1 is not null)
+        {
+            proof = Proof(srpA, srpM1);
+            if (proof is null)
+            {
+                return null;
+            }
+        }
+
+        return number is null && digits is null && proof is null ? null : new LoginSubmission(number, digits, proof);
+    }
+
+    private static PasswordProof? Proof(string? a, string? m1)
+    {
+        var aBytes = FromBase64(a);
+        var m1Bytes = FromBase64(m1);
+        return aBytes?.Length == PasswordProof.ALength && m1Bytes?.Length == PasswordProof.M1Length ? new PasswordProof(aBytes, m1Bytes) : null;
+    }
+
+    private static byte[]? FromBase64(string? text)
+    {
+        // 256 bytes are 344 characters: anything much longer is not a proof.
+        if (string.IsNullOrEmpty(text) || text.Length > 400)
         {
             return null;
         }
 
-        if ((digits is not null && !IsCode(digits)) || secret?.Length > MaxPasswordChars)
-        {
-            return null;
-        }
-
-        return new LoginSubmission(number, digits, secret);
+        var buffer = new byte[300];
+        return Convert.TryFromBase64String(text, buffer, out var written) ? buffer[..written] : null;
     }
 }

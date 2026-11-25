@@ -11,8 +11,11 @@ public interface ILoginAttemptStore
     // Puts what the Mini App sent into the attempt with this id. False when it is gone, expired or used up its submissions.
     Task<bool> TrySubmitAsync(string attemptId, LoginSubmission submission, DateTimeOffset now, CancellationToken ct);
 
-    // Reads and clears what was submitted, so a code or a password stays in storage only until it is used. Null when nothing is waiting.
+    // Reads and clears what was submitted, so it stays in storage only until it is used. Null when nothing is waiting.
     Task<LoginSubmission?> TakeSubmissionAsync(string attemptId, CancellationToken ct);
+
+    // Publishes the challenge the page needs for the password proof (and drops a stale proof).
+    Task SetChallengeAsync(string attemptId, PasswordChallenge challenge, CancellationToken ct);
 
     // Removes the attempt with this id (not a newer one).
     Task DeleteAsync(string attemptId, CancellationToken ct);

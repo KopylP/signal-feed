@@ -8,7 +8,8 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Login.Infrastructure;
 
-// One blob next to the session, so that only the identities that may read the session can read a code or a password in transit.
+// One blob next to the session, so that only the identities that may read the session can read a code in transit.
+// It never holds the 2FA password: only the SRP proof computed on the phone, which is single-use.
 // Every change is a read, a check and a write with the ETag; a lost race is simply retried.
 public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<AgentOptions> options) : ILoginAttemptStore
 {
@@ -50,7 +51,7 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
                 return false;
             }
 
-            var updated = attempt with { Phone = submission.Phone, Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
+            var updated = attempt with { Phone = submission.Phone, Code = submission.Code, Proof = submission.Proof, Submissions = attempt.Submissions + 1 };
             if (await TryWriteAsync(updated, etag, ct))
             {
                 return true;
@@ -69,18 +70,36 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, IOptions<Agen
                 return null;
             }
 
-            if (attempt.Phone is null && attempt.Code is null && attempt.Password is null)
+            if (attempt.Phone is null && attempt.Code is null && attempt.Proof is null)
             {
                 return null;
             }
 
-            if (await TryWriteAsync(attempt with { Phone = null, Code = null, Password = null }, etag, ct))
+            if (await TryWriteAsync(attempt with { Phone = null, Code = null, Proof = null }, etag, ct))
             {
-                return new LoginSubmission(attempt.Phone, attempt.Code, attempt.Password);
+                return new LoginSubmission(attempt.Phone, attempt.Code, attempt.Proof);
             }
         }
 
         return null;
+    }
+
+    public async Task SetChallengeAsync(string attemptId, PasswordChallenge challenge, CancellationToken ct)
+    {
+        for (var i = 0; i < MaxRetries; i++)
+        {
+            if (await ReadAsync(ct) is not { Attempt: var attempt, ETag: var etag } || attempt.Id != attemptId)
+            {
+                return;
+            }
+
+            if (await TryWriteAsync(attempt with { Challenge = challenge, Proof = null }, etag, ct))
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("The password challenge could not be published.");
     }
 
     public async Task DeleteAsync(string attemptId, CancellationToken ct)

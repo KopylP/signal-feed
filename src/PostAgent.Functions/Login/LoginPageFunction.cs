@@ -26,8 +26,15 @@ public sealed class LoginPageFunction(LoginForm form)
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = LoginPageUrl.Route)] HttpRequestData request,
         CancellationToken ct)
     {
-        var response = request.CreateResponse(await form.HandleAsync(request.Body, ct));
+        var result = await form.HandleAsync(request.Body, ct);
+        var response = request.CreateResponse(result.Status);
         AddCommonHeaders(response);
+        if (result.Challenge is { } challenge)
+        {
+            // byte[] values are written as base64; srp_id stays on the server, the page does not need it.
+            await response.WriteAsJsonAsync(new { g = challenge.G, p = challenge.P, salt1 = challenge.Salt1, salt2 = challenge.Salt2, srpB = challenge.SrpB }, ct);
+        }
+
         return response;
     }
 

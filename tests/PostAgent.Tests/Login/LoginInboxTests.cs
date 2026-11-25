@@ -19,6 +19,8 @@ public class LoginInboxTests
     private readonly FakeTimeProvider _time = new(TestData.Now);
     private RecordingLoginQueue _queue = new();
 
+    private LoginAttempt CurrentAttempt => Assert.IsType<LoginAttempt>(_attempts.Current);
+
     private LoginInbox Inbox()
     {
         var resolver = new ChatResolver(Options.Create(new AgentOptions()), new InMemoryChatBindingStore(Owner));
@@ -42,12 +44,12 @@ public class LoginInboxTests
     public async Task Gives_every_attempt_a_new_id()
     {
         await Inbox().HandleAsync(MenuHarness.Text("/login"), CancellationToken.None);
-        var first = _attempts.Current!.Id;
+        var first = CurrentAttempt.Id;
         _time.Advance(LoginInbox.AttemptLifetime);
 
         await Inbox().HandleAsync(MenuHarness.Text("/login"), CancellationToken.None);
 
-        Assert.NotEqual(first, _attempts.Current!.Id);
+        Assert.NotEqual(first, CurrentAttempt.Id);
     }
 
     [Theory]

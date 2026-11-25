@@ -21,6 +21,8 @@ public class LoginFormTests
     private readonly FakeTimeProvider _time = new(TestData.Now);
     private readonly InMemoryChatBindingStore _bindings = new(Owner);
 
+    private LoginAttempt CurrentAttempt => Assert.IsType<LoginAttempt>(_attempts.Current);
+
     public LoginFormTests()
     {
         _attempts.Current = new LoginAttempt(AttemptId, Owner, TestData.Now.AddMinutes(5));
@@ -34,18 +36,69 @@ public class LoginFormTests
         NullLogger<LoginForm>.Instance);
 
     private static MemoryStream Body(
-        string? initData = null, string attempt = AttemptId, string? code = "12345", string? password = null, string? phone = null) =>
-        new(JsonSerializer.SerializeToUtf8Bytes(new { attempt, initData = initData ?? Sign(Owner, TestData.Now), phone, code, password }));
+        string? initData = null, string attempt = AttemptId, string? code = "12345", string? phone = null,
+        string? srpA = null, string? srpM1 = null, string? action = null) =>
+        new(JsonSerializer.SerializeToUtf8Bytes(new { attempt, initData = initData ?? Sign(Owner, TestData.Now), action, phone, code, srpA, srpM1 }));
 
-    private Task<HttpStatusCode> Post(Stream body) => Form().HandleAsync(body, CancellationToken.None);
+    private async Task<HttpStatusCode> Post(Stream body) => (await Form().HandleAsync(body, CancellationToken.None)).Status;
 
     [Fact]
-    public async Task Hands_the_code_and_password_to_the_attempt_of_the_chat_that_opened_the_form()
+    public async Task Hands_the_code_to_the_attempt_of_the_chat_that_opened_the_form()
     {
-        Assert.Equal(HttpStatusCode.Accepted, await Post(Body(password: "secret")));
+        Assert.Equal(HttpStatusCode.Accepted, await Post(Body()));
 
-        Assert.Equal("12345", _attempts.Current!.Code);
-        Assert.Equal("secret", _attempts.Current.Password);
+        Assert.Equal("12345", CurrentAttempt.Code);
+    }
+
+    [Fact]
+    public async Task Hands_a_password_proof_to_the_attempt()
+    {
+        var a = Convert.ToBase64String(new byte[PasswordProof.ALength]);
+        var m1 = Convert.ToBase64String(new byte[PasswordProof.M1Length]);
+
+        Assert.Equal(HttpStatusCode.Accepted, await Post(Body(code: null, srpA: a, srpM1: m1)));
+
+        Assert.Equal(PasswordProof.M1Length, CurrentAttempt.Proof?.M1.Length);
+    }
+
+    [Fact]
+    public async Task Ignores_a_password_sent_in_plain_text()
+    {
+        var body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new { attempt = AttemptId, initData = Sign(Owner, TestData.Now), password = "secret" }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, await Post(body));
+        Assert.Null(CurrentAttempt.Proof);
+    }
+
+    [Fact]
+    public async Task Gives_the_challenge_of_the_password_step_without_counting_a_submission()
+    {
+        var challenge = new PasswordChallenge(7, 3, new byte[256], [1], [2], [3]);
+        _attempts.Current = CurrentAttempt with { Challenge = challenge };
+
+        var result = await Form().HandleAsync(Body(code: null, action: LoginForm.ChallengeAction), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, result.Status);
+        Assert.Same(challenge, result.Challenge);
+        Assert.Equal(0, _attempts.Current.Submissions);
+    }
+
+    [Fact]
+    public async Task Has_no_challenge_before_the_password_step()
+    {
+        Assert.Equal(HttpStatusCode.Conflict, await Post(Body(code: null, action: LoginForm.ChallengeAction)));
+    }
+
+    [Fact]
+    public async Task Gives_no_challenge_to_another_user()
+    {
+        _attempts.Current = CurrentAttempt with { Challenge = new PasswordChallenge(7, 3, new byte[256], [1], [2], [3]) };
+        _bindings.Bound.Add(7);
+
+        var result = await Form().HandleAsync(Body(Sign(7, TestData.Now), code: null, action: LoginForm.ChallengeAction), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Forbidden, result.Status);
+        Assert.Null(result.Challenge);
     }
 
     [Fact]
@@ -53,14 +106,14 @@ public class LoginFormTests
     {
         Assert.Equal(HttpStatusCode.Accepted, await Post(Body(code: null, phone: "+380 67 123 45 67")));
 
-        Assert.Equal("+380671234567", _attempts.Current!.Phone);
+        Assert.Equal("+380671234567", CurrentAttempt.Phone);
     }
 
     [Fact]
     public async Task Rejects_data_not_signed_by_telegram_for_this_bot()
     {
         Assert.Equal(HttpStatusCode.Unauthorized, await Post(Body(Sign(Owner, TestData.Now, "999:other"))));
-        Assert.Null(_attempts.Current!.Code);
+        Assert.Null(CurrentAttempt.Code);
     }
 
     [Fact]
@@ -69,7 +122,7 @@ public class LoginFormTests
         _bindings.Bound.Add(7);
 
         Assert.Equal(HttpStatusCode.Forbidden, await Post(Body(Sign(7, TestData.Now))));
-        Assert.Null(_attempts.Current!.Code);
+        Assert.Null(CurrentAttempt.Code);
     }
 
     [Fact]
@@ -106,19 +159,19 @@ public class LoginFormTests
     [Fact]
     public async Task Stops_accepting_forms_after_the_submission_limit()
     {
-        _attempts.Current = _attempts.Current! with { Submissions = LoginAttempt.MaxSubmissions };
+        _attempts.Current = CurrentAttempt with { Submissions = LoginAttempt.MaxSubmissions };
 
         Assert.Equal(HttpStatusCode.Conflict, await Post(Body()));
     }
 
     [Theory]
-    [InlineData("12a45", null, null)]
-    [InlineData("", null, null)]
-    [InlineData(null, null, null)]
-    [InlineData(null, null, "not a phone")]
-    public async Task Rejects_input_that_is_not_a_phone_a_code_or_a_password(string? code, string? password, string? phone)
+    [InlineData("12a45", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    [InlineData(null, "not a phone")]
+    public async Task Rejects_input_that_is_not_a_phone_a_code_or_a_proof(string? code, string? phone)
     {
-        Assert.Equal(HttpStatusCode.BadRequest, await Post(Body(code: code, password: password, phone: phone)));
+        Assert.Equal(HttpStatusCode.BadRequest, await Post(Body(code: code, phone: phone)));
     }
 
     [Fact]

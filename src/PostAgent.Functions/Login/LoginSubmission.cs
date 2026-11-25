@@ -1,4 +1,4 @@
 namespace PostAgent.Login;
 
-// What the owner typed into the Mini App: the phone of the account to sign in, the code, the 2FA password. Any of them may be empty.
-public sealed record LoginSubmission(string? Phone, string? Code, string? Password);
+// What the Mini App sent: the phone of the account to sign in, the code, or the SRP proof of the 2FA password. Never the password.
+public sealed record LoginSubmission(string? Phone, string? Code, PasswordProof? Proof);

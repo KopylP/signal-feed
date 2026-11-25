@@ -49,7 +49,9 @@ public class LoginProcessorTests
 
     private static LoginSubmission PhoneForm(string phone = Phone) => new(phone, null, null);
 
-    private static LoginSubmission CodeForm(string? code, string? password = null) => new(null, code, password);
+    private static LoginSubmission CodeForm(string code) => new(null, code, null);
+
+    private static LoginSubmission ProofForm(PasswordProof proof) => new(null, null, proof);
 
     private List<string> Prompts => _panel.Sent.Select(m => m.Html).ToList();
 
@@ -128,28 +130,71 @@ public class LoginProcessorTests
     }
 
     [Fact]
-    public async Task Uses_the_password_sent_together_with_the_code()
+    public async Task Publishes_a_challenge_and_signs_in_with_the_proof_computed_on_the_phone()
     {
-        _login = new ScriptedUserLogin { Password = "secret" };
-        Forms(PhoneForm(), CodeForm("12345", "secret"));
+        _login = new ScriptedUserLogin { HasPassword = true };
+        Forms(PhoneForm(), CodeForm("12345"), ProofForm(ScriptedUserLogin.GoodProof));
 
         await RunAsync();
 
-        Assert.Equal(["secret"], _login.Passwords);
+        Assert.Equal(1, _login.ChallengesIssued);
+        Assert.Single(_attempts.Challenges);
+        Assert.Equal(LoginTexts.PasswordNeeded, Prompts[^1]);
+        Assert.Equal($"https://{Host}/api/telegram/login?a=attempt-1&s=password", WebApp(_panel.Sent.Count - 1));
+        Assert.Equal([ScriptedUserLogin.GoodProof], _login.Proofs);
         Assert.Single(_sessions.Saved);
     }
 
     [Fact]
-    public async Task Asks_for_the_password_when_only_the_code_came()
+    public async Task Issues_a_new_challenge_after_a_wrong_password()
     {
-        _login = new ScriptedUserLogin { Password = "secret" };
-        Forms(PhoneForm(), CodeForm("12345"), CodeForm(null, "secret"));
+        _login = new ScriptedUserLogin { HasPassword = true };
+        Forms(PhoneForm(), CodeForm("12345"), ProofForm(ScriptedUserLogin.BadProof), ProofForm(ScriptedUserLogin.GoodProof));
 
         await RunAsync();
 
-        Assert.Equal(["12345"], _login.Codes);
-        Assert.Equal(LoginTexts.PasswordNeeded, Prompts[^1]);
+        Assert.Equal(2, _login.ChallengesIssued);
+        Assert.Equal(2, _attempts.Challenges.Select(c => c.SrpId).Distinct().Count());
+        Assert.Contains(LoginTexts.WrongPassword, Prompts);
         Assert.Single(_sessions.Saved);
+    }
+
+    [Fact]
+    public async Task Ignores_a_proof_sent_before_the_code()
+    {
+        _login = new ScriptedUserLogin { HasPassword = true };
+        Forms(PhoneForm(), ProofForm(ScriptedUserLogin.GoodProof), CodeForm("12345"), ProofForm(ScriptedUserLogin.GoodProof));
+
+        await RunAsync();
+
+        Assert.Single(_login.Proofs);
+        Assert.Single(_sessions.Saved);
+    }
+
+    [Fact]
+    public async Task Points_to_tglogin_when_the_password_uses_an_unknown_algorithm()
+    {
+        _login = new ScriptedUserLogin { HasPassword = true, UnsupportedPassword = true };
+        Forms(PhoneForm(), CodeForm("12345"));
+
+        await RunAsync();
+
+        Assert.Equal([LoginTexts.Unsupported], _notifier.Replies);
+        Assert.Empty(_attempts.Challenges);
+    }
+
+    [Fact]
+    public async Task Gives_up_after_too_many_wrong_codes_or_passwords()
+    {
+        _login = new ScriptedUserLogin { HasPassword = true };
+        Forms(PhoneForm(), CodeForm("11111"), CodeForm("12345"), ProofForm(ScriptedUserLogin.BadProof),
+            ProofForm(ScriptedUserLogin.BadProof), ProofForm(ScriptedUserLogin.GoodProof));
+
+        await RunAsync();
+
+        Assert.Equal([LoginTexts.TooManyTries], _notifier.Replies);
+        Assert.Empty(_sessions.Saved);
+        Assert.Null(_attempts.Current);
     }
 
     [Fact]
@@ -162,19 +207,6 @@ public class LoginProcessorTests
         Assert.Equal(LoginTexts.WrongCode, Prompts[^1]);
         Assert.Equal(LoginTexts.CodeButton, Assert.Single(Assert.Single(_panel.Sent[^1].Keyboard.Rows)).Text);
         Assert.Single(_sessions.Saved);
-    }
-
-    [Fact]
-    public async Task Gives_up_after_too_many_wrong_codes_or_passwords()
-    {
-        _login = new ScriptedUserLogin { Password = "secret" };
-        Forms(PhoneForm(), CodeForm("11111"), CodeForm("12345", "wrong"), CodeForm(null, "wrong again"), CodeForm(null, "secret"));
-
-        await RunAsync();
-
-        Assert.Equal([LoginTexts.TooManyTries], _notifier.Replies);
-        Assert.Empty(_sessions.Saved);
-        Assert.Null(_attempts.Current);
     }
 
     [Fact]

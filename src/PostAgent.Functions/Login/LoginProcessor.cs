@@ -65,13 +65,15 @@ public sealed class LoginProcessor(
     {
         var host = options.Value.WebsiteHostName;
         if (LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.PhoneStage) is not { } phoneUrl
-            || LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.CodeStage) is not { } codeUrl)
+            || LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.CodeStage) is not { } codeUrl
+            || LoginPageUrl.Build(host, attempt.Id, LoginPageUrl.PasswordStage) is not { } passwordUrl)
         {
             return LoginTexts.NoHost;
         }
 
         var askPhone = Button(LoginTexts.PhoneButton, phoneUrl);
         var askCode = Button(LoginTexts.CodeButton, codeUrl);
+        var askPassword = Button(LoginTexts.PasswordButton, passwordUrl);
         await panel.SendAsync(attempt.ChatId, LoginTexts.AskPhone((int)LoginInbox.AttemptLifetime.TotalMinutes), askPhone, ct);
 
         var step = LoginStep.PhoneRequired;
@@ -86,45 +88,64 @@ public sealed class LoginProcessor(
                 continue;
             }
 
-            if (step == LoginStep.PhoneRequired)
-            {
-                if (submission.Phone is not { } phone)
-                {
-                    continue;
-                }
-
-                step = await login.StartAsync(phone, ct);
-                maskedPhone = LoginInput.MaskPhone(phone);
-                if (step == LoginStep.CodeRequired)
-                {
-                    log.LogInformation("Sign-in code requested");
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent(maskedPhone), askCode, ct);
-                    continue;
-                }
-
-                return step == LoginStep.Done ? await SaveAsync(login, maskedPhone, ct) : LoginTexts.Unsupported;
-            }
-
-            step = await ApplyAsync(login, step, submission, ct);
+            // Each stage takes only its own field: a code sent before the phone, or a proof before the challenge, is ignored.
             switch (step)
             {
-                case LoginStep.Done:
-                    return await SaveAsync(login, maskedPhone, ct);
-                case LoginStep.Unsupported:
-                    return LoginTexts.Unsupported;
-                case LoginStep.CodeInvalid or LoginStep.PasswordInvalid when ++failures >= MaxFailures:
-                    return LoginTexts.TooManyTries;
-                case LoginStep.CodeInvalid:
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.WrongCode, askCode, ct);
-                    step = LoginStep.CodeRequired;
+                case LoginStep.PhoneRequired when submission.Phone is { } phone:
+                    step = await login.StartAsync(phone, ct);
+                    maskedPhone = LoginInput.MaskPhone(phone);
+                    if (step == LoginStep.CodeRequired)
+                    {
+                        log.LogInformation("Sign-in code requested");
+                        await panel.SendAsync(attempt.ChatId, LoginTexts.CodeSent(maskedPhone), askCode, ct);
+                    }
+
                     break;
-                case LoginStep.PasswordInvalid:
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.WrongPassword, askCode, ct);
-                    step = LoginStep.PasswordRequired;
+                case LoginStep.CodeRequired when submission.Code is { } code:
+                    step = await login.SubmitCodeAsync(code, ct);
+                    if (step == LoginStep.CodeInvalid)
+                    {
+                        if (++failures >= MaxFailures)
+                        {
+                            return LoginTexts.TooManyTries;
+                        }
+
+                        await panel.SendAsync(attempt.ChatId, LoginTexts.WrongCode, askCode, ct);
+                        step = LoginStep.CodeRequired;
+                    }
+                    else if (step == LoginStep.PasswordRequired && !await AskPasswordAsync(login, attempt, LoginTexts.PasswordNeeded, askPassword, ct))
+                    {
+                        return LoginTexts.Unsupported;
+                    }
+
                     break;
-                case LoginStep.PasswordRequired when submission.Password is null:
-                    await panel.SendAsync(attempt.ChatId, LoginTexts.PasswordNeeded, askCode, ct);
+                case LoginStep.PasswordRequired when submission.Proof is { } proof:
+                    step = await login.SubmitPasswordProofAsync(proof, ct);
+                    if (step == LoginStep.PasswordInvalid)
+                    {
+                        if (++failures >= MaxFailures)
+                        {
+                            return LoginTexts.TooManyTries;
+                        }
+
+                        step = LoginStep.PasswordRequired;
+                        if (!await AskPasswordAsync(login, attempt, LoginTexts.WrongPassword, askPassword, ct))
+                        {
+                            return LoginTexts.Unsupported;
+                        }
+                    }
+
                     break;
+            }
+
+            if (step == LoginStep.Done)
+            {
+                return await SaveAsync(login, maskedPhone, ct);
+            }
+
+            if (step == LoginStep.Unsupported)
+            {
+                return LoginTexts.Unsupported;
             }
         }
 
@@ -132,25 +153,20 @@ public sealed class LoginProcessor(
         return LoginTexts.Expired;
     }
 
-    private static InlineKeyboard Button(string text, Uri url) => new([[KeyboardButton.OpenWebApp(text, url, ButtonStyle.Primary)]]);
-
-    // A form may carry the code and the password together: the password is used as soon as Telegram asks for it.
-    private static async Task<LoginStep> ApplyAsync(IUserLogin login, LoginStep step, LoginSubmission submission, CancellationToken ct)
+    // Every proof is good for one challenge, so each try gets a fresh one; the page reads it through LoginForm.
+    private async Task<bool> AskPasswordAsync(IUserLogin login, LoginAttempt attempt, string text, InlineKeyboard button, CancellationToken ct)
     {
-        if (step == LoginStep.CodeRequired)
+        if (await login.GetPasswordChallengeAsync(ct) is not { } challenge)
         {
-            if (submission.Code is null)
-            {
-                return step;
-            }
-
-            step = await login.SubmitCodeAsync(submission.Code, ct);
+            return false;
         }
 
-        return step == LoginStep.PasswordRequired && submission.Password is { } password
-            ? await login.SubmitPasswordAsync(password, ct)
-            : step;
+        await attempts.SetChallengeAsync(attempt.Id, challenge, ct);
+        await panel.SendAsync(attempt.ChatId, text, button, ct);
+        return true;
     }
+
+    private static InlineKeyboard Button(string text, Uri url) => new([[KeyboardButton.OpenWebApp(text, url, ButtonStyle.Primary)]]);
 
     // Any paired chat may sign in any account, so every paired chat hears which account reads the channels now:
     // a swap of the reader account never goes unnoticed. The chat that signed in gets the same message.

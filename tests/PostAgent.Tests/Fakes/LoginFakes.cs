@@ -28,7 +28,7 @@ internal sealed class InMemoryLoginAttemptStore : ILoginAttemptStore
             return Task.FromResult(false);
         }
 
-        Current = attempt with { Phone = submission.Phone, Code = submission.Code, Password = submission.Password, Submissions = attempt.Submissions + 1 };
+        Current = attempt with { Phone = submission.Phone, Code = submission.Code, Proof = submission.Proof, Submissions = attempt.Submissions + 1 };
         return Task.FromResult(true);
     }
 
@@ -42,6 +42,19 @@ internal sealed class InMemoryLoginAttemptStore : ILoginAttemptStore
         }
 
         return Task.FromResult<LoginSubmission?>(null);
+    }
+
+    public List<PasswordChallenge> Challenges { get; } = [];
+
+    public Task SetChallengeAsync(string attemptId, PasswordChallenge challenge, CancellationToken ct)
+    {
+        Challenges.Add(challenge);
+        if (Current?.Id == attemptId)
+        {
+            Current = Current with { Challenge = challenge };
+        }
+
+        return Task.CompletedTask;
     }
 
     public Task DeleteAsync(string attemptId, CancellationToken ct)
@@ -59,17 +72,22 @@ internal sealed class InMemoryLoginAttemptStore : ILoginAttemptStore
     public Queue<LoginSubmission> Queued { get; } = new();
 }
 
-// Answers each step from a script: the code and the password that Telegram accepts, and what the first step returns.
+// Answers each step from a script: the code and the password proof that Telegram accepts, and what the first step returns.
 internal sealed class ScriptedUserLogin : IUserLogin
 {
+    public static readonly PasswordProof GoodProof = new(new byte[256], new byte[32]);
+    public static readonly PasswordProof BadProof = new(new byte[256], Enumerable.Repeat((byte)1, 32).ToArray());
+
     public LoginStep FirstStep { get; init; } = LoginStep.CodeRequired;
-    public List<string> Phones { get; } = [];
     public string Code { get; init; } = "12345";
-    public string? Password { get; init; }
+    public bool HasPassword { get; init; }
+    public bool UnsupportedPassword { get; init; }
     public Exception? StartFailure { get; init; }
 
+    public List<string> Phones { get; } = [];
     public List<string> Codes { get; } = [];
-    public List<string> Passwords { get; } = [];
+    public List<PasswordProof> Proofs { get; } = [];
+    public int ChallengesIssued { get; private set; }
     public bool Disposed { get; private set; }
     public bool Exported { get; private set; }
 
@@ -89,13 +107,21 @@ internal sealed class ScriptedUserLogin : IUserLogin
             return Task.FromResult(LoginStep.CodeInvalid);
         }
 
-        return Task.FromResult(Password is null ? Finish() : LoginStep.PasswordRequired);
+        return Task.FromResult(HasPassword ? LoginStep.PasswordRequired : Finish());
     }
 
-    public Task<LoginStep> SubmitPasswordAsync(string password, CancellationToken ct)
+    public Task<PasswordChallenge?> GetPasswordChallengeAsync(CancellationToken ct)
     {
-        Passwords.Add(password);
-        return Task.FromResult(password == Password ? Finish() : LoginStep.PasswordInvalid);
+        ChallengesIssued++;
+        return Task.FromResult(UnsupportedPassword
+            ? null
+            : new PasswordChallenge(ChallengesIssued, 3, new byte[256], [1], [2], [(byte)ChallengesIssued]));
+    }
+
+    public Task<LoginStep> SubmitPasswordProofAsync(PasswordProof proof, CancellationToken ct)
+    {
+        Proofs.Add(proof);
+        return Task.FromResult(proof.M1.SequenceEqual(GoodProof.M1) ? Finish() : LoginStep.PasswordInvalid);
     }
 
     public Task<byte[]> ExportSessionAsync(CancellationToken ct)

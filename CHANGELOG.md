@@ -33,7 +33,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Migration: none
 
 ### Added
-- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password, and every paired chat is told which account reads the channels now ([Renewing the Telegram session](docs/user-guide/how-it-works.md#renewing-the-telegram-session), ADR-0016)
+- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password (checked on the phone with SRP: the password never leaves it and is never stored), and every paired chat is told which account reads the channels now ([Renewing the Telegram session](docs/user-guide/how-it-works.md#renewing-the-telegram-session), ADR-0016)
   - Enable: on by default for every paired private chat, once the `tg-login` queue exists
   - Settings: none
   - Limits: one sign-in at a time, 5 minutes, 3 wrong answers; a sign-in that Telegram routes to email or sign-up needs `TgLogin`

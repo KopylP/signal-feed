@@ -7,6 +7,7 @@ public static class LoginPageUrl
     // Which form the page shows; only a hint for the page; what a submission may do is decided by LoginProcessor.
     public const string PhoneStage = "phone";
     public const string CodeStage = "code";
+    public const string PasswordStage = "password";
 
     // The attempt id rides in the URL so that the page can send it back; it is checked together with the signed initData.
     public static Uri? Build(string? host, string attemptId, string stage) =>

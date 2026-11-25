@@ -8,7 +8,10 @@ public interface IUserLogin : IAsyncDisposable
 
     Task<LoginStep> SubmitCodeAsync(string code, CancellationToken ct);
 
-    Task<LoginStep> SubmitPasswordAsync(string password, CancellationToken ct);
+    // A fresh SRP challenge for the 2FA password; null when Telegram uses an algorithm we do not support. Each proof needs a new one.
+    Task<PasswordChallenge?> GetPasswordChallengeAsync(CancellationToken ct);
+
+    Task<LoginStep> SubmitPasswordProofAsync(PasswordProof proof, CancellationToken ct);
 
     // The signed-in account, for the confirmation; null before the sign-in is done.
     string? AccountName { get; }
