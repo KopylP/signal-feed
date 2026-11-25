@@ -40,6 +40,17 @@ resource "azurerm_storage_queue" "to_score" {
   storage_account_id = azurerm_storage_account.main.id
 }
 
+resource "azurerm_storage_queue" "chat_messages" {
+  name               = "chat-messages"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
+resource "azurerm_storage_container" "chat_state" {
+  name                  = "chat-state"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+}
+
 resource "azurerm_storage_queue" "run_now" {
   name               = "run-now"
   storage_account_id = azurerm_storage_account.main.id
