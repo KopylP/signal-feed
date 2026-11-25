@@ -42,6 +42,8 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Every write to `settings/overrides.json` goes through `SettingsEditor` (ETag, up to 3 retries, validated as a whole); reset is never refused. A button's `callback_data` is at most 64 bytes and carries the target value, not a step.
 - The menu answers only the bound private chat and records the ids of the updates it claimed (the last 30, a set, never a watermark: ids can restart and arrive out of order); a resent one is claimed and ignored, an ordinary chat question is never recorded. A blob that cannot be read is never overwritten except by "reset all". Models are chosen from a fixed list, the model is set per request by `ModelSelectingChatClient`.
 
+- The chat agent changes settings only through `SettingsTools` (ADR-0013): they build a plan of `SettingChange` and never write. The plan is stored and shown by code (`SettingsProposalSender`, `SettingsProposalMessage`), applied only by the button (`SettingsEditor.ApplyProposalAsync`, one checked write). Never put model text into that message, never add an apply tool.
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

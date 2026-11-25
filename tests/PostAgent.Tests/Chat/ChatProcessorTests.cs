@@ -17,7 +17,7 @@ public class ChatProcessorTests
     private static ChatRequest Request(long updateId, string text = "питання", string reportId = "r1") => new(updateId, text, reportId);
 
     private ChatProcessor Create(FakeChatAgent agent) =>
-        new(_state, agent, _notifier, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
+        new(_state, agent, _notifier, new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
 
     private async Task Started(string id = "r1") => await _state.StartNewAsync(Report(id), CancellationToken.None);
 
@@ -241,7 +241,7 @@ public class ChatProcessorTests
         await Started();
         var notifier = new TimingOutNotifier();
         var agent = new FakeChatAgent(_ => "відповідь");
-        var processor = new ChatProcessor(_state, agent, notifier, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
+        var processor = new ChatProcessor(_state, agent, notifier, new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
 
         await processor.HandleAsync(Request(10), CancellationToken.None);
 

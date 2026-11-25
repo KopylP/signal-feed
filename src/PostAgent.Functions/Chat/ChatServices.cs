@@ -10,8 +10,10 @@ public static class ChatServices
         services
             .AddSingleton<IChatStateStore, BlobChatStateStore>()
             .AddSingleton<ChatTools>()
+            .AddSingleton<SettingsToolsFactory>()
             .AddSingleton<IChatAgent, ChatAgent>()
             .AddSingleton<IChatQueue, ChatQueue>()
             .AddScoped<IIncomingMessageHandler, ChatInbox>()
+            .AddScoped<SettingsProposalSender>()
             .AddScoped<ChatProcessor>();
 }

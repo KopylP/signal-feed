@@ -2,7 +2,7 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.SettingsMenu;
 
-// What a button press asks for. Arg is a setting key, a group name or a source name; Number is a target value or a choice index.
+// What a button press asks for. Arg is a setting key, a group name, a source name or a proposal id; Number is a target value or a choice index.
 public sealed record MenuAction(MenuActionKind Kind, string Arg = "", int Number = 0)
 {
     public static readonly MenuAction Main = new(MenuActionKind.Main);
@@ -28,4 +28,8 @@ public sealed record MenuAction(MenuActionKind Kind, string Arg = "", int Number
     public static MenuAction RemoveSource(string name) => new(MenuActionKind.RemoveSource, name);
 
     public static MenuAction ToggleAlert(string name) => new(MenuActionKind.ToggleAlert, name);
+
+    public static MenuAction ApplyProposal(string id) => new(MenuActionKind.ApplyProposal, id);
+
+    public static MenuAction DeclineProposal(string id) => new(MenuActionKind.DeclineProposal, id);
 }

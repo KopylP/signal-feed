@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
+using PostAgent.Chat;
+using PostAgent.Chat.Infrastructure;
 using PostAgent.SettingsMenu;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
@@ -24,6 +26,9 @@ internal sealed class MenuHarness
     public SettingsEditor Editor { get; }
     public MenuController Controller { get; }
     public SettingsInbox Inbox { get; }
+    public ChatResolver Resolver { get; }
+    public SettingsToolsFactory ToolsFactory => new(Editor, Effective);
+    public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Resolver, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
     {
@@ -32,8 +37,8 @@ internal sealed class MenuHarness
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
         Editor = new SettingsEditor(Store, options, Effective, NullLogger<SettingsEditor>.Instance);
         Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
-        var resolver = new ChatResolver(options, new InMemoryChatBindingStore(bound));
-        Inbox = new SettingsInbox(resolver, Store, Editor, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
+        Resolver = new ChatResolver(options, new InMemoryChatBindingStore(bound));
+        Inbox = new SettingsInbox(Resolver, Store, Editor, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
     }
 
     public static Update Callback(string data, int updateId = 1, long chatId = BoundChat, ChatType type = ChatType.Private, int messageId = 7) =>

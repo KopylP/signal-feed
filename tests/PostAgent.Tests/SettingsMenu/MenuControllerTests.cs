@@ -272,4 +272,31 @@ public class MenuControllerTests
 
         Assert.Contains("прочитати", h.Panel.Edited[^1].Html);
     }
+
+    [Fact]
+    public async Task Applying_a_proposal_shows_what_was_applied_and_a_second_press_does_not_touch_the_message()
+    {
+        var h = new MenuHarness();
+        await h.Editor.ProposeAsync(new SettingsProposal("5", [new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ApplyProposal("5"), CancellationToken.None);
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.ApplyProposal("5"), CancellationToken.None);
+
+        Assert.Equal("8", h.Store.Current?.Values["DigestSize"]);
+        var edited = Assert.Single(h.Panel.Edited);
+        Assert.Contains("Застосовано", edited.Html);
+        Assert.Empty(edited.Keyboard.Rows);
+    }
+
+    [Fact]
+    public async Task Declining_a_proposal_changes_no_setting()
+    {
+        var h = new MenuHarness();
+        await h.Editor.ProposeAsync(new SettingsProposal("5", [new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
+
+        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.DeclineProposal("5"), CancellationToken.None);
+
+        Assert.Empty(h.Store.Current!.Values);
+        Assert.Contains("скасовано", Assert.Single(h.Panel.Edited).Html);
+    }
 }

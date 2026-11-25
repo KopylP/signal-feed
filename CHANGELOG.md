@@ -8,6 +8,26 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [thistle] - 2026-11-25
+
+### Contract changes
+- **Storage: `settings/overrides.json` gets an optional `Proposals` list** (compatible)
+  - Before: values, sources, alert sources, the pending question, handled update ids
+  - After: also the plans that the agent prepared and that wait for a button (the last five, each valid 30 minutes)
+  - Affects: nothing; a blob without the field reads as before
+  - Migration: none
+- **Telegram: new message «⚙️ Агент пропонує змінити налаштування»** (compatible)
+  - Before: the bot sent only digests, alerts, failures, answers and the `/settings` screens
+  - After: it also sends the plan the agent prepared, with «✅ Застосувати» / «✖ Скасувати» (callback data `pa:<id>` and `pn:<id>`)
+  - Affects: buttons of an old message keep working only for 30 minutes
+  - Migration: none
+
+### Added
+- **Change settings by asking the agent**: write «прибери один ресурс» or «зроби алерти рідшими» in the chat; the agent asks what is unclear (with the list), prepares a plan and the bot shows it with a confirm button. Nothing changes without the tap.
+  - Enable: on by default, after the first digest (the chat needs one)
+  - Settings: none
+  - Limits: the same parameters and ranges as `/settings`; secrets, schedules and prompts cannot be changed. See [configuration](docs/user-guide/configuration.md#by-asking-the-agent).
+
 ## [v2026.11.25.51-linden] - 2026-11-25
 
 ### Setup required
