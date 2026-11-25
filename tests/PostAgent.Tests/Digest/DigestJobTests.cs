@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Digest;
 using PostAgent.Shared.Posts;
+using PostAgent.Shared.Chat;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
@@ -11,9 +12,10 @@ namespace PostAgent.Tests.Digest;
 public class DigestJobTests
 {
     private RecordingNotifier _notifier = new();
+    private InMemoryChatStateStore _chatState = new();
 
     private DigestJob CreateJob(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
-        new(repo, summarizer, _notifier, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
+        new(repo, summarizer, _notifier, _chatState, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
 
     private static IDigestSummarizer WithOverview(string overview, string text = "Пояснення") =>
         new FakeDigestSummarizer(items => new DigestReport(
@@ -135,5 +137,82 @@ public class DigestJobTests
         await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
 
         Assert.Equal(DigestSelector.QueryStart(Now), repo.QueriedSince);
+    }
+
+    [Fact]
+    public async Task Starts_a_new_conversation_with_a_snapshot_of_the_digest_after_the_posts_are_marked_sent()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+        var store = new OrderRecordingStore(() => repo.SentMarks.Count);
+
+        await new DigestJob(repo, WithOverview("Огляд дня"), _notifier, store,
+            Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            .RunAsync(CancellationToken.None);
+
+        var report = Assert.Single(store.Started);
+        Assert.Equal("Огляд дня", report.Overview);
+        Assert.Equal("Headlines", Assert.Single(report.Entries).Section);
+        Assert.Equal(Now.ToString("yyyyMMddHHmmss"), report.ReportId);
+        Assert.Equal(1, store.MarksWhenStarted);
+    }
+
+    [Fact]
+    public async Task The_digest_still_succeeds_when_the_snapshot_cannot_be_saved()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+        var store = new OrderRecordingStore(() => 0) { Fail = true };
+
+        await new DigestJob(repo, WithOverview("О"), _notifier, store,
+            Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            .RunAsync(CancellationToken.None);
+
+        Assert.Single(_notifier.Sent);
+        Assert.Single(repo.SentMarks);
+    }
+
+    [Fact]
+    public async Task Does_not_touch_the_conversation_when_there_were_no_posts()
+    {
+        await _chatState.StartNewAsync(new ReportSnapshot("old", Now, null, [], []), CancellationToken.None);
+
+        await CreateJob(new InMemoryPostRepository(), WithOverview("О")).RunAsync(CancellationToken.None);
+
+        Assert.Equal("old", _chatState.Current?.Report.ReportId);
+    }
+
+    [Fact]
+    public async Task The_snapshot_is_made_even_when_the_model_failed_and_the_digest_was_plain()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+
+        await CreateJob(repo, Failing()).RunAsync(CancellationToken.None);
+
+        Assert.NotNull(_chatState.Current);
+        Assert.Single(_chatState.Current.Report.Entries);
+    }
+
+    private sealed class OrderRecordingStore(Func<int> marks) : IChatStateStore
+    {
+        public List<ReportSnapshot> Started { get; } = [];
+        public int MarksWhenStarted { get; private set; }
+        public bool Fail { get; init; }
+
+        public Task StartNewAsync(ReportSnapshot report, CancellationToken ct)
+        {
+            if (Fail)
+            {
+                throw new InvalidOperationException("blob is down");
+            }
+
+            MarksWhenStarted = marks();
+            Started.Add(report);
+            return Task.CompletedTask;
+        }
+
+        public Task<ChatStateHandle?> LoadAsync(CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<bool> TrySaveAsync(ChatStateHandle current, ChatState updated, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct) => throw new NotSupportedException();
     }
 }

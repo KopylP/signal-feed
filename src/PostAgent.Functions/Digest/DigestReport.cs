@@ -1,4 +1,6 @@
 using PostAgent.Digest.Infrastructure;
+using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Posts;
 
 namespace PostAgent.Digest;
@@ -15,6 +17,7 @@ public sealed record DigestReport(
 {
     public const int MaxRecommended = 3;
     public const int MaxNeedsVerification = 5;
+    private const int SnapshotExcerptChars = 300;
 
     // Without the model: the selected posts with the short reason from scoring.
     public static DigestReport Plain(IReadOnlyList<DigestItem> items) => new(
@@ -61,6 +64,19 @@ public sealed record DigestReport(
 
     public bool HasEntries => Headlines.Count + ForMarketplace.Count + Notable.Count + Recommended.Count > 0;
 
+    // What the chat is told about this digest. The sections keep the order of the message the reader got.
+    public ReportSnapshot ToSnapshot(DateTimeOffset now) => new(
+        now.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture),
+        now,
+        Overview,
+        [
+            .. Headlines.Select(e => Snapshot("Headlines", e)),
+            .. ForMarketplace.Select(e => Snapshot("ForMarketplace", e)),
+            .. Notable.Select(e => Snapshot("Notable", e)),
+            .. Recommended.Select(e => Snapshot("Recommended", e)),
+        ],
+        NeedsVerification);
+
     public DigestReport WithSkipped(DigestSkipped more) => this with { Skipped = Skipped.Add(more) };
 
     private static List<DigestEntry> Entries<T>(
@@ -84,6 +100,18 @@ public sealed record DigestReport(
 
         return entries;
     }
+
+    private static SnapshotEntry Snapshot(string section, DigestEntry entry) => new(
+        section,
+        ChatPostId.Format(entry.Post.ToRef()),
+        entry.Post.Source,
+        entry.Post.PublishedAt,
+        entry.Title,
+        entry.Text,
+        entry.Why,
+        entry.Post.Text.Truncate(SnapshotExcerptChars),
+        entry.Post.Score,
+        entry.Post.Url);
 
     private static string? NullIfBlank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

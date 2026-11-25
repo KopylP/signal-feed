@@ -1,5 +1,6 @@
 using PostAgent.Digest;
 using PostAgent.Digest.Infrastructure;
+using PostAgent.Shared.Chat;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Digest;
@@ -119,5 +120,46 @@ public class DigestReportTests
 
         Assert.Equal(new DigestSkipped(2, 3), report.Skipped);
         Assert.Equal(5, report.Skipped.Total);
+    }
+
+    [Fact]
+    public void The_snapshot_keeps_every_section_in_order_with_the_post_details()
+    {
+        var long_ = Post("src_9");
+        long_.Text = new string('я', 1000);
+        long_.Score = 8;
+        var items = new DigestItem[] { new(Post("src_1"), true), new(Post("src_2"), true), new(Post("src_3"), false), new(long_, true) };
+        var report = DigestReport.From(items, Summary(
+            headlines: [new("src_1", "Заголовок", "Суть", "Чому")],
+            forMarketplace: [new("src_2", "Для маркетплейсу", "Нотатка")],
+            notable: [new("src_3", "Увага", "Деталь")],
+            recommended: [new("src_9", "Прочитати")],
+            needsVerification: ["Чутка"]));
+
+        var snapshot = report.ToSnapshot(TestData.Now);
+
+        Assert.Equal("20261124080000", snapshot.ReportId);
+        Assert.Equal(TestData.Now, snapshot.CreatedAt);
+        Assert.Equal("Головне", snapshot.Overview);
+        Assert.Equal(["Чутка"], snapshot.NeedsVerification);
+        Assert.Equal(["Headlines", "ForMarketplace", "Notable", "Recommended"], snapshot.Entries.Select(e => e.Section));
+        var first = snapshot.Entries[0];
+        Assert.Equal(ChatPostId.Format(items[0].Post.ToRef()), first.PostId);
+        Assert.Equal(("Заголовок", "Суть", "Чому"), (first.Title, first.Text, first.Why));
+        Assert.Equal(items[0].Post.Url, first.Url);
+        Assert.Equal(items[0].Post.Source, first.Source);
+        Assert.Equal(items[0].Post.Score, first.Score);
+        Assert.Equal(300, snapshot.Entries[3].Excerpt.Length);
+        Assert.Equal(8, snapshot.Entries[3].Score);
+    }
+
+    [Fact]
+    public void A_plain_report_without_the_model_still_makes_a_snapshot()
+    {
+        var snapshot = DigestReport.Plain(Items).ToSnapshot(TestData.Now);
+
+        Assert.Null(snapshot.Overview);
+        Assert.Equal(4, snapshot.Entries.Count);
+        Assert.All(snapshot.Entries, e => Assert.Equal("Headlines", e.Section));
     }
 }

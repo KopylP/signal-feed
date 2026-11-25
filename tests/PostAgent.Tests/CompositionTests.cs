@@ -166,6 +166,7 @@ public class CompositionTests
         using var provider = BuildProvider();
 
         Assert.Contains(provider.GetServices<ICleanupTask>(), task => task is PostsCleanup);
+        Assert.Contains(provider.GetServices<ICleanupTask>(), task => task is ChatStateCleanup);
     }
 
     [Fact]
