@@ -23,6 +23,14 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 - Fixed an empty digest when the model named only unknown post ids: its posts were still marked as sent and lost. The digest now falls back to the plain list with the scoring reasons, as when OpenAI is down.
 - Fixed a manual `collect` (run-now) that overlapped the hourly collection using the Telegram session twice at once, which can make Telegram revoke the session. The second collection is now skipped with a warning in the log.
 
+## [v2026.11.24.43-plover] - 2026-11-24
+
+### Logic
+- **Digest text: one entry per event, no guesses about demand**
+  - Before: the same event reported by two channels got two entries, and «Чому важливо» sometimes guessed how a post could affect the catalog or demand
+  - After: one entry per event, with a note that other channels wrote about it too; «Чому важливо» must rest on what the post says, and without a basis for a link to the marketplace it says only what the news means for the SEO market
+  - Effect: a shorter digest without repeated news and with fewer speculative remarks
+
 ## [v2026.11.24.42-robin] - 2026-11-24
 
 ### Logic
