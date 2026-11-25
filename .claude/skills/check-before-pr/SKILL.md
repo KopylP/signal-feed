@@ -21,7 +21,7 @@ Do not run `terraform plan` or `apply`: they need Azure, and applying is the man
 
 Read the whole change: `git diff origin/main` (committed, staged and unstaged) and `git status --short` for untracked files. Answer each:
 
-1. **Docs current?** If settings, commands, variables, workflows or folder structure changed, are `README.md` and the `CLAUDE.md` of the changed folder (and the root one) updated in the same change?
+1. **Docs current?** Is all documentation current, as in the checklist of the `sdlc` skill ("Documentation is part of done"): the user and developer guides, diagrams, ADRs, `README.md`, the `CLAUDE.md` of the changed folder (and the root one), examples and the changelog, updated in the same change. A document that still describes the old behavior blocks the pull request; if you leave a diagram stale, say so. Original question: if settings, commands, variables, workflows or folder structure changed, are `README.md` and the `CLAUDE.md` of the changed folder (and the root one) updated in the same change?
 2. **ADR?** Is there a hard-to-reverse decision (hosting, storage model, identity, pipeline shape)? Use the `write-adr` skill.
 3. **Release impact?** The merge deploys and creates a release unless it only touches `docs/**`, `README.md`, `CHANGELOG.md`, `CLAUDE.md` files, `.claude/**` or `infra/**`.
    State which applies, and suggest a PR title that reads as a release note.

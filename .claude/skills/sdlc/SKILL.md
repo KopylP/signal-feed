@@ -24,7 +24,7 @@ otherwise do the step by hand as described here.
 | 4 | **Plan** | A change with several steps gets a short written plan; a one-file fix does not | `superpowers:writing-plans` |
 | 5 | **Build, test first** | Write the failing test, then the code. A bug fix comes with a test that fails without the fix | `tests/PostAgent.Tests/CLAUDE.md`, `superpowers:test-driven-development` |
 | 6 | **Verify** | Build, tests, format, and Terraform checks when `infra/` changed. Report what passed and what could not run | Commands in `CLAUDE.md`, `superpowers:verification-before-completion` |
-| 7 | **Document** | Update the guide that describes the change, `README.md` only if entry points moved, and the folder `CLAUDE.md` if a rule changed | `CLAUDE.md` (Keep the docs current) |
+| 7 | **Document** | **All documentation must be current after the change**, not only the guide you first thought of: go through the checklist in "Documentation is part of done" | below, `CLAUDE.md` (Keep the docs current) |
 | 8 | **Changelog** | Behavior, contract or setting changed: add a section named by a new word | `write-changelog` |
 | 9 | **Gate** | Run the pre-PR checks and answer the judgment questions | `check-before-pr` |
 | 10 | **Commit and push** | Commit by the rules below, push to your branch | below |
@@ -44,6 +44,19 @@ Go back one phase when a later phase shows a problem. Do not skip phases 6, 8 an
 - **Workflows:** change `.github/` only with the rules in `.github/CLAUDE.md`; run `python3 -m unittest discover -s .github/scripts` after touching the changelog script.
 - **Language:** English everywhere except the Telegram messages and the Ukrainian text the model returns.
 - **Personal data:** no phone numbers, emails or chat ids as defaults or examples.
+
+## Documentation is part of done
+
+A change is not finished while any document still describes the old behavior. Documentation is updated in the same commit as the code, and the gate (`check-before-pr`, question 1) asks whether it is current, so a stale document is a reason not to open the pull request.
+Do this before phase 9, in this order:
+
+1. **Search first, do not rely on memory.** Grep `docs/`, every `CLAUDE.md`, `README.md`, `prompts/` and `local.settings.json.example` for each name you added, renamed, moved or removed (types, settings, commands, folders, blob and table names, messages the bot sends). Every hit is either updated or consciously left.
+2. **User Guide** (what an operator sees): `overview`, `how-it-works`, `configuration` (every new or changed setting, with its default), `installation` and `handover` (steps, commands, resources), `troubleshooting` (a new symptom, cause or switch to turn the feature off).
+3. **Developer Guide** (how it is built): `architecture` (the flow, the data model table, identity and resources), `code-structure` (the folder tree and what each folder holds), `local-development` and `ci-cd` when commands or pipelines changed.
+4. **Diagrams** (`*.drawio.svg`): redraw one when the flow, a store or a component it shows has changed. If you do not redraw it, say so in your summary so the owner knows it is stale. Never leave a diagram silently wrong.
+5. **ADRs**: a new decision gets an ADR; a decision an accepted ADR describes that changed gets a dated note under its `Updates`, never a rewritten Decision.
+6. **Rules and examples**: the `CLAUDE.md` of the folder you touched (keep it short), `docs/README.md` if an entry point moved, `local.settings.json.example` and `infra/` for a setting, and `CHANGELOG.md` for anything that changes behavior, a contract or a setting.
+7. **Report it.** The final summary lists which documents were updated and which were deliberately not (and why). "No docs needed" is a claim to justify, not a default.
 
 ## Commit rules
 
@@ -80,6 +93,7 @@ Then hand over to `ship`. If a deploy or the app fails afterwards, use `triage-d
 | A new required setting merged together with the code that needs it | Phase 12: infra and secrets first, code after |
 | Tests added after the code, or none for a bug fix | Phase 5: the test fails first |
 | Docs, changelog or ADR in a later commit | Same commit as the change |
+| Updating the user guide only, and forgetting the developer guide, the folder tree, a diagram or `troubleshooting` | Run the search and the checklist in "Documentation is part of done" |
 | `git add -A` that picks up caches or local files | Stage by name; read `git status` |
 | Opening a pull request, merging or deploying unasked | Stop at a pushed branch; `ship` needs the owner's confirmation |
 | A model name in a commit, comment or title | Only the attribution trailers the session provides |
