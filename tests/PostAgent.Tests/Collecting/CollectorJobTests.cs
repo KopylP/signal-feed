@@ -13,16 +13,28 @@ public class CollectorJobTests
     private FakeScoringQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
     private readonly FakeCollectionLock _lock = new();
+    private FakeEffectiveOptions _effective = new(new AgentOptions());
 
     private CollectorJob CreateJob(string sources, FakeSourceReader reader, FakeSourceCursors cursors)
     {
-        var options = Microsoft.Extensions.Options.Options.Create(new AgentOptions { Sources = sources, ScoringBatchSize = 2 });
-        var collector = new SourceCollector(reader, _repo, cursors, _queue, options, NullLogger<SourceCollector>.Instance);
-        return new(collector, _lock, _notifier, options, NullLogger<CollectorJob>.Instance);
+        _effective = new FakeEffectiveOptions(new AgentOptions { Sources = sources, ScoringBatchSize = 2 });
+        var collector = new SourceCollector(reader, _repo, cursors, _queue, NullLogger<SourceCollector>.Instance);
+        return new(collector, _lock, _notifier, _effective, NullLogger<CollectorJob>.Instance);
     }
 
     private static Func<int, SourceBatch> Channel(string username, params int[] ids) =>
         _ => new SourceBatch(new SourceInfo(username, SourceType.Channel), ids.Select(i => Message(i)).ToList(), ids.Max());
+
+    [Fact]
+    public async Task Takes_one_snapshot_of_the_effective_options_for_all_sources()
+    {
+        var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 1), ["tech"] = Channel("tech", 1) });
+
+        await CreateJob("news,tech", reader, new FakeSourceCursors()).RunAsync(CancellationToken.None);
+
+        Assert.Equal(1, _effective.Reads);
+        Assert.Equal(2, reader.Reads.Count);
+    }
 
     [Fact]
     public async Task Skips_the_run_while_another_collection_holds_the_telegram_session()

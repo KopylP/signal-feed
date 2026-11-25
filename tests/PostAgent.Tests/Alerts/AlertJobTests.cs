@@ -16,11 +16,23 @@ public class AlertJobTests
     {
         var options = new AgentOptions { AlertSources = "chat", AlertTimeZone = "UTC" };
         configure?.Invoke(options);
-        return new AlertJob(repo, _notifier, Microsoft.Extensions.Options.Options.Create(options), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+        return new AlertJob(repo, _notifier, new FakeEffectiveOptions(options), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
     }
 
     private static PostEntity HotChatPost(string rowKey = "chat_1") =>
         Post(rowKey, score: 9, hoursAgo: 1, type: SourceType.Group, source: "chat");
+
+    [Fact]
+    public async Task Takes_one_snapshot_of_the_effective_options_and_uses_its_threshold()
+    {
+        var effective = new FakeEffectiveOptions(new AgentOptions { AlertSources = "chat", AlertTimeZone = "UTC", AlertThreshold = 10, BurstMinPosts = 1000 });
+        var job = new AlertJob(new InMemoryPostRepository(HotChatPost()), _notifier, effective, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+
+        await job.RunAsync(CancellationToken.None);
+
+        Assert.Empty(_notifier.Sent);
+        Assert.Equal(1, effective.Reads);
+    }
 
     [Fact]
     public async Task Sends_an_alert_and_marks_the_posts_as_sent_with_the_alert_time()

@@ -15,7 +15,7 @@ public class DigestJobTests
     private InMemoryChatStateStore _chatState = new();
 
     private DigestJob CreateJob(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
-        new(repo, summarizer, _notifier, _chatState, Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
+        new(repo, summarizer, _notifier, _chatState, new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
 
     private static IDigestSummarizer WithOverview(string overview, string text = "Пояснення") =>
         new FakeDigestSummarizer(items => new DigestReport(
@@ -25,6 +25,19 @@ public class DigestJobTests
 
     private static IDigestSummarizer Failing() =>
         new FakeDigestSummarizer(_ => throw new InvalidOperationException("model is down"));
+
+    [Fact]
+    public async Task Takes_one_snapshot_of_the_effective_options_and_uses_its_digest_size()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2), Post("b", score: 8, hoursAgo: 2));
+        var effective = new FakeEffectiveOptions(new AgentOptions { DigestSize = 1 });
+
+        await new DigestJob(repo, WithOverview("О"), _notifier, _chatState, effective, new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            .RunAsync(CancellationToken.None);
+
+        Assert.Single(Assert.Single(repo.SentMarks).Posts);
+        Assert.Equal(1, effective.Reads);
+    }
 
     [Fact]
     public async Task Sends_the_no_posts_message_when_there_is_nothing_to_send()
@@ -146,7 +159,7 @@ public class DigestJobTests
         var store = new OrderRecordingStore(() => repo.SentMarks.Count);
 
         await new DigestJob(repo, WithOverview("Огляд дня"), _notifier, store,
-            Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
             .RunAsync(CancellationToken.None);
 
         var report = Assert.Single(store.Started);
@@ -163,7 +176,7 @@ public class DigestJobTests
         var store = new OrderRecordingStore(() => 0) { Fail = true };
 
         await new DigestJob(repo, WithOverview("О"), _notifier, store,
-            Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
             .RunAsync(CancellationToken.None);
 
         Assert.Single(_notifier.Sent);

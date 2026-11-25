@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Notifications;
@@ -12,7 +11,7 @@ public sealed class DigestJob(
     IDigestSummarizer summarizer,
     ITelegramNotifier notifier,
     IChatStateStore chatState,
-    IOptions<AgentOptions> options,
+    IEffectiveOptions options,
     TimeProvider time,
     ILogger<DigestJob> log) : IJob
 {
@@ -20,10 +19,11 @@ public sealed class DigestJob(
 
     public async Task RunAsync(CancellationToken ct)
     {
+        var settings = await options.GetAsync(ct);
         var now = time.GetUtcNow();
 
         var recent = await posts.GetSinceAsync(DigestSelector.QueryStart(now), now, ct);
-        var items = DigestSelector.Build(recent, options.Value, now);
+        var items = DigestSelector.Build(recent, settings, now);
         var unscored = DigestSelector.CountUnscored(recent, now);
         if (items.Count == 0)
         {

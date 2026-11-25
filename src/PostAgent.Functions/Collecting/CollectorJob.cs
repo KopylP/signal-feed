@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using PostAgent.Shared.Common;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Notifications;
@@ -10,7 +9,7 @@ public sealed class CollectorJob(
     SourceCollector collector,
     ICollectionLock collectionLock,
     ITelegramNotifier notifier,
-    IOptions<AgentOptions> options,
+    IEffectiveOptions options,
     ILogger<CollectorJob> log) : IJob
 {
     private const int MinPauseMs = 1000;
@@ -28,15 +27,16 @@ public sealed class CollectorJob(
             return;
         }
 
+        var settings = await options.GetAsync(ct);
         var failures = new List<string>();
-        foreach (var (index, username) in options.Value.SourceList.Index())
+        foreach (var (index, username) in settings.SourceList.Index())
         {
             if (index > 0)
             {
                 await Task.Delay(Random.Shared.Next(MinPauseMs, MaxPauseMs), ct); // do not overload Telegram
             }
 
-            if (await TryCollectAsync(username, ct) is { } failure)
+            if (await TryCollectAsync(username, settings, ct) is { } failure)
             {
                 failures.Add(failure);
             }
@@ -49,11 +49,11 @@ public sealed class CollectorJob(
         }
     }
 
-    private async Task<string?> TryCollectAsync(string username, CancellationToken ct)
+    private async Task<string?> TryCollectAsync(string username, AgentOptions settings, CancellationToken ct)
     {
         try
         {
-            await collector.CollectAsync(username, ct);
+            await collector.CollectAsync(username, settings, ct);
             return null;
         }
         catch (SourceThrottledException ex)
