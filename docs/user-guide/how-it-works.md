@@ -5,15 +5,7 @@ Setting names (in `code`) are explained in [Configuration](configuration.md). Th
 
 ## The life of a post
 
-```mermaid
-graph LR
-    TG["Telegram<br/>channels and groups"] -->|"every hour"| COL["1. Collect"]
-    COL --> SCO["2. Score with AI<br/>against your rules"]
-    SCO -->|"very important or burst<br/>(groups only)"| ALR["Instant alert"]
-    SCO -->|"once a day"| DIG["3. Daily digest"]
-    ALR --> YOU["You, in Telegram"]
-    DIG --> YOU
-```
+![The life of a post: Telegram, collect, score with AI, then an instant alert or the daily digest to you in Telegram](images/life-of-a-post.drawio.svg)
 
 1. **Collect.** Every hour the agent reads new messages from your sources. The first time it sees a source, it reads the last 24 hours.
 2. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.

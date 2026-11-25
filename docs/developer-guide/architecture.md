@@ -13,13 +13,7 @@ Resources talk to each other with managed identity and RBAC: there are no keys o
 
 ## System context
 
-```mermaid
-graph LR
-    OP["Operator"] -->|"terraform, deploy, TgLogin"| SYS
-    TG["Telegram<br/>MTProto"] -->|"messages"| SYS["Signal Feed<br/>Function App"]
-    SYS -->|"digest, alerts<br/>Bot API"| USER["Reader in Telegram"]
-    SYS -->|"score, summarize"| OAI["OpenAI API"]
-```
+![System context: the operator provisions and deploys the Function App, Telegram and OpenAI talk to it, the reader gets the digest in Telegram](images/system-context.drawio.svg)
 
 ## Runtime components
 
@@ -34,35 +28,13 @@ graph LR
 | `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`; today it deletes days older than `RetentionDays` from `Posts` |
 | `RunNowFunction` | queue `run-now` | Starts a job by name (`collect`, `digest`, `alert`, `cleanup`) for testing, only when `ManualRunsEnabled` is true. The timer functions and this one call the same `IJob` class, so the logic exists once |
 
-```mermaid
-graph LR
-    COL["Collector<br/>hourly"] -->|"write"| POSTS[("Posts table")]
-    COL -->|"batches"| Q[["to-score queue"]]
-    COL <-->|"read cursors"| CS[("ChannelState table")]
-    COL <-->|"MTProto session"| SES[("session blob")]
-    Q --> SCO["Scorer<br/>OpenAI"]
-    SCO -->|"scores"| POSTS
-    POSTS --> ALR["Alert<br/>hourly, groups only"]
-    POSTS --> DIG["Digest<br/>daily"]
-    ALR -->|"Bot API"| TG(["Telegram chat"])
-    DIG -->|"Bot API"| TG
-    DIG -->|"summary"| OAI["OpenAI"]
-    CLN["Cleanup<br/>daily"] -->|"delete old days"| POSTS
-```
+![Functions and their links: the digest pipeline (Collector, Scorer, Digest, Alert, Cleanup), the chat and bot control (Pairing, Chat) and RunNow, with the queues, tables and blobs between them](images/functions.drawio.svg)
+
+Blue lines go to Telegram, green lines to OpenAI, dashed lines are reads or side effects. Every diagram here is a draw.io file: open the `.drawio.svg` in [draw.io](https://app.diagrams.net), edit it and save it under the same name.
 
 ### Chat about the digest
 
-```mermaid
-graph LR
-    R(["Reader"]) -->|"question"| WH["Webhook<br/>checks secret and chat"]
-    WH --> CQ[["chat-messages queue"]]
-    CQ --> CH["ChatFunction<br/>agent + tools"]
-    CH <-->|"conversation"| CS[("chat-state blob")]
-    CH -->|"get_post, search_posts"| POSTS[("Posts table")]
-    CH -->|"model"| OAI["OpenAI<br/>OpenAIChatModel"]
-    CH -->|"answer"| R
-    DIG["Digest"] -->|"new snapshot replaces it"| CS
-```
+![Chat about the digest: question, webhook, chat-messages queue, Chat function with its tools, chat-state blob replaced by every new digest](images/chat-flow.drawio.svg)
 
 The webhook only checks and queues, so Telegram gets its answer fast and does not resend. `ChatProcessor` asks the model, saves the conversation with the blob ETag and only then sends the answer: a failed save never repeats a send.
 Handled update ids are a set of the last 20 (not a watermark): messages run in parallel and Telegram may restart its ids. A new digest or a cleanup that replaces the blob makes a running turn drop its answer.
@@ -104,52 +76,9 @@ Everything lives in one resource group `rg-<prefix>`. Names follow `<abbreviatio
 
 Secrets in Key Vault (set by hand, never by Terraform): `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`, `TelegramPairingKey`, `TelegramWebhookSecret`.
 
-```mermaid
-graph LR
-    subgraph EXT["External services"]
-        TG["Telegram<br/>MTProto + Bot API"]
-        OAI["OpenAI API<br/>Structured Outputs"]
-        ADM["Operator<br/>terraform / CI deployer"]
-    end
+![Azure architecture of Signal Feed: one resource group with the Function App on a Flex Consumption plan, the storage account, Key Vault, Application Insights with Log Analytics and the budget, and the external Telegram, OpenAI and deployer](images/azure-architecture.drawio.svg)
 
-    subgraph RG["Resource group rg-prefix"]
-        subgraph COMPUTE["Compute"]
-            PLAN["plan-prefix<br/>Flex Consumption FC1"]
-            FUNC["func-prefix<br/>dotnet-isolated, 512 MB, max 10<br/>Collector, Scorer, Alert, Digest, Cleanup, Pairing"]
-            PLAN --> FUNC
-        end
-
-        subgraph DATA["Data: storage account st..."]
-            TBL["Tables<br/>Posts, ChannelState, ChatBinding"]
-            QUE["Queue<br/>to-score, to-score-poison"]
-            BLB["Blob containers<br/>deployment-package, session"]
-        end
-
-        subgraph SEC["Security"]
-            KV["Key Vault kv-prefix<br/>RBAC, soft delete 7d<br/>OpenAIApiKey, TelegramBotToken,<br/>TelegramApiHash, TelegramPairingKey,<br/>TelegramWebhookSecret"]
-        end
-
-        subgraph MON["Monitoring and cost"]
-            AI["Application Insights<br/>appi-prefix"]
-            LOG["Log Analytics log-prefix<br/>30d, 0.1 GB/day cap"]
-            BUD["Budget<br/>monthly, 80% / 100% email"]
-            AI --> LOG
-        end
-    end
-
-    FUNC ==>|"Table Data Contributor"| TBL
-    FUNC ==>|"Queue Data Contributor"| QUE
-    FUNC ==>|"Blob Data Owner"| BLB
-    FUNC -->|"Secrets User, Key Vault references"| KV
-    FUNC -->|"telemetry"| AI
-    FUNC ==>|"reads channels and groups"| TG
-    FUNC ==>|"digest and alerts"| TG
-    TG ==>|"webhook: /start key"| FUNC
-    FUNC -->|"scoring and summary"| OAI
-    ADM -.->|"Secrets Officer"| KV
-    ADM -.->|"Blob Data Contributor, code deploy"| BLB
-    BUD -.->|"scope"| RG
-```
+The Azure icons come from draw.io's built-in `azure2` library.
 
 ## Identity and access
 
