@@ -10,8 +10,12 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 
 ## [willow] - 2026-11-25
 
+### Improved
+- The live answer shows its text only from the third word, and a text that arrived inside the 0.7 s window before a pause is no longer lost: it is sent when the window is over
+- The preview is sent again every 20 s while the model thinks, with a check every 5 s, so it no longer disappears for up to 40 s
+
 ### Fixed
-- **The live answer shows a placeholder first**: an empty draft was not displayed as «Thinking…» by the clients, so the preview now starts with «💭 Думаю…» and shows the text only once it has three words, instead of jumping on the first one or two
+- Fixed the live answer showing nothing before its first words: the preview now starts with «💭 Думаю…» (the clients we tried displayed nothing for an empty draft)
 
 ## [v2026.11.25.70-bramble] - 2026-11-25
 

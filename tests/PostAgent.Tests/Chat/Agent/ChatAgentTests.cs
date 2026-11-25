@@ -83,6 +83,18 @@ public class ChatAgentTests
     }
 
     [Fact]
+    public async Task An_answer_of_two_words_keeps_the_placeholder_and_still_comes_back_whole()
+    {
+        var drafts = new RecordingDrafts();
+        var client = new ScriptedChatClient(Reply("Так, звісно"));
+
+        var reply = await Create(client, drafts: drafts).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("Так, звісно", reply.Text);
+        Assert.Equal([ChatDraftStream.Placeholder], drafts.Sent.Select(d => d.Text));
+    }
+
+    [Fact]
     public async Task With_streaming_off_there_are_no_drafts_and_the_answer_is_the_same()
     {
         var drafts = new RecordingDrafts();
