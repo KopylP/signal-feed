@@ -13,7 +13,7 @@ public sealed class ChatDraftStream(IChatDrafts drafts, TimeProvider time, ILogg
     public static readonly TimeSpan KeepAliveCheckEvery = TimeSpan.FromSeconds(5);
 
     // What the preview says until there is something worth reading. The clients we tried showed nothing for an empty draft, so it says "thinking" itself.
-    public const string Placeholder = "💭 Думаю…";
+    public const string Placeholder = "💭 Думаю";
 
     // A text of one or two words is not shown: it jumps and says nothing, so the placeholder stays until the third word.
     public const int MinWords = 3;
