@@ -4,7 +4,7 @@ Resource names and variables are described in `docs/user-guide/installation.md`.
 
 ## Rules
 
-- Terraform never creates secret values (OpenAI, Telegram) and never stores them in state: App Settings only carry Key Vault references.
+- Terraform never creates secret values (OpenAI, Telegram) and never stores them in state: App Settings only carry Key Vault references. The one key it creates, `tg-session`, is generated inside Key Vault (ADR-0017).
 - Access between resources goes through managed identity and RBAC (`roles.tf`), without keys or connection strings.
 - Names: `<abbreviation>-${var.name_prefix}` (`rg-`, `plan-`, `log-`, `appi-`, `budget-`). Globally unique ones (`st`, `kv-`, `func-`) get `local.suffix`.
 - A new variable has a `description`, a type, and a `default` when the value is non-secret and the same for everyone. Personal data (phone, email, chat id) gets no `default` (the chat id: an empty one) and is `sensitive = true`; the workflow reads it from GitHub Secrets.

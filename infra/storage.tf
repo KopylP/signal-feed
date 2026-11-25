@@ -61,3 +61,9 @@ resource "azurerm_storage_queue" "run_now" {
   name               = "run-now"
   storage_account_id = azurerm_storage_account.main.id
 }
+
+# Sign-ins started from the bot with /login (ADR-0016).
+resource "azurerm_storage_queue" "tg_login" {
+  name               = "tg-login"
+  storage_account_id = azurerm_storage_account.main.id
+}
