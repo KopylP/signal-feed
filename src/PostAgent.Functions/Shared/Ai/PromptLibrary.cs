@@ -5,11 +5,23 @@ public sealed class PromptLibrary
 {
     public static readonly IReadOnlyList<string> Names = ["scoring", "digest", "chat"];
 
-    private readonly Dictionary<string, string> _files = Names.ToDictionary(n => n, n => Prompts.Load(n + ".md"));
+    // Line endings are normalized: a checkout with CRLF must not stop a multi-line fragment from matching.
+    private readonly Dictionary<string, string> _files = Names.ToDictionary(n => n, n => Prompts.Load(n + ".md").Replace("\r\n", "\n", StringComparison.Ordinal));
 
     public PromptLibrary()
     {
         Sections = Names.SelectMany(n => PromptTemplate.Sections(n + ".md", _files[n])).ToList();
+
+        // A broken marker (a missing closing one, an empty section) would leave markers in the prompt or swallow fixed text: fail at startup, not in production.
+        foreach (var name in Names)
+        {
+            var markers = System.Text.RegularExpressions.Regex.Count(_files[name], "<!--\\s*editable:");
+            var found = Sections.Count(s => s.File == name + ".md");
+            if (markers != found || Sections.Any(s => s.Default.Contains("<!--", StringComparison.Ordinal)))
+            {
+                throw new InvalidOperationException($"The editable sections of prompts/{name}.md are not marked correctly.");
+            }
+        }
     }
 
     public IReadOnlyList<PromptSection> Sections { get; }

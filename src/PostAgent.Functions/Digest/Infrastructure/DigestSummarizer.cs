@@ -8,7 +8,6 @@ public sealed class DigestSummarizer(IChatClient chat, IPromptProvider prompts) 
 {
     private const int MaxTextChars = 1500;
 
-
     public async Task<DigestReport> SummarizeAsync(IReadOnlyList<DigestItem> items, CancellationToken ct)
     {
         var summary = await chat.AskAsync<DigestSummary>(await prompts.GetAsync("digest.md", ct), ToUserMessage(items), ct);

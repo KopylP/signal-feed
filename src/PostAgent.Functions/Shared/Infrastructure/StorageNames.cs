@@ -15,7 +15,9 @@ public static class StorageNames
     public static string ChatStateBlobName(long chatId) => chatId.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".json";
     public const string SettingsContainer = "settings";
     public const string SettingsBlob = "overrides.json";
-    public const string ProfileBlob = "profile.txt";
+
+    // What one chat's reader wrote about themselves: a chat never reads another chat's profile.
+    public static string ProfileBlobName(long chatId) => $"profile/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.txt";
     public const string SessionBlob = "wtelegram.session";
     public const string CollectionLockBlob = "collect.lock";
     public const string DefaultSessionContainer = "tg-session";

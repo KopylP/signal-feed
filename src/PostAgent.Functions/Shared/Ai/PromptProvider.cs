@@ -2,10 +2,12 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Shared.Ai;
 
-// Reads the overrides blob for the edits, with a short cache: the scorer asks once per queue message. A blob that cannot be read means the shipped prompt.
-public sealed class PromptProvider(PromptLibrary library, IOverridesStore store, TimeProvider time) : IPromptProvider
+// Reads the overrides blob for the edits, with a short cache: the scorer asks once per queue message.
+// A blob that cannot be read or parsed means the shipped prompt, so a storage error never stops a model call.
+public sealed class PromptProvider(PromptLibrary library, IOverridesStore store, TimeProvider time, ILogger<PromptProvider> log) : IPromptProvider
 {
-    private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan CacheFailureFor = TimeSpan.FromSeconds(5);
 
     private readonly Lock _gate = new();
     private (IReadOnlyDictionary<string, string>? Value, DateTimeOffset Expires)? _cached;
@@ -26,10 +28,21 @@ public sealed class PromptProvider(PromptLibrary library, IOverridesStore store,
             }
         }
 
-        var value = (await store.LoadAsync(ct))?.Value.PromptSections;
+        IReadOnlyDictionary<string, string>? value = null;
+        var keepFor = CacheFor;
+        try
+        {
+            value = (await store.LoadAsync(ct))?.Value.PromptSections;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "The prompt edits could not be read, using the shipped prompts");
+            keepFor = CacheFailureFor;
+        }
+
         lock (_gate)
         {
-            _cached = (value, time.GetUtcNow() + CacheFor);
+            _cached = (value, time.GetUtcNow() + keepFor);
         }
 
         return value;

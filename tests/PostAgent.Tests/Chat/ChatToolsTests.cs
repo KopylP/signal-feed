@@ -11,7 +11,7 @@ namespace PostAgent.Tests.Chat;
 public class ChatToolsTests
 {
     private static ToolShim Create(InMemoryPostRepository repo, Action<AgentOptions>? configure = null) =>
-        new(new PostAgent.Tests.SettingsMenu.MenuHarness(configure) { Posts = repo }.ToolsFactory.Create([]));
+        new(new PostAgent.Tests.SettingsMenu.MenuHarness(configure) { Posts = repo }.ToolsFactory.Create([], TestData.ChatId));
 
     private static PostEntity Found(string rowKey, string text, double hoursAgo = 1)
     {

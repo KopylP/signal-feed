@@ -35,7 +35,7 @@ public class ChatModelRequestTests
         var options = Microsoft.Extensions.Options.Options.Create(settings);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(state, "питання", CancellationToken.None);
+        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(ChatId, state, "питання", CancellationToken.None);
         return (handler, reply);
     }
 
@@ -84,10 +84,10 @@ public class ChatModelRequestTests
         var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var first = await agent.AskAsync(state, "перше", CancellationToken.None);
+        var first = await agent.AskAsync(ChatId, state, "перше", CancellationToken.None);
         var stored = ChatStateJson.Write(state.WithProcessed(1, first.Session));
         Assert.True(ChatStateJson.TryRead(stored, out var reloaded));
-        var second = await agent.AskAsync(reloaded, "друге", CancellationToken.None);
+        var second = await agent.AskAsync(ChatId, reloaded, "друге", CancellationToken.None);
 
         Assert.Equal("Перша відповідь", first.Text);
         Assert.Equal("Друга відповідь", second.Text);

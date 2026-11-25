@@ -6,7 +6,7 @@ namespace PostAgent.Tests.Chat;
 
 public class ChatToolRegistrationTests
 {
-    private static IReadOnlyList<AIFunction> Functions() => new MenuHarness().ToolsFactory.Create([]);
+    private static IReadOnlyList<AIFunction> Functions() => new MenuHarness().ToolsFactory.Create([], TestData.ChatId);
 
     [Fact]
     public void Every_tool_class_in_the_assembly_is_a_tool_of_the_agent()
@@ -34,5 +34,22 @@ public class ChatToolRegistrationTests
         Assert.Equal("The fragment to replace, copied exactly.", properties.GetProperty("old_text").GetProperty("description").GetString());
         Assert.False(properties.TryGetProperty("ct", out _));
         Assert.False(string.IsNullOrWhiteSpace(edit.Description));
+    }
+
+    [Fact]
+    public void Every_tool_and_every_parameter_has_a_description()
+    {
+        foreach (var tool in Functions())
+        {
+            Assert.False(string.IsNullOrWhiteSpace(tool.Description), tool.Name);
+            if (tool.JsonSchema.TryGetProperty("properties", out var properties))
+            {
+                foreach (var property in properties.EnumerateObject())
+                {
+                    Assert.True(property.Value.TryGetProperty("description", out _), $"{tool.Name}.{property.Name}");
+                    Assert.NotEqual("ct", property.Name);
+                }
+            }
+        }
     }
 }

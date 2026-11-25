@@ -18,7 +18,7 @@ The agent changes a section only with a reviewed edit: `propose_prompt_edit(sect
 (built by code, in the proposal message) and applies it with the same button as any settings plan. Up to three text edits per plan; a section keeps no headings or markers and is never empty; `propose_prompt_reset` restores the default.
 The agent reads any prompt with `get_prompt(name)`, with the editable sections named.
 
-The **reader profile** is a separate plain-text blob, `settings/profile.txt`, written with an ETag. The chat adds it to its instructions inside `<about_me>` (escaped, as data) for every question.
+The **reader profile** is a separate plain-text blob per chat, `settings/profile/<chat id>.txt` (one chat never sees another's), written with an ETag. The chat adds it to its instructions inside `<about_me>` (escaped, as data) for every question.
 It is changed through the same reviewed edit (`propose_profile_edit`), in a plan of its own: it is written after the proposal is taken out, so a tap never applies it twice.
 
 ## Options considered
@@ -30,9 +30,9 @@ It is changed through the same reviewed edit (`propose_profile_edit`), in a plan
 
 ## Consequences
 
-The base instructions (schemas, limits, the data rules, tool names) cannot be changed from the bot, only from the repository. The agent can only follow the owner's own message: text in a post never reaches the edit tools by design, and the confirmation is built from the stored edit.
+The base instructions (schemas, limits, the data rules, tool names) cannot be changed from the bot, only from the repository. The model could be influenced by text it reads (a post, a quote, a tool result), so the guard is twofold, as in ADR-0013: `chat.md` says that only the reader's own message can ask for an edit, and nothing is applied without the owner's tap on a confirmation built by code from the stored edit. The effect of a bad edit lasts longer than a setting, which is why the exact before and after is shown.
 An edited prompt is still model input: a section that makes the model score everything 10 is possible, and "reset" or an edit back fixes it. Reset-all returns the prompts to the shipped text but leaves the profile.
-A change applies to the next model call (the provider caches the blob for 30 seconds). New markers in a prompt file are a code change, and `PromptTemplateTests` keeps the safety rules outside the sections.
+A prompt edit applies within 10 seconds (the provider caches the blob; a profile edit applies at once). A pending profile edit sits in `overrides.json` as a proposal until it is applied or expires, and "reset all" clears the proposals. A section whose shipped text is improved later keeps the owner's text; "reset" returns it to the new default. New markers in a prompt file are a code change, and `PromptTemplateTests` keeps the safety rules outside the sections.
 The profile is personal data in a blob (never in the repository). Revisit if the profile should also reach scoring and the digest.
 
 ## Updates

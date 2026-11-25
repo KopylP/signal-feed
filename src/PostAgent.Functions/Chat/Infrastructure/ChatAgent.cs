@@ -19,11 +19,11 @@ public sealed class ChatAgent(
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
-    public async Task<ChatReply> AskAsync(ChatState state, string userText, CancellationToken ct)
+    public async Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, CancellationToken ct)
     {
         var settings = await options.GetAsync(ct);
         var draft = new List<SettingChange>();
-        var agent = CreateAgent(settings, toolFactory.Create(draft), await InstructionsAsync(ct));
+        var agent = CreateAgent(settings, toolFactory.Create(draft, chatId), await InstructionsAsync(chatId, ct));
 
         var (session, hasHistory) = await OpenSessionAsync(agent, state.Session, ct);
         var messages = new List<ChatMessage>();
@@ -46,11 +46,11 @@ public sealed class ChatAgent(
         return new ChatReply(response.Text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
     }
 
-    // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question, so an edit applies at once.
-    private async Task<string> InstructionsAsync(CancellationToken ct)
+    // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question: a profile edit applies at once, a prompt edit within the cache time of the provider.
+    private async Task<string> InstructionsAsync(long chatId, CancellationToken ct)
     {
         var instructions = await prompts.GetAsync("chat.md", ct);
-        var about = (await profile.LoadAsync(ct))?.Text;
+        var about = (await profile.LoadAsync(chatId, ct))?.Text;
         return string.IsNullOrWhiteSpace(about) ? instructions : instructions + "\n\n## About the reader\n" + DataBlock.Wrap("about_me", about.Trim());
     }
 

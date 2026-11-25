@@ -125,11 +125,11 @@ Everything else (the output fields and limits, the rules that treat post text as
 - Ask what is in a prompt: «що в мене в промпті оцінювання?». The agent reads it (`get_prompt`) and tells you, naming the sections you can change.
 - Ask for a change: «додай у мої інтереси Bing та Yandex». The agent finds the section and proposes **one fragment replaced by another**. The bot then sends «⚙️ Агент пропонує змінити налаштування» with the exact old text (−) and the new text (+) and the buttons «✅ Застосувати» / «✖ Скасувати». Nothing changes until you tap.
 - A plan holds at most 3 text edits, each fragment up to 500 characters, a section up to 2000. A section cannot get headings and cannot be empty; to go back, ask «поверни стандартний промпт секції …» (a reset).
-- The change applies from the next model call. «Скинути все» in `/settings` returns the prompts to the shipped text.
+- The change applies within about 10 seconds. «Скинути все» in `/settings` returns the prompts to the shipped text.
 
 ### About me
 
-A short text about you (your work, goals, what you do not care about) that the chat always sees as context, so answers fit you. It is stored in its own blob (`settings/profile.txt`), not in the settings, and «Скинути все» does not clear it.
+A short text about you (your work, goals, what you do not care about) that the chat always sees as context, so answers fit you. It is stored per chat in its own blob (`settings/profile/<chat id>.txt`), not in the settings: every paired chat has its own and never sees another's, and «Скинути все» does not clear it.
 Tell the agent: «запам'ятай, що я працюю над каталогом майданчиків», or ask what it knows: «що ти про мене знаєш?». Changes work like prompt edits: the agent proposes an exact before and after, and you confirm with the button. The profile is used by the chat only, not by scoring or the digest.
 
 ### Prompt files

@@ -67,11 +67,20 @@ public static class TextEdit
             return "Секція не може бути порожньою. Скинь її до стандартної.";
         }
 
-        if (text.Contains("<!--", StringComparison.Ordinal) || text.Split('\n').Any(l => l.TrimStart().StartsWith('#')))
+        var lines = text.Replace("\r\n", "\n").Split('\n', '\r', '\u2028', '\u2029', '\u0085');
+        var markers = new[] { "<!--", "[editable section", "[end of section]" };
+        if (markers.Any(m => text.Contains(m, StringComparison.Ordinal)) || lines.Any(l => l.TrimStart().StartsWith('#') || IsRule(l)))
         {
-            return "У секції не можна додавати заголовки (#) та службові маркери.";
+            return "У секції не можна додавати заголовки (#, ===, ---) та службові маркери.";
         }
 
         return null;
+    }
+
+    // A line of only "=" or "-" turns the line above it into a heading, or draws a rule.
+    private static bool IsRule(string line)
+    {
+        var trimmed = line.Trim();
+        return trimmed.Length >= 3 && trimmed.All(c => c is '=' or '-');
     }
 }

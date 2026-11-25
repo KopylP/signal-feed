@@ -90,8 +90,8 @@ public class SettingsProposalTests
     [Fact]
     public async Task The_dry_run_saves_nothing_and_reports_the_problem()
     {
-        var bad = await _h.Editor.CheckAsync([Set("DigestSize", "9999")], CancellationToken.None);
-        var good = await _h.Editor.CheckAsync([Set("DigestSize", "8")], CancellationToken.None);
+        var bad = await _h.Editor.CheckAsync([Set("DigestSize", "9999")], TestData.ChatId, CancellationToken.None);
+        var good = await _h.Editor.CheckAsync([Set("DigestSize", "8")], TestData.ChatId, CancellationToken.None);
 
         Assert.False(bad.Ok);
         Assert.True(good.Ok);

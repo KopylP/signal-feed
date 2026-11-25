@@ -7,15 +7,15 @@ namespace PostAgent.Shared.Settings.Infrastructure;
 
 public sealed class BlobProfileStore(BlobServiceClient blobs) : IProfileStore
 {
-    private readonly BlobClient _blob = blobs
+    private BlobClient Blob(long chatId) => blobs
         .GetBlobContainerClient(StorageNames.SettingsContainer)
-        .GetBlobClient(StorageNames.ProfileBlob);
+        .GetBlobClient(StorageNames.ProfileBlobName(chatId));
 
-    public async Task<ProfileHandle?> LoadAsync(CancellationToken ct)
+    public async Task<ProfileHandle?> LoadAsync(long chatId, CancellationToken ct)
     {
         try
         {
-            var result = (await _blob.DownloadContentAsync(ct)).Value;
+            var result = (await Blob(chatId).DownloadContentAsync(ct)).Value;
             return new ProfileHandle(result.Content.ToString(), result.Details.ETag.ToString());
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
@@ -24,14 +24,14 @@ public sealed class BlobProfileStore(BlobServiceClient blobs) : IProfileStore
         }
     }
 
-    public async Task<bool> TrySaveAsync(ProfileHandle? current, string text, CancellationToken ct)
+    public async Task<bool> TrySaveAsync(long chatId, ProfileHandle? current, string text, CancellationToken ct)
     {
         var conditions = current is null
             ? new BlobRequestConditions { IfNoneMatch = ETag.All }
             : new BlobRequestConditions { IfMatch = new ETag(current.ETag) };
         try
         {
-            await _blob.UploadAsync(BinaryData.FromString(text), new BlobUploadOptions { Conditions = conditions }, ct);
+            await Blob(chatId).UploadAsync(BinaryData.FromString(text), new BlobUploadOptions { Conditions = conditions }, ct);
             return true;
         }
         catch (RequestFailedException ex) when (ex.Status is 404 or 409 or 412)

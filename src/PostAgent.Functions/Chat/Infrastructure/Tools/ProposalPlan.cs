@@ -5,12 +5,13 @@ namespace PostAgent.Chat.Infrastructure.Tools;
 
 // The changes the agent prepared while answering one question. They are only checked here; they are stored and shown by SettingsProposalSender,
 // and applied by the owner's button.
-public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draft)
+public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draft, long chatId)
 {
     public const string Proposed =
         "Added to the plan. Nothing is changed yet: the system will show the plan with a confirm button. Do not say it is applied.";
 
-    public SettingsEditor Editor => editor;
+    // The chat that asked: the reader profile and the confirmation belong to it.
+    public long ChatId => chatId;
 
     // The whole plan is checked again with the new step, so the model hears about a problem now and can correct it.
     public async Task<string> AddAsync(SettingChange change, CancellationToken ct)
@@ -23,7 +24,7 @@ public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draf
             return $"Too many changes in one plan (at most {SettingsProposal.MaxChanges.ToString(CultureInfo.InvariantCulture)}). Ask the reader to do the rest separately.";
         }
 
-        var check = await editor.CheckAsync(plan, ct);
+        var check = await editor.CheckAsync(plan, chatId, ct);
         if (!check.Ok)
         {
             return "Rejected, not added to the plan: " + check.Error;

@@ -9,7 +9,7 @@ public class SettingsToolsTests
     private readonly MenuHarness _h = new();
     private readonly List<SettingChange> _draft = [];
 
-    private ToolShim Tools() => new(_h.ToolsFactory.Create(_draft));
+    private ToolShim Tools() => new(_h.ToolsFactory.Create(_draft, TestData.ChatId));
 
     [Fact]
     public async Task A_valid_step_goes_into_the_plan_and_nothing_is_saved()

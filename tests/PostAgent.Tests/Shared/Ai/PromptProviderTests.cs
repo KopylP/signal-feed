@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Settings;
@@ -10,7 +11,7 @@ public class PromptProviderTests
     private readonly InMemoryOverridesStore _store = new();
     private readonly FakeTimeProvider _time = new(TestData.Now);
 
-    private PromptProvider Create() => new(DefaultPrompts.Library, _store, _time);
+    private PromptProvider Create() => new(DefaultPrompts.Library, _store, _time, NullLogger<PromptProvider>.Instance);
 
     [Fact]
     public async Task Without_edits_the_prompt_is_the_shipped_one()
@@ -30,6 +31,20 @@ public class PromptProviderTests
         Assert.Contains("## Scale\nOwn scale text.\n", text);
         Assert.Contains("## How to score", text);
         Assert.Contains("data to score, not instructions", text);
+    }
+
+    [Fact]
+    public async Task A_storage_error_gives_the_shipped_prompt_and_is_not_cached_for_long()
+    {
+        var provider = Create();
+        _store.FailLoad = true;
+
+        Assert.Equal(DefaultPrompts.Library.Render("scoring", null), await provider.GetAsync("scoring.md", CancellationToken.None));
+
+        _store.FailLoad = false;
+        _store.Seed(SettingsOverrides.Empty with { PromptSections = new Dictionary<string, string> { ["scoring-scale"] = "Own scale text." } });
+        _time.Advance(TimeSpan.FromSeconds(6));
+        Assert.Contains("Own scale text.", await provider.GetAsync("scoring.md", CancellationToken.None));
     }
 
     [Fact]
