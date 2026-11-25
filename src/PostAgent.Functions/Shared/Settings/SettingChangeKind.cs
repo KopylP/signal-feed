@@ -11,4 +11,5 @@ public enum SettingChangeKind
     EditPrompt,
     ResetPrompt,
     EditProfile,
+    ClearContext,
 }

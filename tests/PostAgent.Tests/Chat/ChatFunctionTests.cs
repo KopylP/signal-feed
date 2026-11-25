@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Chat;
+using PostAgent.Chat.Answering;
+using PostAgent.Chat.Intake;
 using PostAgent.Shared.Chat;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
@@ -14,7 +16,7 @@ public class ChatFunctionTests
     private readonly FakeChatAgent _agent = new(_ => "відповідь");
 
     private ChatFunction Create() =>
-        new(new ChatProcessor(_state, _agent, _notifier, new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance),
+        new(new ChatProcessor(_state, _agent, new ChatDelivery(_notifier, new FakeTimeProvider(Now), NullLogger<ChatDelivery>.Instance), new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, NullLogger<ChatProcessor>.Instance),
             NullLogger<ChatFunction>.Instance);
 
     [Fact]

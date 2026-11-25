@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Ai;
+using PostAgent.Shared.Chat;
 
 namespace PostAgent.Shared.Settings;
 
@@ -10,6 +11,7 @@ public sealed class SettingsEditor(
     IEffectiveOptions effective,
     PromptLibrary prompts,
     IProfileStore profile,
+    IChatStateStore chats,
     ILogger<SettingsEditor> log)
 {
     private const int MaxAttempts = 3;
@@ -75,6 +77,19 @@ public sealed class SettingsEditor(
         }
 
         return await TryEditProfileAsync(changes, chatId, ct) is { Error: { } profileError } ? EditResult.Fail(profileError) : EditResult.Success;
+    }
+
+    private async Task<bool> TryClearConversationAsync(long chatId, CancellationToken ct)
+    {
+        try
+        {
+            return await chats.ClearConversationAsync(chatId, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogError(ex, "The conversation could not be cleared");
+            return false;
+        }
     }
 
     // A storage error is reported like a lost race: the proposal is already taken out, so the owner must hear that nothing was changed.
@@ -174,6 +189,8 @@ public sealed class SettingsEditor(
             _ when error is not null => new ProposalOutcome(ProposalStatus.Failed, found, error),
             _ when profileEdit.Text is not null && !await TrySaveProfileAsync(chatId, profileEdit.Handle, profileEdit.Text, ct) =>
                 new ProposalOutcome(ProposalStatus.Failed, found, "Не вдалося зберегти профіль, попроси агента ще раз."),
+            _ when found.Changes.Any(c => c.Kind == SettingChangeKind.ClearContext) && !await TryClearConversationAsync(chatId, ct) =>
+                new ProposalOutcome(ProposalStatus.Failed, found, "Не вдалося очистити контекст, спробуй /clear."),
             _ => new ProposalOutcome(ProposalStatus.Applied, found),
         };
     }
@@ -322,7 +339,8 @@ public sealed class SettingsEditor(
                     : o;
 
             case SettingChangeKind.EditProfile:
-                // The profile is its own blob, written by ApplyProposalAsync.
+            case SettingChangeKind.ClearContext:
+                // Not a setting: the profile and the conversation are their own blobs, written by ApplyProposalAsync.
                 return o;
 
             default:

@@ -9,6 +9,9 @@ public interface IChatStateStore
     // Replaces the whole conversation of the chat with a new digest. Unconditional on purpose: a digest must win over a turn that is running.
     Task StartNewAsync(long chatId, ReportSnapshot report, CancellationToken ct);
 
+    // Creates the conversation of a chat that has none yet (no digest was sent). False when one already exists, so a digest that arrived first is never replaced.
+    Task<bool> TryStartAsync(long chatId, ReportSnapshot report, CancellationToken ct);
+
     // False when the state changed or disappeared since it was loaded.
     Task<bool> TrySaveAsync(long chatId, ChatStateHandle current, ChatState updated, CancellationToken ct);
 

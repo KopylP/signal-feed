@@ -224,6 +224,8 @@ public class DigestJobTests
             return Task.CompletedTask;
         }
 
+        public Task<bool> TryStartAsync(long chatId, ReportSnapshot report, CancellationToken ct) => throw new NotSupportedException();
+
         public Task<ChatStateHandle?> LoadAsync(long chatId, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<bool> TrySaveAsync(long chatId, ChatStateHandle current, ChatState updated, CancellationToken ct) => throw new NotSupportedException();

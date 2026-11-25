@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PostAgent.Alerts;
 using PostAgent.Chat;
+using PostAgent.Chat.Agent;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
