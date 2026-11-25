@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using PostAgent.Alerts;
+using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
@@ -31,6 +32,7 @@ public static class ServiceCollectionExtensions
             .AddPosts()
             .AddNotifications()
             .AddPairing()
+            .AddChat()
             .AddCollecting()
             .AddScoring()
             .AddDigest()
