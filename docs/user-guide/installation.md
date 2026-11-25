@@ -93,11 +93,11 @@ HOST=$(az functionapp show -g $(terraform -chdir=infra output -raw resource_grou
 curl -s "https://api.telegram.org/bot$(secret TelegramBotToken)/setWebhook" \
   --data-urlencode "url=https://$HOST/api/telegram/webhook" \
   --data-urlencode "secret_token=$(secret TelegramWebhookSecret)" \
-  --data-urlencode 'allowed_updates=["message"]'
+  --data-urlencode 'allowed_updates=["message","callback_query"]'
 echo "https://t.me/<your_bot_username>?start=$(secret TelegramPairingKey)"
 ```
 
-`setWebhook` answers `{"ok":true,...}`. Open the printed link on the phone or desktop where you want the digest, press **Start**, and the bot replies «✅ Чат прив'язано».
+`callback_query` is what makes the buttons of `/settings` work. If you installed the webhook earlier with `["message"]` only, run this call again. `setWebhook` answers `{"ok":true,...}`. Open the printed link on the phone or desktop where you want the digest, press **Start**, and the bot replies «✅ Чат прив'язано».
 (Typing `/start <key>` to the bot works too.) The first chat that pairs wins. Other chats are ignored, even with the right key.
 
 To move the digest to another chat, delete the binding and pair again:

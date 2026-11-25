@@ -8,6 +8,55 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [linden] - 2026-11-25
+
+### Setup required
+- **Terraform apply before the deploy**: required
+  - Where: the `infra` workflow (plan, then apply)
+  - Value: creates the blob container `settings`; no new variables or secrets
+  - Apply: run `infra` first, then merge. Without the container the bot cannot save settings, and the jobs keep using the App Settings
+- **Telegram webhook update types**: required for the buttons
+  - Where: Telegram Bot API (`setWebhook`)
+  - Value: `allowed_updates=["message","callback_query"]`; the call is in [installation, step 6](docs/user-guide/installation.md#step-6-connect-your-chat)
+  - Apply: after the deploy, run the same `setWebhook` call again. Until then `/settings` opens but its buttons do nothing
+
+### Contract changes
+- **Telegram webhook: handles button presses** (compatible)
+  - Before: only `message` updates were handled
+  - After: `callback_query` updates (button presses) from the bound private chat are handled too; `/start` still pairs
+  - Affects: the webhook registration (see Setup required); presses from other chats and groups are ignored
+  - Migration: run `setWebhook` again with both update types
+- **Storage: new blob `settings/overrides.json`** (compatible)
+  - Before: none
+  - After: what you set from the bot; replaced on every change
+  - Affects: nothing existing
+  - Migration: none
+- **Settings: a value set in the bot wins over the App Setting** (compatible)
+  - Before: App Setting, then the default in code
+  - After: the bot, then the App Setting, then the default; applies to the settings the bot can change ([list](docs/user-guide/configuration.md#from-telegram))
+  - Affects: once the sources are changed in the bot, a later change of the `Sources` App Setting is ignored until the group is reset in the menu
+  - Migration: none
+
+### Added
+- **Settings from the Telegram bot**: `/settings` opens a menu with buttons to change the digest size and thresholds, alerts, collecting limits, chat limits and the models, without a restart.
+  - Enable: on by default
+  - Settings: none new
+  - Limits: schedules, prompts, secrets and `RetentionDays` are not in the menu; see [configuration](docs/user-guide/configuration.md#from-telegram)
+- **Sources from the Telegram bot**: add, remove and mark alert sources in the menu. A new source shows ⏳ until the first collection reads it.
+  - Enable: on by default
+  - Settings: none new
+  - Limits: the last source cannot be removed; the bot does not check that the reading account can see a channel until the collection
+
+### Logic
+- **Settings are read at the start of each run**
+  - Before: read when the app started, so a change needed a restart
+  - After: read at the start of every run (cached for 30 seconds); the model of scoring, the digest and the chat is chosen per request
+  - Effect: a change from the bot applies to the next run; changing an App Setting still restarts the app
+
+### Improved
+- The «Збір не вдався» message offers «🗑 Видалити» for a source added from the bot that failed before it was ever read.
+- Cursors of sources that are no longer listed are deleted, so adding one back later starts as a new source.
+
 ## [v2026.11.25.47-aspen] - 2026-11-25
 
 ### Setup required
