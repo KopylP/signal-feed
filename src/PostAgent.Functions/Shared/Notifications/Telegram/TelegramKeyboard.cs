@@ -1,3 +1,4 @@
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace PostAgent.Shared.Notifications.Telegram;
@@ -12,7 +13,9 @@ public static class TelegramKeyboard
 
     private static InlineKeyboardButton ToButton(KeyboardButton button)
     {
-        var result = InlineKeyboardButton.WithCallbackData(button.Text, button.Data);
+        var result = button.WebApp is { } url
+            ? InlineKeyboardButton.WithWebApp(button.Text, new WebAppInfo(url.AbsoluteUri))
+            : InlineKeyboardButton.WithCallbackData(button.Text, button.Data);
         result.Style = button.Style switch
         {
             ButtonStyle.Primary => KeyboardButtonStyle.Primary,

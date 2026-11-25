@@ -5,10 +5,13 @@
 // Дані акаунта беруться зі змінних TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE,
 // а якщо їх немає, програма запитає їх у консолі. У Azure доступ до Blob іде через
 // DefaultAzureCredential (az login), для Azurite передайте рядок підключення.
+// In Azure the session is encrypted with the Key Vault key from SESSION_KEY_ID (terraform output session_key_id, ADR-0017);
+// against Azurite it may stay in clear.
 
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using PostAgent.Shared.Infrastructure;
+using PostAgent.Shared.TelegramSession;
 using WTelegram;
 
 if (args.Length == 0)
@@ -20,9 +23,18 @@ if (args.Length == 0)
 var target = args[0];
 var containerName = args.Length > 1 ? args[1] : StorageNames.DefaultSessionContainer;
 
-var container = target.Contains('=')
+var local = target.Contains('=');
+var keyId = Environment.GetEnvironmentVariable("SESSION_KEY_ID");
+if (!local && string.IsNullOrWhiteSpace(keyId))
+{
+    Console.Error.WriteLine("Set SESSION_KEY_ID=$(terraform -chdir=infra output -raw session_key_id): the session is stored encrypted.");
+    return 1;
+}
+
+var credential = new DefaultAzureCredential();
+var container = local
     ? new BlobContainerClient(target, containerName)
-    : new BlobContainerClient(new Uri($"https://{target}.blob.core.windows.net/{containerName}"), new DefaultAzureCredential());
+    : new BlobContainerClient(new Uri($"https://{target}.blob.core.windows.net/{containerName}"), credential);
 
 var session = new MemoryStream();
 using (var client = new Client(Config, session))
@@ -31,8 +43,16 @@ using (var client = new Client(Config, session))
     Console.WriteLine($"Logged in as {me}");
 }
 
+var content = session.ToArray();
+if (!string.IsNullOrWhiteSpace(keyId))
+{
+    var dataKey = SessionEnvelope.NewDataKey();
+    var wrapped = await new KeyVaultKeyWrapper(keyId, credential).WrapAsync(dataKey, CancellationToken.None);
+    content = SessionEnvelope.Seal(dataKey, wrapped, content, StorageNames.SessionBlob);
+}
+
 await container.CreateIfNotExistsAsync();
-await container.GetBlobClient(StorageNames.SessionBlob).UploadAsync(BinaryData.FromBytes(session.ToArray()), overwrite: true);
+await container.GetBlobClient(StorageNames.SessionBlob).UploadAsync(BinaryData.FromBytes(content), overwrite: true);
 Console.WriteLine($"Session uploaded to {container.Uri}/{StorageNames.SessionBlob}");
 return 0;
 

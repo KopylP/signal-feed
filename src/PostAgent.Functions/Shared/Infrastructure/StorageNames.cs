@@ -21,5 +21,8 @@ public static class StorageNames
     public static string ProfileBlobName(long chatId) => $"profile/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.txt";
     public const string SessionBlob = "wtelegram.session";
     public const string CollectionLockBlob = "collect.lock";
+    // The sign-in from the bot that is in progress (ADR-0016); it may hold a login code for a few minutes.
+    public const string LoginAttemptBlob = "login-attempt.json";
+    public const string LoginQueue = "tg-login";
     public const string DefaultSessionContainer = "tg-session";
 }

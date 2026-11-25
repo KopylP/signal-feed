@@ -4,10 +4,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\PostAgent.Functions\Shared\Infrastructure\StorageNames.cs" Link="StorageNames.cs" />
+    <Compile Include="..\PostAgent.Functions\Shared\TelegramSession\IKeyWrapper.cs" Link="IKeyWrapper.cs" />
+    <Compile Include="..\PostAgent.Functions\Shared\TelegramSession\WrappedKey.cs" Link="WrappedKey.cs" />
+    <Compile Include="..\PostAgent.Functions\Shared\TelegramSession\KeyVaultKeyWrapper.cs" Link="KeyVaultKeyWrapper.cs" />
+    <Compile Include="..\PostAgent.Functions\Shared\TelegramSession\SessionEnvelope.cs" Link="SessionEnvelope.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="WTelegramClient" />
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" />
   </ItemGroup>
 </Project>

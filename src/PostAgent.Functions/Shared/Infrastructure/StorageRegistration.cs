@@ -15,12 +15,13 @@ public static class StorageRegistration
         var account = config["AzureWebJobsStorage:accountName"];
         var queueOptions = new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 };
 
-        if (!string.IsNullOrEmpty(connectionString))
+        if (IsLocal(config))
         {
             services.AddSingleton(new TableServiceClient(connectionString));
             services.AddSingleton(new BlobServiceClient(connectionString));
             services.AddSingleton(new QueueClient(connectionString, StorageNames.ScoringQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(connectionString, StorageNames.ChatQueue, queueOptions));
+            services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(connectionString, StorageNames.LoginQueue, queueOptions));
         }
         else if (!string.IsNullOrEmpty(account))
         {
@@ -31,6 +32,8 @@ public static class StorageRegistration
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ScoringQueue}"), credential, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ChatQueue}"), credential, queueOptions));
+            services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.LoginQueue}"), credential, queueOptions));
         }
         else
         {
@@ -41,9 +44,14 @@ public static class StorageRegistration
         return services;
     }
 
+    // The identity-based account name wins: the platform can leave a connection string with an empty AccountKey
+    // next to it, and building a client from that string stops the worker at startup.
+    public static bool IsLocal(IConfiguration config) =>
+        string.IsNullOrEmpty(config["AzureWebJobsStorage:accountName"]) && !string.IsNullOrEmpty(config["AzureWebJobsStorage"]);
+
     public static async Task EnsureLocalResourcesAsync(this IServiceProvider services, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(services.GetRequiredService<IConfiguration>()["AzureWebJobsStorage"]))
+        if (!IsLocal(services.GetRequiredService<IConfiguration>()))
         {
             return;
         }
@@ -54,6 +62,7 @@ public static class StorageRegistration
         await tables.CreateTableIfNotExistsAsync(StorageNames.ChatBindingTable, ct);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue).CreateIfNotExistsAsync(cancellationToken: ct);
+        await services.GetRequiredKeyedService<QueueClient>(StorageNames.LoginQueue).CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
         var blobs = services.GetRequiredService<BlobServiceClient>();

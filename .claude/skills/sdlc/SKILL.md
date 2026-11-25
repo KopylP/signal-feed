@@ -25,20 +25,21 @@ otherwise do the step by hand as described here.
 | 5 | **Build, test first** | Write the failing test, then the code. A bug fix comes with a test that fails without the fix | `tests/PostAgent.Tests/CLAUDE.md`, `superpowers:test-driven-development` |
 | 6 | **Verify** | Build, tests, format, and Terraform checks when `infra/` changed. Report what passed and what could not run | Commands in `CLAUDE.md`, `superpowers:verification-before-completion` |
 | 7 | **Document** | **All documentation must be current after the change**, not only the guide you first thought of: go through the checklist in "Documentation is part of done" | below, `CLAUDE.md` (Keep the docs current) |
-| 8 | **Changelog** | Behavior, contract or setting changed: add a section named by a new word | `write-changelog` |
-| 9 | **Gate** | Run the pre-PR checks and answer the judgment questions | `check-before-pr` |
-| 10 | **Commit and push** | Commit by the rules below, push to your branch | below |
-| 11 | **Pull request** | Only when the owner asks. Title reads as a release note | below |
-| 12 | **Deploy readiness** | Name what must exist in Azure and in what order. The owner confirms | `ship`, `check-before-pr` question 4 |
+| 8 | **Diagrams** | Open every `*.drawio.svg` the change could touch and redraw each one whose flow, store, queue, command or component changed. The pull request is not opened with a stale diagram | "Documentation is part of done", point 4 |
+| 9 | **Changelog** | Behavior, contract or setting changed: add a section named by a new word | `write-changelog` |
+| 10 | **Gate** | Run the pre-PR checks and answer the judgment questions | `check-before-pr` |
+| 11 | **Commit and push** | Commit by the rules below, push to your branch | below |
+| 12 | **Pull request** | Only when the owner asks. Title reads as a release note | below |
+| 13 | **Deploy readiness** | Name what must exist in Azure and in what order. The owner confirms | `ship`, `check-before-pr` question 4 |
 
-Go back one phase when a later phase shows a problem. Do not skip phases 6, 8 and 9 because the change looks small.
+Go back one phase when a later phase shows a problem. Do not skip phases 6, 8, 9 and 10 because the change looks small.
 
 ## Rules that decide most changes
 
 - **Code:** the C# rules in the root `CLAUDE.md` (warnings are errors, English comments, `TimeProvider`, `CancellationToken`, message-template logging, no secrets in logs).
 - **Features:** a feature is a folder, `Shared/` never depends on a feature (`src/PostAgent.Functions/CLAUDE.md`).
 - **Settings:** the default lives only in `AgentOptions`; add validation, the row in `docs/user-guide/configuration.md`, and `local.settings.json.example`.
-  A required setting or secret also changes the deploy order (phase 12).
+  A required setting or secret also changes the deploy order (phase 13).
 - **Infrastructure:** Terraform never creates secret values, access goes through managed identity, no resources with a standing cost without a request (`infra/CLAUDE.md`).
 - **Prompts:** English, asking for Ukrainian output; strict schema fields match the C# type, post text is data (`prompts/CLAUDE.md`). Changing a prompt needs a deploy.
 - **Workflows:** change `.github/` only with the rules in `.github/CLAUDE.md`; run `python3 -m unittest discover -s .github/scripts` after touching the changelog script.
@@ -48,12 +49,12 @@ Go back one phase when a later phase shows a problem. Do not skip phases 6, 8 an
 ## Documentation is part of done
 
 A change is not finished while any document still describes the old behavior. Documentation is updated in the same commit as the code, and the gate (`check-before-pr`, question 1) asks whether it is current, so a stale document is a reason not to open the pull request.
-Do this before phase 9, in this order:
+Do this before phase 10, in this order:
 
 1. **Search first, do not rely on memory.** Grep `docs/`, every `CLAUDE.md`, `README.md`, `prompts/` and `local.settings.json.example` for each name you added, renamed, moved or removed (types, settings, commands, folders, blob and table names, messages the bot sends). Every hit is either updated or consciously left.
 2. **User Guide** (what an operator sees): `overview`, `how-it-works`, `configuration` (every new or changed setting, with its default), `installation` and `handover` (steps, commands, resources), `troubleshooting` (a new symptom, cause or switch to turn the feature off).
 3. **Developer Guide** (how it is built): `architecture` (the flow, the data model table, identity and resources), `code-structure` (the folder tree and what each folder holds), `local-development` and `ci-cd` when commands or pipelines changed.
-4. **Diagrams** (`*.drawio.svg`): redraw one when the flow, a store or a component it shows has changed. If you do not redraw it, say so in your summary so the owner knows it is stale. Never leave a diagram silently wrong.
+4. **Diagrams** (`*.drawio.svg`, phase 8): list them (`git ls-files '*.drawio.svg'`), open each one and ask whether the change added or moved a flow, a command, a store, a queue or a component it shows; grep alone is not enough, a missing element does not show up in a search. Redraw every one that changed, in the same commit. Stale diagrams are not left for a follow-up: the owner wants them current before the pull request. Say in the summary which ones you checked and which you redrew.
 5. **ADRs**: a new decision gets an ADR; a decision an accepted ADR describes that changed gets a dated note under its `Updates`, never a rewritten Decision.
 6. **Rules and examples**: the `CLAUDE.md` of the folder you touched (keep it short), `docs/README.md` if an entry point moved, `local.settings.json.example` and `infra/` for a setting, and `CHANGELOG.md` for anything that changes behavior, a contract or a setting.
 7. **Report it.** The final summary lists which documents were updated and which were deliberately not (and why). "No docs needed" is a claim to justify, not a default.
@@ -77,7 +78,7 @@ Do this before phase 9, in this order:
 
 ## Ready to deploy means
 
-- Phases 1 to 10 are done and the branch is pushed; the pre-PR gate reported no failure you did not explain.
+- Phases 1 to 11 are done and the branch is pushed; the pre-PR gate reported no failure you did not explain.
 - The changelog section exists, or you said why none is needed.
 - The owner has the list of what must exist before the code deploys, in order: infra change merged and applied from `main`, GitHub Variables, Key Vault secrets, App Settings.
   You cannot verify Azure from here, so you ask them to confirm.
@@ -90,10 +91,10 @@ Then hand over to `ship`. If a deploy or the app fails afterwards, use `triage-d
 | Mistake | Fix |
 |---|---|
 | Starting to code before a hard-to-reverse choice is recorded | Phase 3: write the ADR first |
-| A new required setting merged together with the code that needs it | Phase 12: infra and secrets first, code after |
+| A new required setting merged together with the code that needs it | Phase 13: infra and secrets first, code after |
 | Tests added after the code, or none for a bug fix | Phase 5: the test fails first |
 | Docs, changelog or ADR in a later commit | Same commit as the change |
-| Updating the user guide only, and forgetting the developer guide, the folder tree, a diagram or `troubleshooting` | Run the search and the checklist in "Documentation is part of done" |
+| Updating the user guide only, and forgetting the developer guide, the folder tree, a diagram (phase 8) or `troubleshooting` | Run the search and the checklist in "Documentation is part of done" |
 | `git add -A` that picks up caches or local files | Stage by name; read `git status` |
 | Opening a pull request, merging or deploying unasked | Stop at a pushed branch; `ship` needs the owner's confirmation |
 | A model name in a commit, comment or title | Only the attribution trailers the session provides |

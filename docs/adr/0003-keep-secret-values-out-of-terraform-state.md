@@ -29,3 +29,5 @@ Rotating a secret is done in Key Vault and may need `az functionapp restart`. Th
 ## Updates
 
 2026-11-24: The setup steps are no longer in the README. They moved to [installation](../user-guide/installation.md) (secrets in Key Vault); the README is now a short entry point.
+
+2026-11-25: Terraform now creates one Key Vault key, `tg-session` ([ADR-0017](0017-encrypt-the-telegram-session-with-a-key-vault-key.md)). Key Vault generates it and its private part never leaves the vault, so only the public key is in the state: this decision still holds.

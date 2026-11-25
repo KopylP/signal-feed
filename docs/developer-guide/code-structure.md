@@ -14,7 +14,7 @@ and `Shared/` never depends on a feature (an architecture test enforces this). T
 ```
 src/PostAgent.Functions/
 ├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
-│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob, collection lock), source read cursors
+│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest
@@ -28,6 +28,8 @@ src/PostAgent.Functions/
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
+├── Login/                 /login (ADR-0016): LoginInbox (the command), LoginProcessor (the waiting side: phone, code, password), LoginForm and LoginPage (the Mini App), WebAppInitData (checks the signature)
+│   └── Infrastructure/    the attempt blob, the session blob, the tg-login queue, the WTelegram sign-in
 ├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
@@ -37,11 +39,12 @@ src/PostAgent.Functions/
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob, SettingsProposal and SettingsProposalMessage (the agent's plan and its text, ADR-0013)
+│   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once; ISessionCipher, EnvelopeCipher and SessionEnvelope: the session and the sign-in are encrypted with the Key Vault key (KeyVaultKeyWrapper, ADR-0017)
 │   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features
-src/TgLogin/               one-off Telegram sign-in
+src/TgLogin/               Telegram sign-in from a terminal (first installation; later /login in the bot)
 tools/                     run-now.cs, a file-based app (`dotnet run tools/run-now.cs`) that starts a job through the queue
 tests/PostAgent.Tests/     xUnit, same folders; Fakes/ holds the fake dependencies for function tests
 Directory.Packages.props   versions of all NuGet packages in one place

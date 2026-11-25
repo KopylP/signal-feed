@@ -7,7 +7,7 @@ public class SettingsCatalogTests
     private static readonly string[] NotEditable =
     [
         "OpenAIApiKey", "TelegramBotToken", "TelegramApiHash", "TelegramPairingKey", "TelegramWebhookSecret", "TelegramChatId",
-        "TelegramApiId", "TelegramPhone", "SessionBlobContainer", "ManualRunsEnabled", "RetentionDays", "FirstRunLookbackHours",
+        "TelegramApiId", "SessionBlobContainer", "ManualRunsEnabled", "RetentionDays", "FirstRunLookbackHours",
     ];
 
     public static TheoryData<string> Keys()
