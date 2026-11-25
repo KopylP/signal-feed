@@ -17,6 +17,7 @@ public static class ChatServices
             .AddSingleton<ChatToolFactory>()
             .AddSingleton<IChatAgent, ChatAgent>()
             .AddSingleton<IChatQueue, ChatQueue>()
+            .AddScoped<IIncomingMessageHandler, ClearInbox>()
             .AddScoped<IIncomingMessageHandler, ChatInbox>()
             .AddScoped<SettingsProposalSender>()
             .AddScoped<ChatDelivery>()

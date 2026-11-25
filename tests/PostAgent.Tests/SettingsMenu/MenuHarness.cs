@@ -24,6 +24,7 @@ internal sealed class MenuHarness
 
     public InMemoryOverridesStore Store { get; } = new();
     public InMemoryProfileStore Profile { get; } = new();
+    public InMemoryChatStateStore ChatState { get; } = new();
     public FakeTimeProvider Time { get; } = new(TestData.Now);
     public RecordingPanel Panel { get; } = new();
     public AgentOptions App { get; }
@@ -53,7 +54,7 @@ internal sealed class MenuHarness
         App = OverridesApplierTests.ValidApp(configure);
         var options = Options.Create(App);
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
-        Editor = new SettingsEditor(Store, options, Effective, DefaultPrompts.Library, Profile, NullLogger<SettingsEditor>.Instance);
+        Editor = new SettingsEditor(Store, options, Effective, DefaultPrompts.Library, Profile, ChatState, NullLogger<SettingsEditor>.Instance);
         Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
         Bindings = bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore();
         Resolver = new ChatResolver(options, Bindings);

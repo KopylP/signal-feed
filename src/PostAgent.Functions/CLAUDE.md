@@ -29,6 +29,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 ## Chat about the digest (ADR-0010)
 
 - The webhook routes `/start` to pairing and every other update to the `IIncomingMessageHandler` list in registration order, the first that returns true wins (`Shared/Notifications`; the settings menu is registered before the chat); `Pairing`, `Digest`, `Chat` and `Cleanup` never reference each other, they share only types in `Shared/` (`Shared/Chat`).
+- A chat works before the first digest: `ChatInbox` starts an empty conversation (`ReportSnapshot.None`, no report id) with `TryStartAsync`, which never replaces a digest; `Digest` replaces it with the real one. `/clear` (`ClearInbox`) and the agent's `propose_clear_context` (applied by `SettingsEditor` after the owner's tap) drop only the session, never the snapshot.
 - The conversation is one blob per chat (`chat-state/<chat id>.json`, ADR-0014): `Digest` overwrites each with a snapshot after the digest is sent, `Cleanup` deletes the stale ones. Keep it that way: no history of old conversations.
 - A message to every chat goes through `ITelegramNotifier.SendAsync` (one failing chat does not stop the others); an answer or a reply goes through `SendToAsync` to the chat that asked. Never read "the" chat from `ChatResolver`: ask for the list, or check `IsBoundAsync`.
 - `ChatProcessor` order is ask the model, save with the blob ETag, then send. Never send before the save succeeds. A turn whose digest changed is dropped, not redelivered.

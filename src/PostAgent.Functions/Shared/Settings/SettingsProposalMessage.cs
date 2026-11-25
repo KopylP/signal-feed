@@ -58,6 +58,9 @@ public static class SettingsProposalMessage
             case SettingChangeKind.ResetPrompt:
                 return $"Промпт «{TelegramHtml.Escape(Shipped.Value.FindSection(change.Target)?.Label ?? change.Target)}»: повернути стандартний текст";
 
+            case SettingChangeKind.ClearContext:
+                return "Очистити контекст розмови: питання й відповіді буде забуто, дайджест лишається";
+
             case SettingChangeKind.EditProfile:
                 return $"Профіль «про мене»:\n{Diff(change)}";
 

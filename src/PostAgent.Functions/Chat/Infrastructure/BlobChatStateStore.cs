@@ -33,6 +33,20 @@ public sealed class BlobChatStateStore(BlobServiceClient blobs, ILogger<BlobChat
     public Task StartNewAsync(long chatId, ReportSnapshot report, CancellationToken ct) =>
         BlobOf(chatId).UploadAsync(BinaryData.FromString(ChatStateJson.Write(new ChatState(report, [], null))), overwrite: true, ct);
 
+    public async Task<bool> TryStartAsync(long chatId, ReportSnapshot report, CancellationToken ct)
+    {
+        var options = new BlobUploadOptions { Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All } };
+        try
+        {
+            await BlobOf(chatId).UploadAsync(BinaryData.FromString(ChatStateJson.Write(new ChatState(report, [], null))), options, ct);
+            return true;
+        }
+        catch (RequestFailedException ex) when (ex.Status is 409 or 412)
+        {
+            return false;
+        }
+    }
+
     public async Task<bool> TrySaveAsync(long chatId, ChatStateHandle current, ChatState updated, CancellationToken ct)
     {
         var options = new BlobUploadOptions { Conditions = new BlobRequestConditions { IfMatch = new ETag(current.ETag) } };

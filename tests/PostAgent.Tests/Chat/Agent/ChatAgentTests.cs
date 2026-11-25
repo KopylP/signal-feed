@@ -68,6 +68,36 @@ public class ChatAgentTests
     }
 
     [Fact]
+    public async Task Without_a_digest_the_model_is_told_there_is_none_and_still_answers()
+    {
+        var client = new ScriptedChatClient(Reply("Відповідь без дайджесту"));
+
+        var reply = await Create(client).AskAsync(ChatId, new ChatState(ReportSnapshot.None(Now), [], null), "що нового про Google?", CancellationToken.None);
+
+        Assert.Equal("Відповідь без дайджесту", reply.Text);
+        var seen = AllText(client.Calls[0]);
+        Assert.Contains("No digest has been sent to the reader yet", seen);
+        Assert.DoesNotContain("This is the digest the reader received", seen);
+        Assert.Contains("що нового про Google?", seen);
+    }
+
+    [Fact]
+    public async Task After_a_clear_the_digest_is_sent_again_as_the_first_message()
+    {
+        var client = new ScriptedChatClient(Reply("перша"), Reply("друга"));
+        var agent = Create(client);
+        var first = await agent.AskAsync(ChatId, Fresh(), "питання 1", CancellationToken.None);
+        var cleared = Fresh().WithProcessed(1, first.Session).WithoutSession();
+
+        await agent.AskAsync(ChatId, cleared, "питання 2", CancellationToken.None);
+
+        var seen = AllText(client.Calls[1]);
+        Assert.Contains("This is the digest the reader received", seen);
+        Assert.DoesNotContain("питання 1", seen);
+        Assert.Contains("питання 2", seen);
+    }
+
+    [Fact]
     public async Task What_the_reader_wrote_about_themselves_goes_into_the_instructions_as_data()
     {
         var profile = new InMemoryProfileStore();
@@ -116,7 +146,7 @@ public class ChatAgentTests
         Assert.Equal(123, client.LastOptions?.MaxOutputTokens);
         Assert.Equal(
             [
-                "get_post", "get_profile", "get_prompt", "get_settings", "propose_add_source", "propose_profile_edit", "propose_prompt_edit",
+                "get_post", "get_profile", "get_prompt", "get_settings", "propose_add_source", "propose_clear_context", "propose_profile_edit", "propose_prompt_edit",
                 "propose_prompt_reset", "propose_remove_source", "propose_reset_group",
                 "propose_reset_setting", "propose_set_setting", "propose_toggle_alert_source", "search_posts",
             ],

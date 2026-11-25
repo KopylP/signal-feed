@@ -12,6 +12,7 @@ public sealed class ChatInbox(
     IChatStateStore state,
     IChatQueue queue,
     ITelegramNotifier notifier,
+    TimeProvider time,
     ILogger<ChatInbox> log) : IIncomingMessageHandler
 {
     private const int MaxQuestionChars = 2000;
@@ -30,10 +31,10 @@ public sealed class ChatInbox(
             return false;
         }
 
-        var current = await state.LoadAsync(message.Chat.Id, ct);
+        var current = await StateAsync(message.Chat.Id, ct);
         if (current is null)
         {
-            await notifier.SendToAsync(message.Chat.Id, ChatTexts.NoReport, ct);
+            await notifier.SendToAsync(message.Chat.Id, ChatTexts.Failed, ct);
             return true;
         }
 
@@ -48,5 +49,18 @@ public sealed class ChatInbox(
         }
 
         return true;
+    }
+
+    // Before the first digest there is no conversation yet: it starts empty, and the digest replaces it when it comes.
+    private async Task<ChatStateHandle?> StateAsync(long chatId, CancellationToken ct)
+    {
+        var current = await state.LoadAsync(chatId, ct);
+        if (current is not null)
+        {
+            return current;
+        }
+
+        await state.TryStartAsync(chatId, ReportSnapshot.None(time.GetUtcNow()), ct);
+        return await state.LoadAsync(chatId, ct);
     }
 }

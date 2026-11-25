@@ -56,7 +56,7 @@ The digest then adds a separate message «⚠️ Не оцінено N пост�
 
 ## Asking about the digest
 
-After a digest arrives, reply to the bot in the same private chat to ask more: «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?». The agent can also show and change parts of its own prompts and keep a short profile of you, each change only after you confirm the exact before and after ([configuration](configuration.md#prompts-from-the-chat)). You can also use Telegram's reply or quote on any message: the quoted part (or the message you replied to) goes to the model with your question, so «розкрий цю тему» knows which topic you mean.
+Write to the bot in the private chat to ask more (after a digest, or before the first one): «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?». The agent can also show and change parts of its own prompts and keep a short profile of you, each change only after you confirm the exact before and after ([configuration](configuration.md#prompts-from-the-chat)). You can also use Telegram's reply or quote on any message: the quoted part (or the message you replied to) goes to the model with your question, so «розкрий цю тему» knows which topic you mean.
 An AI assistant answers in Ukrainian, plain text, using the digest you received. If the digest is not enough, it can open the full text of a post and
 search the posts stored for the last `RetentionDays` days (for example «що ще писали про це вчора?»). A question the posts do not cover is answered from the model's own knowledge,
 and the answer says so. It does not browse the web.
@@ -67,7 +67,8 @@ and the answer says so. It does not browse the web.
 - **Private chat only.** The bot answers in the private chat with it. If `TelegramChatId` points to a group, the digest still goes there, but questions in the group are not answered.
 - **Bounds.** A conversation keeps the last `ChatMaxMessages` messages; a question is cut at 2000 characters; a question that waited in the queue for more than an hour is dropped.
 - **Cost.** A question the digest answers is one model call, about 2 to 4 cents with the default `OpenAIChatModel` and `medium` reasoning. When the assistant uses tools it makes one more call per round, up to `ChatMaxToolCalls + 1`, and every call resends the digest and the conversation, so a tool-heavy question can cost several times more (see [configuration](configuration.md#settings)).
-- Before the first digest the bot answers «Ще немає дайджесту, про який можна поговорити. Напишіть після наступного дайджесту.»
+- **Before the first digest** the chat works too: the agent has no digest to rely on, so it answers from the stored posts and from its own knowledge and says which. When a digest arrives, it becomes the context of the conversation and replaces what was there.
+- **Clearing the context.** Send `/clear` to forget the earlier questions and answers (the digest stays), or ask the agent («забудь розмову»): it then prepares the action and you confirm it with a button, like a settings change.
 
 ## Data retention
 

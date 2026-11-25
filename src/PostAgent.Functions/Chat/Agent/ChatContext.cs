@@ -9,6 +9,11 @@ public static class ChatContext
     // The whole snapshot is one data block, so nothing a channel wrote can speak with the authority of the instructions.
     public static string Build(ReportSnapshot report)
     {
+        if (!report.HasDigest)
+        {
+            return "No digest has been sent to the reader yet. " + DataBlock.Wrap("report", "No digest yet.");
+        }
+
         var body = new StringBuilder();
         body.Append("Digest ").Append(report.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).AppendLine(" UTC");
         if (report.Overview is not null)

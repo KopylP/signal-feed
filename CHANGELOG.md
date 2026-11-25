@@ -8,6 +8,15 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [clover] - 2026-11-25
+
+### Added
+- **The chat works before the first digest**: the agent answers from the stored posts and its own knowledge, and says which; the first digest replaces that conversation with its own
+- **Clear the context**: `/clear` forgets the earlier questions and answers and keeps the digest; asking the agent to forget the conversation makes it prepare the action, and a button confirms it
+
+### Logic
+- The bot no longer answers «Ще немає дайджесту...»: a question before the first digest starts an empty conversation (a blob `chat-state/<chat id>.json` with no report id)
+
 ## [v2026.11.25.61-yarrow] - 2026-11-25
 
 ### Setup required

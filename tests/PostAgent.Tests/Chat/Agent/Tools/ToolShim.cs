@@ -24,6 +24,8 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
 
     public Task<string> ProposeToggleAlertSource(string name, CancellationToken ct) => Call("propose_toggle_alert_source", ct, ("name", name));
 
+    public Task<string> ProposeClearContext(CancellationToken ct) => Call("propose_clear_context", ct);
+
     public Task<string> GetPrompt(string name, CancellationToken ct) => Call("get_prompt", ct, ("name", name));
 
     public Task<string> ProposePromptEdit(string section, string oldText, string newText, CancellationToken ct) =>

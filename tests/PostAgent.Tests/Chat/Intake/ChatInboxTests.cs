@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
 using PostAgent.Chat;
 using PostAgent.Chat.Answering;
@@ -29,7 +30,7 @@ public class ChatInboxTests
 
         var options = Microsoft.Extensions.Options.Options.Create(new AgentOptions());
         var resolver = new ChatResolver(options, (bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore()));
-        return new ChatInbox(resolver, _state, queue ?? _queue, _notifier, NullLogger<ChatInbox>.Instance);
+        return new ChatInbox(resolver, _state, queue ?? _queue, _notifier, new FakeTimeProvider(Now), NullLogger<ChatInbox>.Instance);
     }
 
     private static Update Incoming(string? text, long chatId = BoundChat, ChatType type = ChatType.Private, int updateId = 100) =>
@@ -139,14 +140,28 @@ public class ChatInboxTests
     }
 
     [Fact]
-    public async Task Without_a_digest_the_reader_is_told_so_and_nothing_is_queued()
+    public async Task Without_a_digest_the_question_is_queued_for_an_empty_conversation()
     {
         var inbox = await Create(withReport: false);
 
         await inbox.HandleAsync(Incoming("hello"), CancellationToken.None);
 
-        Assert.Equal([ChatTexts.NoReport], _notifier.Replies);
-        Assert.Empty(_queue.Enqueued);
+        var request = Assert.Single(_queue.Enqueued);
+        Assert.Equal(string.Empty, request.ReportId);
+        Assert.False(_state.Of(BoundChat)!.Report.HasDigest);
+        Assert.Empty(_notifier.Replies);
+    }
+
+    [Fact]
+    public async Task A_second_question_before_any_digest_reuses_the_empty_conversation()
+    {
+        var inbox = await Create(withReport: false);
+
+        await inbox.HandleAsync(Incoming("one", updateId: 1), CancellationToken.None);
+        await inbox.HandleAsync(Incoming("two", updateId: 2), CancellationToken.None);
+
+        Assert.Equal(2, _queue.Enqueued.Count);
+        Assert.All(_queue.Enqueued, r => Assert.Equal(string.Empty, r.ReportId));
     }
 
     [Fact]
@@ -165,7 +180,7 @@ public class ChatInboxTests
         await _state.StartNewAsync(42, new ReportSnapshot("r1", Now, null, [], []), CancellationToken.None);
         await _state.StartNewAsync(43, new ReportSnapshot("r2", Now, null, [], []), CancellationToken.None);
         var resolver = new ChatResolver(Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new InMemoryChatBindingStore(42, 43));
-        var inbox = new ChatInbox(resolver, _state, _queue, _notifier, NullLogger<ChatInbox>.Instance);
+        var inbox = new ChatInbox(resolver, _state, _queue, _notifier, new FakeTimeProvider(Now), NullLogger<ChatInbox>.Instance);
 
         await inbox.HandleAsync(Incoming("питання", chatId: 43, updateId: 5), CancellationToken.None);
 
@@ -173,15 +188,17 @@ public class ChatInboxTests
     }
 
     [Fact]
-    public async Task A_bound_chat_without_a_conversation_is_told_so_in_that_chat()
+    public async Task A_bound_chat_without_a_conversation_starts_its_own_and_leaves_the_other_chat_alone()
     {
         await _state.StartNewAsync(42, new ReportSnapshot("r1", Now, null, [], []), CancellationToken.None);
         var resolver = new ChatResolver(Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new InMemoryChatBindingStore(42, 43));
-        var inbox = new ChatInbox(resolver, _state, _queue, _notifier, NullLogger<ChatInbox>.Instance);
+        var inbox = new ChatInbox(resolver, _state, _queue, _notifier, new FakeTimeProvider(Now), NullLogger<ChatInbox>.Instance);
 
         await inbox.HandleAsync(Incoming("питання", chatId: 43), CancellationToken.None);
 
-        Assert.Equal([(43L, ChatTexts.NoReport)], _notifier.SentTo);
-        Assert.Empty(_queue.Enqueued);
+        var request = Assert.Single(_queue.Enqueued);
+        Assert.Equal((43L, string.Empty), (request.ChatId, request.ReportId));
+        Assert.Equal("r1", _state.Of(42)!.Report.ReportId);
+        Assert.Empty(_notifier.SentTo);
     }
 }

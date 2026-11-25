@@ -27,6 +27,17 @@ public sealed class InMemoryChatStateStore : IChatStateStore
         return Task.CompletedTask;
     }
 
+    public Task<bool> TryStartAsync(long chatId, ReportSnapshot report, CancellationToken ct)
+    {
+        if (_states.ContainsKey(chatId))
+        {
+            return Task.FromResult(false);
+        }
+
+        _states[chatId] = (new ChatState(report, [], null), ++_version);
+        return Task.FromResult(true);
+    }
+
     public Task<bool> TrySaveAsync(long chatId, ChatStateHandle current, ChatState updated, CancellationToken ct)
     {
         BeforeSave?.Invoke();
