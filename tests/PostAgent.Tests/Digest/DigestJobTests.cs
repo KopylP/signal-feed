@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Digest;
+using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
@@ -98,6 +99,32 @@ public class DigestJobTests
             CreateJob(repo, WithOverview("Огляд", text: new string('с', 700))).RunAsync(CancellationToken.None));
 
         Assert.Empty(repo.SentMarks); // the next run repeats the digest: a duplicate is better than a lost one
+    }
+
+    [Fact]
+    public async Task Warns_about_unscored_posts_instead_of_saying_the_day_was_quiet()
+    {
+        var repo = new InMemoryPostRepository(Post("stuck", score: null, hoursAgo: 3, status: PostStatus.New));
+
+        await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
+
+        Assert.Equal([DigestMessage.Unscored(1)], _notifier.Sent);
+        Assert.Empty(repo.SentMarks);
+    }
+
+    [Fact]
+    public async Task Warns_about_unscored_posts_after_the_digest()
+    {
+        var repo = new InMemoryPostRepository(
+            Post("a", score: 9, hoursAgo: 2),
+            Post("stuck", score: null, hoursAgo: 3, status: PostStatus.New));
+
+        await CreateJob(repo, WithOverview("Огляд")).RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _notifier.Sent.Count);
+        Assert.Contains("Огляд", _notifier.Sent[0]);
+        Assert.Equal(DigestMessage.Unscored(1), _notifier.Sent[1]);
+        Assert.Single(repo.SentMarks);
     }
 
     [Fact]

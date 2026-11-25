@@ -14,7 +14,7 @@ and `Shared/` never depends on a feature (an architecture test enforces this). T
 ```
 src/PostAgent.Functions/
 ├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
-│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
+│   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob, collection lock), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
 ├── Digest/                daily digest

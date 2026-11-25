@@ -49,4 +49,30 @@ public class DigestSummarizerTests
         Assert.False(sent.TryGetProperty("url", out _));
         Assert.Equal(true, chat.Options!.AdditionalProperties!["strict"]);
     }
+
+    [Fact]
+    public async Task Fails_when_the_model_names_only_posts_that_are_not_in_the_digest()
+    {
+        var items = new[] { new DigestItem(Post("src_1"), IsInteresting: true) };
+        var chat = new FakeChatClient("""
+            {"overview":"О","headlines":[{"id":"made_up","title":"Т","summary":"С","why_it_matters":"Ч"}],
+             "for_marketplace":[],"notable":[],"recommended":[{"id":"other","why":"В"}],"needs_verification":[]}
+            """);
+
+        // The job then falls back to the plain digest instead of an empty one that still marks the posts as sent.
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new DigestSummarizer(chat).SummarizeAsync(items, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Accepts_a_weak_day_when_the_model_names_no_post_at_all()
+    {
+        var items = new[] { new DigestItem(Post("src_1"), IsInteresting: false) };
+        var chat = new FakeChatClient("""{"overview":"Тихий день","headlines":[],"for_marketplace":[],"notable":[],"recommended":[],"needs_verification":[]}""");
+
+        var report = await new DigestSummarizer(chat).SummarizeAsync(items, CancellationToken.None);
+
+        Assert.Empty(report.Headlines);
+        Assert.Equal(1, report.Skipped.Other);
+    }
 }

@@ -19,7 +19,8 @@
 | A setting seems ignored | A typo in the key name: unknown keys are silently ignored | Compare the name with the [settings reference](configuration.md#settings-reference) |
 | The Telegram sign-in stops with `PHONE_NUMBER_INVALID` | Telegram rejected the number: it is a landline or not registered in Telegram, or it has a typo | Use a mobile number that can receive Telegram codes, in the form `+48123456789`. Update the `TF_TELEGRAM_PHONE` secret and run `infra` with apply, then sign in again |
 | The Telegram sign-in prints `Logged in as ...` and then hangs, with no `Session uploaded` | The tool picks an Azure credential that never answers on this machine | Set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` (it uses only your `az login`) and run it again |
-| Posts stay unscored | Scoring failed 5 times and the message went to the `to-score-poison` queue | Open the queue in the Azure portal and find the cause in Application Insights. There is no automatic notification |
+| «⚠️ Не оцінено N постів» arrives with the digest | Scoring failed 5 times and the message went to the `to-score-poison` queue (most often the OpenAI key, quota or model) | Find the cause in Application Insights (`ScorerFunction` errors), and fix it. The posts already in `to-score-poison` are not retried; new posts are scored again once the cause is fixed |
+| The log shows `Collection skipped: another collection is using the Telegram session` | A manual `collect` overlapped another collection (usually the hourly timer) | Nothing to do: the next run reads the messages. Start a manual `collect` away from the collector schedule |
 
 ## Known limitations
 
@@ -28,7 +29,7 @@ These are deliberate trade-offs or open edges, not bugs to report.
 - **Duplicate messages after a failed send.** A single Telegram send is never repeated automatically, because after a timeout the message may already be delivered. If a send fails, the job fails, its posts stay unsent
   and the next run sends them again, so a digest or alert can arrive twice. We prefer a duplicate to a lost message. A long digest is sent as several messages, and the posts are marked as sent only after the last one,
   so if a later message fails, the next run sends the whole digest again. A send gets 30 seconds; the log line `Telegram send failed: N chars after M ms` shows how long it took.
-- **Unscored posts stay `New`.** After 5 failed attempts a message lands in `to-score-poison`, and its posts stay `New` until cleanup removes them.
+- **Unscored posts stay `New`.** After 5 failed attempts a message lands in `to-score-poison`, and its posts stay `New` until cleanup removes them. The digest reports how many there are, but nothing retries them.
 - **Posts in two bundles.** If a collection run broke off between writing the posts and moving the read position, and new messages arrived meanwhile, the same group messages can land in two bundles.
 - **First-run flood waits.** See the symptom table above.
 - **Fresh messages have no reactions yet,** so the prominence order inside a bundle is approximate at first.

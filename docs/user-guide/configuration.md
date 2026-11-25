@@ -84,7 +84,7 @@ dotnet run tools/run-now.cs -- digest --storage <storage-account-name>
 az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=false
 ```
 
-The command only queues the job and does not wait for it: read the result in the function logs (a manual run is logged under `RunNowFunction`, not under the timer function). `collect` moves the read cursors and reports failed sources to Telegram, and running `digest` right after the scheduled digest sends the "no posts" message. Two runs at the same time (or one together with the timer) can send a message twice. While `ManualRunsEnabled` is `false`, a message is dropped with a warning.
+The command only queues the job and does not wait for it: read the result in the function logs (a manual run is logged under `RunNowFunction`, not under the timer function). `collect` moves the read cursors and reports failed sources to Telegram, and running `digest` right after the scheduled digest sends the "no posts" message. Two runs at the same time (or one together with the timer) can send a message twice. Two collections never run at once: they share the Telegram session, so a `collect` that starts while another holds it is skipped with a warning in the log. While `ManualRunsEnabled` is `false`, a message is dropped with a warning.
 A job that fails is logged and not retried, like a scheduled run. Access to the queue is controlled by Azure roles, there is no key.
 
 ### Prompts

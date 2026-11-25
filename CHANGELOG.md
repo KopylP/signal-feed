@@ -8,6 +8,21 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [lilac] - 2026-11-25
+
+### Added
+- **Warning about unscored posts**: when posts are still unscored two hours after publication (scoring failed, for example an expired OpenAI key), the digest is followed by «⚠️ Не оцінено N постів» with a hint to check `to-score-poison` and Application Insights. When nothing was scored at all, this message replaces «За добу нових постів не було», which used to make a broken scorer look like a quiet day.
+  - Enable: on by default
+  - Settings: none
+  - Limits: the unscored posts are not retried; see [troubleshooting](docs/user-guide/troubleshooting.md)
+
+### Improved
+- WTelegramClient logs only warnings and errors, so routine connection messages no longer use up the daily log quota.
+
+### Fixed
+- Fixed an empty digest when the model named only unknown post ids: its posts were still marked as sent and lost. The digest now falls back to the plain list with the scoring reasons, as when OpenAI is down.
+- Fixed a manual `collect` (run-now) that overlapped the hourly collection using the Telegram session twice at once, which can make Telegram revoke the session. The second collection is now skipped with a warning in the log.
+
 ## [v2026.11.24.43-plover] - 2026-11-24
 
 ### Logic

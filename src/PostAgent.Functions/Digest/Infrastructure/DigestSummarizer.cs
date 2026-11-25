@@ -13,8 +13,22 @@ public sealed class DigestSummarizer(IChatClient chat) : IDigestSummarizer
     public async Task<DigestReport> SummarizeAsync(IReadOnlyList<DigestItem> items, CancellationToken ct)
     {
         var summary = await chat.AskAsync<DigestSummary>(_systemPrompt, ToUserMessage(items), ct);
-        return DigestReport.From(items, summary);
+        var report = DigestReport.From(items, summary);
+
+        // Strict mode checks the shape, not the ids. If every named id is unknown, the digest would be empty
+        // and its posts still marked as sent; failing here makes the job send the plain digest instead.
+        // A summary that names no post at all is a weak day, not an error.
+        if (!report.HasEntries && NamesAnyPost(summary))
+        {
+            throw new InvalidOperationException("The digest summary named none of the selected posts.");
+        }
+
+        return report;
     }
+
+    private static bool NamesAnyPost(DigestSummary summary) =>
+        (summary.Headlines?.Count ?? 0) + (summary.ForMarketplace?.Count ?? 0)
+        + (summary.Notable?.Count ?? 0) + (summary.Recommended?.Count ?? 0) > 0;
 
     private static string ToUserMessage(IEnumerable<DigestItem> items) =>
         PromptJson.Serialize(items.Select(i => new

@@ -23,6 +23,9 @@ builder.Logging.Services.Configure<LoggerFilterOptions>(filter =>
     }
 });
 
+// WTelegramClient logs every connection and session event at Information; only its warnings and errors are worth the log quota.
+builder.Logging.AddFilter("WTelegram", LogLevel.Warning);
+
 var app = builder.Build();
 
 // Логи WTelegramClient (статичний хук бібліотеки) йдуть у загальний ILogger.
