@@ -14,7 +14,7 @@ public class ChatFunctionTests
     private readonly FakeChatAgent _agent = new(_ => "відповідь");
 
     private ChatFunction Create() =>
-        new(new ChatProcessor(_state, _agent, _notifier, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance),
+        new(new ChatProcessor(_state, _agent, _notifier, new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance),
             NullLogger<ChatFunction>.Instance);
 
     [Fact]

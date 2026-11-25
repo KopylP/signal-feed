@@ -23,6 +23,8 @@ public static class CallbackData
         MenuActionKind.AddSource => "sa",
         MenuActionKind.RemoveSource => MenuCallbacks.RemoveSource(a.Arg),
         MenuActionKind.ToggleAlert => $"sl:{a.Arg}",
+        MenuActionKind.ApplyProposal => MenuCallbacks.ApplyProposal(a.Arg),
+        MenuActionKind.DeclineProposal => MenuCallbacks.DeclineProposal(a.Arg),
         _ => throw new ArgumentOutOfRangeException(nameof(a)),
     };
 
@@ -48,6 +50,8 @@ public static class CallbackData
             ("t", 2) when parts[1].Length > 0 => MenuAction.AskText(parts[1]),
             ("r", 2) when parts[1].Length > 0 => MenuAction.Reset(parts[1]),
             ("sd", 2) when parts[1].Length > 0 => MenuAction.RemoveSource(parts[1]),
+            ("pa", 2) when parts[1].Length > 0 => MenuAction.ApplyProposal(parts[1]),
+            ("pn", 2) when parts[1].Length > 0 => MenuAction.DeclineProposal(parts[1]),
             ("sl", 2) when parts[1].Length > 0 => MenuAction.ToggleAlert(parts[1]),
             ("n", 3) when parts[1].Length > 0 && Number(parts[2]) is { } value => MenuAction.SetInt(parts[1], value),
             ("c", 3) when parts[1].Length > 0 && Number(parts[2]) is { } index => MenuAction.Choose(parts[1], index),

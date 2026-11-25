@@ -29,7 +29,7 @@ public class ChatAgentTests
     {
         var options = Microsoft.Extensions.Options.Options.Create(Options(configure));
         var tools = new ChatTools(new InMemoryPostRepository(Stored), options, new FakeTimeProvider(Now));
-        return new ChatAgent(client, tools, new FakeEffectiveOptions(options.Value), NullLogger<ChatAgent>.Instance);
+        return new ChatAgent(client, tools, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new FakeEffectiveOptions(options.Value), NullLogger<ChatAgent>.Instance);
     }
 
     private static ChatState Fresh() => new(
@@ -68,14 +68,37 @@ public class ChatAgentTests
     }
 
     [Fact]
-    public async Task The_model_gets_the_configured_limits_and_both_tools()
+    public async Task The_model_gets_the_configured_limits_and_all_tools()
     {
         var client = new ScriptedChatClient(Reply("ok"));
 
         await Create(client, o => o.ChatMaxOutputTokens = 123).AskAsync(Fresh(), "q", CancellationToken.None);
 
         Assert.Equal(123, client.LastOptions?.MaxOutputTokens);
-        Assert.Equal(["get_post", "search_posts"], client.LastOptions?.Tools?.Select(t => t.Name).Order());
+        Assert.Equal(
+            [
+                "get_post", "get_settings", "propose_add_source", "propose_remove_source", "propose_reset_group",
+                "propose_reset_setting", "propose_set_setting", "propose_toggle_alert_source", "search_posts",
+            ],
+            client.LastOptions?.Tools?.Select(t => t.Name).Order());
+    }
+
+    [Fact]
+    public async Task A_proposed_change_comes_back_with_the_reply_and_nothing_is_saved()
+    {
+        var harness = new PostAgent.Tests.SettingsMenu.MenuHarness();
+        var options = Microsoft.Extensions.Options.Options.Create(Options());
+        var agent = new ChatAgent(
+            new ScriptedChatClient(CallTool("propose_remove_source", "name", "@Chat"), Reply("Підготував, підтверди кнопкою")),
+            new ChatTools(new InMemoryPostRepository(Stored), options, new FakeTimeProvider(Now)),
+            harness.ToolsFactory,
+            new FakeEffectiveOptions(options.Value),
+            NullLogger<ChatAgent>.Instance);
+
+        var reply = await agent.AskAsync(Fresh(), "прибери chat", CancellationToken.None);
+
+        Assert.Equal([new SettingChange(SettingChangeKind.RemoveSource, "chat")], reply.Proposed);
+        Assert.Null(harness.Store.Current);
     }
 
     [Fact]

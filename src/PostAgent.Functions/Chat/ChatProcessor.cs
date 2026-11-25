@@ -9,6 +9,7 @@ public sealed class ChatProcessor(
     IChatStateStore store,
     IChatAgent agent,
     ITelegramNotifier notifier,
+    SettingsProposalSender proposals,
     TimeProvider time,
     ILogger<ChatProcessor> log)
 {
@@ -47,6 +48,11 @@ public sealed class ChatProcessor(
             if (await store.TrySaveAsync(current, current.State.WithProcessed(request.UpdateId, reply.Session), ct))
             {
                 await SendAsync(reply.Text, ct);
+                if (reply.Proposed is { Count: > 0 } changes)
+                {
+                    await proposals.SendAsync(request.UpdateId, changes, ct);
+                }
+
                 return;
             }
 

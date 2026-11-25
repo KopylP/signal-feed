@@ -14,6 +14,7 @@ namespace PostAgent.Chat.Infrastructure;
 public sealed class ChatAgent(
     [FromKeyedServices(AiServices.ChatClientKey)] IChatClient chat,
     ChatTools tools,
+    SettingsToolsFactory settingsTools,
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
@@ -22,7 +23,8 @@ public sealed class ChatAgent(
     public async Task<ChatReply> AskAsync(ChatState state, string userText, CancellationToken ct)
     {
         var settings = await options.GetAsync(ct);
-        var agent = CreateAgent(settings);
+        var draft = new List<SettingChange>();
+        var agent = CreateAgent(settings, settingsTools.Create(draft));
 
         var (session, hasHistory) = await OpenSessionAsync(agent, state.Session, ct);
         var messages = new List<ChatMessage>();
@@ -42,10 +44,10 @@ public sealed class ChatAgent(
         }
 
         var serialized = await agent.SerializeSessionAsync(session, cancellationToken: ct);
-        return new ChatReply(response.Text.Trim(), serialized.Clone());
+        return new ChatReply(response.Text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
     }
 
-    private AIAgent CreateAgent(AgentOptions settings)
+    private AIAgent CreateAgent(AgentOptions settings, SettingsTools settingTools)
     {
         var client = new ChatClientBuilder(chat)
             .UseFunctionInvocation(configure: c => c.MaximumIterationsPerRequest = settings.ChatMaxToolCalls)
@@ -71,6 +73,13 @@ public sealed class ChatAgent(
                 [
                     AIFunctionFactory.Create(tools.GetPost, "get_post"),
                     AIFunctionFactory.Create(tools.SearchPosts, "search_posts"),
+                    AIFunctionFactory.Create(settingTools.GetSettings, "get_settings"),
+                    AIFunctionFactory.Create(settingTools.ProposeSet, "propose_set_setting"),
+                    AIFunctionFactory.Create(settingTools.ProposeReset, "propose_reset_setting"),
+                    AIFunctionFactory.Create(settingTools.ProposeResetGroup, "propose_reset_group"),
+                    AIFunctionFactory.Create(settingTools.ProposeAddSource, "propose_add_source"),
+                    AIFunctionFactory.Create(settingTools.ProposeRemoveSource, "propose_remove_source"),
+                    AIFunctionFactory.Create(settingTools.ProposeToggleAlertSource, "propose_toggle_alert_source"),
                 ],
             },
             ChatHistoryProvider = new InMemoryChatHistoryProvider(

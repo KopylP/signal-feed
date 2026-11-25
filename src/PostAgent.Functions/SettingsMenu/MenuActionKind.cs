@@ -16,4 +16,6 @@ public enum MenuActionKind
     AddSource,
     RemoveSource,
     ToggleAlert,
+    ApplyProposal,
+    DeclineProposal,
 }

@@ -130,14 +130,9 @@ public static class MenuScreens
     private static int CurrentInt(SettingDefinition d, AgentOptions options) =>
         int.TryParse(Raw(d, options), out var value) ? value : d.Min;
 
-    private static string Raw(SettingDefinition d, AgentOptions options) =>
-        typeof(AgentOptions).GetProperty(d.Key)?.GetValue(options)?.ToString() ?? string.Empty;
+    private static string Raw(SettingDefinition d, AgentOptions options) => SettingsCatalog.Raw(d, options);
 
-    private static string Display(SettingDefinition d, AgentOptions options)
-    {
-        var raw = Raw(d, options);
-        return raw.Length > 0 ? raw : d.Kind == SettingKind.QuietHours ? "вимкнено" : "—";
-    }
+    private static string Display(SettingDefinition d, AgentOptions options) => SettingsCatalog.Display(d, Raw(d, options));
 
     private static KeyboardButton Button(string text, MenuAction action) => new(text, CallbackData.Encode(action));
 }

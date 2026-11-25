@@ -1,6 +1,6 @@
-using PostAgent.SettingsMenu;
+using PostAgent.Shared.Settings;
 
-namespace PostAgent.Tests.SettingsMenu;
+namespace PostAgent.Tests.Shared.Settings;
 
 public class SourceRulesTests
 {

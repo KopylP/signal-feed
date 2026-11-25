@@ -21,6 +21,8 @@ public class CallbackDataTests
         MenuAction.AddSource,
         MenuAction.RemoveSource("some_channel"),
         MenuAction.ToggleAlert("some_channel"),
+        MenuAction.ApplyProposal("123456789"),
+        MenuAction.DeclineProposal("123456789"),
     ];
 
     [Theory]

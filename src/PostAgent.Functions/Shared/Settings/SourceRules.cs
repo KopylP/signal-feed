@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
-using PostAgent.Shared.Settings;
 
-namespace PostAgent.SettingsMenu;
+namespace PostAgent.Shared.Settings;
 
 public static class SourceRules
 {

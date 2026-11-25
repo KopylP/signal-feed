@@ -130,10 +130,29 @@ public sealed class MenuController(
                 await editor.ResetGroupAsync(group, ct);
                 return group == SettingGroup.Sources ? await SourcesAsync(null, ct) : await GroupAsync(group, null, ct);
 
+            case MenuActionKind.ApplyProposal:
+                return await ApplyProposalAsync(action.Arg, ct);
+
+            case MenuActionKind.DeclineProposal:
+                return await editor.DeclineProposalAsync(action.Arg, ct) ? new Screen(SettingsProposalMessage.Declined, InlineKeyboard.Empty) : null;
+
             default:
                 // An unknown key or a value outside the catalog (an old or forged button): nothing changes.
                 return null;
         }
+    }
+
+    // A second tap finds the proposal gone and changes nothing, so it cannot overwrite the "applied" text.
+    private async Task<Screen?> ApplyProposalAsync(string id, CancellationToken ct)
+    {
+        var outcome = await editor.ApplyProposalAsync(id, time.GetUtcNow(), ct);
+        return outcome.Status switch
+        {
+            ProposalStatus.Applied => new Screen(SettingsProposalMessage.Applied(outcome.Proposal!), InlineKeyboard.Empty),
+            ProposalStatus.Expired => new Screen(SettingsProposalMessage.Expired, InlineKeyboard.Empty),
+            ProposalStatus.Failed => new Screen(SettingsProposalMessage.Failed(outcome.Error), InlineKeyboard.Empty),
+            _ => null,
+        };
     }
 
     private async Task<Screen> AfterSetAsync(SettingDefinition definition, string value, CancellationToken ct)

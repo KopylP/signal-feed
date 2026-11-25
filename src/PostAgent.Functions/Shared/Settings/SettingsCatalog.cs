@@ -53,6 +53,13 @@ public static class SettingsCatalog
 
     public static IReadOnlyList<SettingDefinition> InGroup(SettingGroup group) => All.Where(d => d.Group == group).ToList();
 
+    public static string Raw(SettingDefinition definition, AgentOptions options) =>
+        typeof(AgentOptions).GetProperty(definition.Key)?.GetValue(options)?.ToString() ?? string.Empty;
+
+    // What the owner reads for a stored value.
+    public static string Display(SettingDefinition definition, string raw) =>
+        raw.Length > 0 ? raw : definition.Kind == SettingKind.QuietHours ? "вимкнено" : "—";
+
     // The bounds have one home: the Range attribute of the AgentOptions property.
     private static SettingDefinition Int(string key, SettingGroup group, string label)
     {
