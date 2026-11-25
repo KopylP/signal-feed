@@ -1,6 +1,7 @@
 using PostAgent.Collecting;
 using PostAgent.Scoring;
 using PostAgent.Shared.Posts;
+using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent.Tests.Fakes;
 
@@ -63,7 +64,7 @@ internal sealed class FakeScoringQueue : IScoringQueue
     }
 }
 
-internal sealed class FakeCollectionLock : ICollectionLock
+internal sealed class FakeSessionLock : ISessionLock
 {
     public bool Busy { get; set; }
     public int Acquired { get; private set; }
@@ -80,7 +81,7 @@ internal sealed class FakeCollectionLock : ICollectionLock
         return Task.FromResult<IAsyncDisposable?>(new Handle(this));
     }
 
-    private sealed class Handle(FakeCollectionLock owner) : IAsyncDisposable
+    private sealed class Handle(FakeSessionLock owner) : IAsyncDisposable
     {
         public ValueTask DisposeAsync()
         {

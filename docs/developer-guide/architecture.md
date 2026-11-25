@@ -25,6 +25,8 @@ Resources talk to each other with managed identity and RBAC: there are no keys o
 | `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
 | `PairingFunction` | HTTP `POST /api/telegram/webhook` (anonymous) | The bot's webhook: checks the secret token header, binds the chat that sends `/start <TelegramPairingKey>`, and hands every other update (a message or a button press) to the handlers, the settings menu first and then the chat ([ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md)) |
 | `ChatFunction` | queue `chat-messages` | Answers one question about the latest digest with a Microsoft Agent Framework agent and tools ([ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md)) |
+| `LoginFunction` | queue `tg-login` | The waiting side of `/login`: holds the session lock and one MTProto connection, sends the Mini App buttons, takes the phone, the code and the SRP proof of the 2FA password (computed on the phone: the password never reaches us) from the attempt blob, replaces the session and announces the new account to every paired chat ([ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md)) |
+| `LoginPage`, `LoginSubmit` | HTTP `GET`/`POST /api/telegram/login` (anonymous) | The Mini App page and its form (phone, code, or the SRP proof the page computes from the 2FA password; `action: challenge` returns the public SRP values); the form is accepted only with `initData` signed by Telegram for this bot, from the paired chat that started the attempt, with its attempt id |
 | `CleanupFunction` | `%CleanupSchedule%` | Runs every `ICleanupTask`; today it deletes days older than `RetentionDays` from `Posts` |
 | `RunNowFunction` | queue `run-now` | Starts a job by name (`collect`, `digest`, `alert`, `cleanup`) for testing, only when `ManualRunsEnabled` is true. The timer functions and this one call the same `IJob` class, so the logic exists once |
 
@@ -67,11 +69,12 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 | Table | `ChatBinding` | One row per paired chat (`chat`/`<chat id>`; an earlier version's `chat`/`digest` row still counts), at most `TelegramMaxChats`; deleted by the operator to unbind ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)) |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about, chat id); messages live one hour |
+| Queue | `tg-login` | One message per `/login` (attempt id, chat id); lives 10 minutes, never retried |
 | Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
 | Blob | `settings` / `overrides.json` | What the owner set from the bot (values, sources with a verified flag, alert sources, edited prompt sections, the ids of the last handled menu updates); written with an ETag, read by `IEffectiveOptions` ([ADR-0012](../adr/0012-override-settings-from-the-telegram-bot-through-a-blob.md)) |
 | Blob | `settings` / `profile/<chat id>.txt` | What the reader of one chat wrote about themselves, plain text, one blob per chat; the chat adds it to its instructions as data; written by the chat through a confirmed edit ([ADR-0015](../adr/0015-edit-prompt-sections-and-a-reader-profile-from-the-chat.md)) |
 | Blob | `chat-state` / `<chat id>.json` | The conversation of one chat about the latest digest: snapshot of the digest (empty before the first digest, the chat works without it), ids of the last 20 handled updates, serialized agent session (dropped by `/clear`); overwritten by every digest |
-| Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin`, and `collect.lock`, leased for the length of a collection so that two collections never share the session (two connections on one auth key can make Telegram revoke it) |
+| Blob | `var.session_blob_container` | Everything here is encrypted with the Key Vault key `tg-session` (envelope, AES-256-GCM, [ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md)) except `collect.lock`. The Telegram MTProto session, uploaded by `TgLogin` or by `/login`; `collect.lock`, leased for the length of a collection or a sign-in so that two of them never share the session (two connections on one auth key can make Telegram revoke it); `login-attempt.json`, the sign-in in progress (attempt id, chat, expiry, the public SRP challenge of the password step, and the phone, code and password proof the form sent until `LoginFunction` takes them; never the password), deleted when the sign-in ends |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
 
 Every storage name is defined once in `Shared/Infrastructure/StorageNames`.
@@ -91,6 +94,8 @@ Everything lives in one resource group `rg-<prefix>`. Names follow `<abbreviatio
 | Budget | `budget-<prefix>` | `azurerm_consumption_budget_resource_group` | monthly, alerts at 80% and 100% |
 
 Secrets in Key Vault (set by hand, never by Terraform): `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash`, `TelegramPairingKey`, `TelegramWebhookSecret`.
+Key in Key Vault (generated by Key Vault, created by Terraform): `tg-session`, RSA-3072, wrap and unwrap only; it encrypts the session and the sign-in in progress (`SessionKeyId`).
+A rotation policy makes a new version every 90 days; each process wraps its data key with the current version, so rewritten blobs follow it.
 
 ![Azure architecture of Signal Feed: one resource group with the Function App on a Flex Consumption plan, the storage account, Key Vault, Application Insights with Log Analytics and the budget, and the external Telegram, OpenAI and deployer](images/azure-architecture.drawio.svg)
 
@@ -104,10 +109,13 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Function App (system-assigned) | Storage account | Storage Queue Data Contributor |
 | Function App (system-assigned) | Storage account | Storage Table Data Contributor |
 | Function App (system-assigned) | Key Vault | Key Vault Secrets User |
+| Function App (system-assigned) | Key Vault key `tg-session` | Key Vault Crypto Service Encryption User (wrap and unwrap) |
 | Deployer (`var.deployer_object_id`) | Key Vault | Key Vault Secrets Officer |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Blob Data Contributor |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Table Data Contributor (to edit `ChatBinding`) |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Queue Data Contributor (to start a job with `tools/run-now.cs`) |
+| Deployer (`var.deployer_object_id`) | Key Vault key `tg-session` | Key Vault Crypto Service Encryption User (`TgLogin` encrypts the session) |
+| Whoever runs Terraform | Key Vault | Key Vault Crypto Officer (creates and rotates the `tg-session` key) |
 
 `AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The secrets are App Settings of the form
 `@Microsoft.KeyVault(SecretUri=.../secrets/<name>/)`. Roles are defined in `infra/roles.tf`.
@@ -122,11 +130,16 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Every deploy is a release with a build-counter version | Traceable versions and simple rollback | [ADR-0005](../adr/0005-release-every-deploy-with-a-build-counter-version.md) |
 | Bind the chat with a pairing key over a webhook | The operator does not have to look up a chat id; the first chat with the secret key wins and the id is stored in a table | [ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md) |
 | Chat about the digest with one conversation blob | A new digest replaces the state, so nothing accumulates; the queue keeps the webhook fast; the agent framework core gives session serialization without durable hosting | [ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md) |
+| Sign in to Telegram from the bot through a Mini App | The session can be renewed from the phone; the code never travels as a Telegram message, and the 2FA password never leaves the phone (SRP proof computed in the page) | [ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md) |
+| Encrypt the Telegram session with a Key Vault key | Storage access alone (a key, a SAS, a backup) shows only ciphertext; Key Vault is called about once per process | [ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md) |
 | Fix formatting and validate Terraform in the build job | One pipeline gates the deploy: a broken format or Terraform change cannot reach it | [ADR-0006](../adr/0006-fix-formatting-and-validate-terraform-in-the-build-job.md) |
 
 ## Known gaps
 
 - **The webhook endpoint is public.** It is protected by the secret token header and the pairing key, not by a function key (Telegram cannot send one).
+- **The sign-in page is public.** Its form trusts only `initData` signed with the bot token, so a leaked bot token also lets someone submit a form; they still need the login code Telegram sends to the reader account. Any paired chat can sign the reader in as another account it controls; every paired chat is told which account reads the channels after each sign-in.
+- **A login code passes through storage.** It sits in `login-attempt.json`, encrypted with the session key, for the seconds between the form and `LoginFunction` (which clears it at once); it is single-use.
+- **The session key protects against storage-only access, not against the function.** The function and the deployer can both read the blobs and unwrap the key. The 2FA password never reaches the app: only its single-use SRP proof does.
 - **The chat costs money per question and has no per-day limit.** Only the bound private chat reaches it, and a conversation, a reply and the tool calls per question are capped, but there is no daily budget for questions; a question costs up to `ChatMaxToolCalls + 1` model calls.
 - **No network isolation.** Storage and Key Vault are reachable over their public endpoints, protected by RBAC and TLS 1.2. A VNet or private endpoints have a standing cost, so they need an explicit decision.
 - **Anyone with write access to the `run-now` queue can start a job** (the function identity and the deployer; storage keys are not disabled either). The switch `ManualRunsEnabled` is off in Azure by default, so a message does nothing until the operator turns it on.

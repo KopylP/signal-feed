@@ -12,7 +12,7 @@ public class CollectorJobTests
     private readonly InMemoryPostRepository _repo = new();
     private FakeScoringQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
-    private readonly FakeCollectionLock _lock = new();
+    private readonly FakeSessionLock _lock = new();
     private FakeEffectiveOptions _effective = new(new AgentOptions());
 
     private InMemoryOverridesStore Overrides { get; } = new();

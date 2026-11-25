@@ -28,7 +28,6 @@ public class AgentOptionsTests
         TelegramWebhookSecret = "webhook_secret-token",
         TelegramApiId = 12345,
         TelegramApiHash = "hash",
-        TelegramPhone = "+380000000000",
     };
 
     private static List<ValidationResult> Validate(AgentOptions options)

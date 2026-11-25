@@ -24,4 +24,12 @@ public sealed record KeyboardButton
     public string Data { get; }
 
     public ButtonStyle Style { get; }
+
+    // Set for a button that opens a Telegram Mini App instead of sending callback data (only in a private chat).
+    public Uri? WebApp { get; private init; }
+
+    public static KeyboardButton OpenWebApp(string text, Uri url, ButtonStyle style = ButtonStyle.Default) =>
+        url.Scheme == Uri.UriSchemeHttps
+            ? new KeyboardButton(text, string.Empty, style) { WebApp = url }
+            : throw new ArgumentException("A Mini App must be served over HTTPS.", nameof(url));
 }

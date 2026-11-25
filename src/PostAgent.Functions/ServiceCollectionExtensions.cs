@@ -4,6 +4,7 @@ using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
+using PostAgent.Login;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
 using PostAgent.SettingsMenu;
@@ -12,6 +13,7 @@ using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent;
 
@@ -29,11 +31,13 @@ public static class ServiceCollectionExtensions
 
         return services
             .AddStorage(config)
+            .AddSessionCipher(config)
             .AddSettings()
             .AddAi()
             .AddPosts()
             .AddNotifications()
             .AddPairing()
+            .AddLogin()
             .AddSettingsMenu()
             .AddChat()
             .AddCollecting()

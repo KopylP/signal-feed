@@ -21,6 +21,7 @@ public static class StorageRegistration
             services.AddSingleton(new BlobServiceClient(connectionString));
             services.AddSingleton(new QueueClient(connectionString, StorageNames.ScoringQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(connectionString, StorageNames.ChatQueue, queueOptions));
+            services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(connectionString, StorageNames.LoginQueue, queueOptions));
         }
         else if (!string.IsNullOrEmpty(account))
         {
@@ -31,6 +32,8 @@ public static class StorageRegistration
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ScoringQueue}"), credential, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ChatQueue}"), credential, queueOptions));
+            services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.LoginQueue}"), credential, queueOptions));
         }
         else
         {
@@ -54,6 +57,7 @@ public static class StorageRegistration
         await tables.CreateTableIfNotExistsAsync(StorageNames.ChatBindingTable, ct);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue).CreateIfNotExistsAsync(cancellationToken: ct);
+        await services.GetRequiredKeyedService<QueueClient>(StorageNames.LoginQueue).CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
         var blobs = services.GetRequiredService<BlobServiceClient>();

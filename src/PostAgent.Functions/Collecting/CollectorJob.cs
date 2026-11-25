@@ -2,12 +2,13 @@ using PostAgent.Shared.Common;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent.Collecting;
 
 public sealed class CollectorJob(
     SourceCollector collector,
-    ICollectionLock collectionLock,
+    ISessionLock sessionLock,
     ITelegramNotifier notifier,
     IEffectiveOptions options,
     SettingsEditor editor,
@@ -22,10 +23,10 @@ public sealed class CollectorJob(
 
     public async Task RunAsync(CancellationToken ct)
     {
-        await using var held = await collectionLock.TryAcquireAsync(ct);
+        await using var held = await sessionLock.TryAcquireAsync(ct);
         if (held is null)
         {
-            log.LogWarning("Collection skipped: another collection is using the Telegram session");
+            log.LogWarning("Collection skipped: another collection or a sign-in is using the Telegram session");
             return;
         }
 

@@ -8,6 +8,55 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [cedar] - 2026-11-25
+
+### Setup required
+- **Key Vault key `tg-session` and `SessionKeyId`**: required before the code deploys
+  - Where: Terraform (`infra/keyvault.tf`, `infra/roles.tf`, `infra/function.tf`)
+  - Value: none, Key Vault generates the key; Terraform grants the roles and sets the App Setting
+  - Apply: run the `infra` workflow with apply before this code merges (rerun it if the key creation fails with 403 while the new role propagates); without `SessionKeyId` the app does not start
+- **`SESSION_KEY_ID` for `TgLogin`**: required to run `TgLogin` against Azure
+  - Where: your shell
+  - Value: `$(terraform -chdir=infra output -raw session_key_id)`
+  - Apply: export it before `dotnet run --project src/TgLogin`
+- **`tg-login` queue**: required before the code deploys
+  - Where: Terraform (`infra/storage.tf`)
+  - Value: none, Terraform creates it
+  - Apply: run the `infra` workflow with apply (or `terraform apply`) before this code merges; without the queue `/login` fails
+- **`TF_TELEGRAM_PHONE`**: no longer used
+  - Where: GitHub Secret
+  - Value: none
+  - Apply: delete the secret after the `infra` workflow ran; the `infra` apply removes the `TelegramPhone` App Setting
+
+### Contract changes
+- **Terraform variable `telegram_phone` and App Setting `TelegramPhone`: removed** (breaking)
+  - Before: required, the phone of the reader account
+  - After: gone; the phone is typed in the bot with `/login` (`TgLogin` still reads `TELEGRAM_PHONE` from its own environment)
+  - Affects: a `terraform.tfvars` that still sets `telegram_phone` makes Terraform warn about an undeclared variable
+  - Migration: delete `telegram_phone` from `terraform.tfvars` and the `TF_TELEGRAM_PHONE` secret from GitHub
+- **Telegram messages: the collection failure for an expired session** (compatible)
+  - Before: `Telegram session is expired. Run TgLogin again.`
+  - After: `Telegram session is expired. Send /login to the bot (or run TgLogin).`
+  - Affects: nothing
+  - Migration: none
+
+### Added
+- **Sign in to Telegram from the bot**: `/login` in a paired private chat renews the reader session from the phone: a form inside Telegram asks for the number, then for the code and the 2FA password (checked on the phone with SRP: the password never leaves it and is never stored), and every paired chat is told which account reads the channels now ([Renewing the Telegram session](docs/user-guide/how-it-works.md#renewing-the-telegram-session), ADR-0016)
+  - Enable: on by default for every paired private chat, once the `tg-login` queue exists
+  - Settings: none
+  - Limits: one sign-in at a time, 5 minutes, 3 wrong answers; a sign-in that Telegram routes to email or sign-up needs `TgLogin`
+- **Encrypted Telegram session**: the session and the sign-in in progress are stored encrypted with a Key Vault key, so access to the storage account alone no longer reveals them ([ADR-0017](docs/adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md))
+  - Enable: on in Azure once `SessionKeyId` is set; a session stored in clear is encrypted on the first collection
+  - Settings: `SessionKeyId` (set by Terraform)
+  - Limits: the function and the deployer can still read it; deleting the key makes the session unreadable (sign in again)
+  - Rotation: Key Vault rotates the key every 90 days on its own; to rotate at once, see [Rotating the session key](docs/user-guide/configuration.md#rotating-the-session-key)
+
+### Logic
+- **Collecting: which account the session may hold**
+  - Before: the collector compared the session's account with `TelegramPhone` and, on a mismatch, logged the session out and tried to sign in again
+  - After: the collector uses whichever account the session holds and never asks Telegram for a code; an expired session fails the collection with a hint to send `/login`
+  - Effect: no code requests from the hourly collection; the reader account can be changed with `/login` without touching Terraform
+
 ## [v2026.11.25.75-willow] - 2026-11-25
 
 ### Improved

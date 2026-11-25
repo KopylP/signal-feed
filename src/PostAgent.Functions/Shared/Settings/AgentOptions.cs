@@ -73,8 +73,10 @@ public sealed class AgentOptions
     [Required] public string TelegramWebhookSecret { get; set; } = string.Empty;
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = string.Empty;
-    [Required] public string TelegramPhone { get; set; } = string.Empty;
     public string SessionBlobContainer { get; set; } = StorageNames.DefaultSessionContainer;
+
+    // Set by the Azure platform, never by us: the host name the Mini App of /login is served from (ADR-0016). Empty locally.
+    [ConfigurationKeyName("WEBSITE_HOSTNAME")] public string WebsiteHostName { get; set; } = string.Empty;
 
     // A shallow copy is enough: every property is a value or an immutable string.
     public AgentOptions Clone() => (AgentOptions)MemberwiseClone();
