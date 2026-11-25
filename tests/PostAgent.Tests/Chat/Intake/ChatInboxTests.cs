@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Time.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using PostAgent.Chat;
 using PostAgent.Chat.Answering;
 using PostAgent.Chat.Intake;
