@@ -13,6 +13,11 @@ output "storage_account_name" {
   value       = azurerm_storage_account.main.name
 }
 
+output "session_key_id" {
+  description = "Key Vault key that encrypts the Telegram session, needed by TgLogin (SESSION_KEY_ID)."
+  value       = azurerm_key_vault_key.session.versionless_id
+}
+
 output "key_vault_name" {
   description = "Key Vault that receives the secrets (az keyvault secret set)."
   value       = azurerm_key_vault.main.name

@@ -4,6 +4,8 @@ locals {
     queue = { scope = azurerm_storage_account.main.id, role = "Storage Queue Data Contributor" }
     table = { scope = azurerm_storage_account.main.id, role = "Storage Table Data Contributor" }
     vault = { scope = azurerm_key_vault.main.id, role = "Key Vault Secrets User" }
+    # Wrap and unwrap with the session key only: no other key, no secret values.
+    session_key = { scope = azurerm_key_vault_key.session.resource_versionless_id, role = "Key Vault Crypto Service Encryption User" }
   }
 
   deployer_roles = {
@@ -11,6 +13,8 @@ locals {
     blob    = { scope = azurerm_storage_account.main.id, role = "Storage Blob Data Contributor" }
     table   = { scope = azurerm_storage_account.main.id, role = "Storage Table Data Contributor" }
     queue   = { scope = azurerm_storage_account.main.id, role = "Storage Queue Data Contributor" }
+    # TgLogin encrypts the session it uploads.
+    session_key = { scope = azurerm_key_vault_key.session.resource_versionless_id, role = "Key Vault Crypto Service Encryption User" }
   }
 }
 
@@ -29,4 +33,11 @@ resource "azurerm_role_assignment" "deployer" {
   scope                = each.value.scope
   role_definition_name = each.value.role
   principal_id         = var.deployer_object_id
+}
+
+# Whoever runs Terraform (you locally, or the infra workflow) creates and rotates the session key in the RBAC-mode vault.
+resource "azurerm_role_assignment" "terraform_keys" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Crypto Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
