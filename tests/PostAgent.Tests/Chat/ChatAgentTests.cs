@@ -1,0 +1,174 @@
+using System.Text.Json;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
+using PostAgent.Chat.Infrastructure;
+using PostAgent.Shared.Chat;
+using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
+using PostAgent.Tests.Fakes;
+using static PostAgent.Tests.TestData;
+using static PostAgent.Tests.Fakes.ScriptedChatClient;
+
+namespace PostAgent.Tests.Chat;
+
+public class ChatAgentTests
+{
+    private static readonly PostEntity Stored = StoredPost();
+    private static readonly string StoredId = ChatPostId.Format(Stored.ToRef());
+
+    private static PostEntity StoredPost()
+    {
+        var post = Post("src_1");
+        post.Text = "Повний текст про Google";
+        post.Topic = "Тема збереженого посту";
+        return post;
+    }
+
+    private static ChatAgent Create(ScriptedChatClient client, Action<AgentOptions>? configure = null)
+    {
+        var options = Microsoft.Extensions.Options.Options.Create(Options(configure));
+        var tools = new ChatTools(new InMemoryPostRepository(Stored), options, new FakeTimeProvider(Now));
+        return new ChatAgent(client, tools, options, NullLogger<ChatAgent>.Instance);
+    }
+
+    private static ChatState Fresh() => new(
+        new ReportSnapshot("r1", Now, "Огляд дня",
+            [new SnapshotEntry("Headlines", StoredId, "src", Now, "Заголовок", "Суть", "Чому", "Уривок", 9, Stored.Url)], []),
+        [], null);
+
+    private static string AllText(IEnumerable<ChatMessage> messages) =>
+        string.Join("\n", messages.Select(m => m.Text));
+
+    [Fact]
+    public async Task The_reply_comes_from_the_model_with_a_session_to_keep()
+    {
+        var client = new ScriptedChatClient(Reply("Відповідь"));
+
+        var reply = await Create(client).AskAsync(Fresh(), "Розкажи більше", CancellationToken.None);
+
+        Assert.Equal("Відповідь", reply.Text);
+        Assert.Equal(JsonValueKind.Object, reply.Session.ValueKind);
+    }
+
+    [Fact]
+    public async Task The_snapshot_goes_in_as_a_user_message_and_not_into_the_instructions()
+    {
+        var client = new ScriptedChatClient(Reply("ok"));
+
+        await Create(client).AskAsync(Fresh(), "Питання", CancellationToken.None);
+
+        var first = client.Calls[0];
+        Assert.Equal(ChatRole.User, first[0].Role);
+        Assert.Contains("<report>", first[0].Text);
+        Assert.Contains(StoredId, first[0].Text);
+        Assert.Contains("Питання", first[^1].Text);
+        Assert.DoesNotContain("Огляд дня", client.LastOptions?.Instructions ?? string.Empty);
+        Assert.False(string.IsNullOrWhiteSpace(client.LastOptions?.Instructions));
+    }
+
+    [Fact]
+    public async Task The_model_gets_the_configured_limits_and_both_tools()
+    {
+        var client = new ScriptedChatClient(Reply("ok"));
+
+        await Create(client, o => o.ChatMaxOutputTokens = 123).AskAsync(Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal(123, client.LastOptions?.MaxOutputTokens);
+        Assert.Equal(["get_post", "search_posts"], client.LastOptions?.Tools?.Select(t => t.Name).Order());
+    }
+
+    [Fact]
+    public async Task The_next_turn_sees_the_earlier_question_and_the_snapshot_only_once()
+    {
+        var client = new ScriptedChatClient(Reply("перша"), Reply("друга"));
+        var agent = Create(client);
+        var first = await agent.AskAsync(Fresh(), "перше питання", CancellationToken.None);
+
+        await agent.AskAsync(Fresh().WithProcessed(1, first.Session), "друге питання", CancellationToken.None);
+
+        var seen = AllText(client.Calls[1]);
+        Assert.Contains("перше питання", seen);
+        Assert.Contains("перша", seen);
+        Assert.Contains("друге питання", seen);
+        Assert.Equal(1, client.Calls[1].Count(m => m.Text.Contains("<report>")));
+    }
+
+    [Fact]
+    public async Task A_turn_with_a_tool_call_survives_serialization_into_the_next_turn()
+    {
+        var client = new ScriptedChatClient(CallTool("get_post", "id", StoredId), Reply("з інструментом"), Reply("далі"));
+        var agent = Create(client);
+        var first = await agent.AskAsync(Fresh(), "дістань пост", CancellationToken.None);
+
+        await agent.AskAsync(Fresh().WithProcessed(1, first.Session), "ще питання", CancellationToken.None);
+
+        var next = client.Calls[^1];
+        Assert.Contains(next.SelectMany(m => m.Contents), c => c is FunctionCallContent);
+        Assert.Contains(next.SelectMany(m => m.Contents), c => c is FunctionResultContent);
+    }
+
+    [Fact]
+    public async Task A_tool_call_reaches_the_chat_tools()
+    {
+        var client = new ScriptedChatClient(CallTool("get_post", "id", StoredId), Reply("готово"));
+
+        await Create(client).AskAsync(Fresh(), "дістань пост", CancellationToken.None);
+
+        var result = client.Calls[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
+        Assert.Contains("Повний текст про Google", result.Result?.ToString());
+    }
+
+    [Fact]
+    public async Task The_history_is_capped_but_keeps_the_digest_as_its_first_message()
+    {
+        var client = new ScriptedChatClient(Reply("a"));
+        var agent = Create(client, o => o.ChatMaxMessages = 4);
+        var state = Fresh();
+        for (var turn = 1; turn <= 5; turn++)
+        {
+            var reply = await agent.AskAsync(state, "питання " + turn, CancellationToken.None);
+            state = state.WithProcessed(turn, reply.Session);
+        }
+
+        var last = client.Calls[^1];
+        Assert.True(last.Count <= 5, $"the client was sent {last.Count} messages");
+        Assert.Contains("<report>", last[0].Text);
+        Assert.Contains("питання 5", last[^1].Text);
+        Assert.DoesNotContain("питання 1", AllText(last));
+    }
+
+    [Fact]
+    public async Task A_model_that_keeps_asking_for_tools_is_stopped_at_the_cap_and_the_turn_fails()
+    {
+        var client = new ScriptedChatClient(CallTool("search_posts", "query", "seo"));
+
+        var ask = () => Create(client, o => o.ChatMaxToolCalls = 2).AskAsync(Fresh(), "q", CancellationToken.None);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(ask);
+        Assert.Equal(3, client.Calls.Count);
+    }
+
+    [Fact]
+    public async Task An_empty_model_reply_fails_the_turn()
+    {
+        var client = new ScriptedChatClient(Reply("   "));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Create(client).AskAsync(Fresh(), "q", CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData("""{"stateBag":{"InMemoryChatHistoryProvider":{"messages":"nope"}}}""")]
+    [InlineData("""{"stateBag":5}""")]
+    [InlineData("{}")]
+    public async Task A_session_that_cannot_be_used_starts_a_fresh_one_with_the_same_snapshot(string session)
+    {
+        var client = new ScriptedChatClient(Reply("ok"));
+        var state = Fresh().WithProcessed(1, JsonDocument.Parse(session).RootElement);
+
+        var reply = await Create(client).AskAsync(state, "q", CancellationToken.None);
+
+        Assert.Equal("ok", reply.Text);
+        Assert.Contains("<report>", client.Calls[0][0].Text);
+    }
+}

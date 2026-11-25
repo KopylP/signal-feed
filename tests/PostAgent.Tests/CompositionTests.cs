@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PostAgent.Alerts;
+using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
@@ -111,6 +112,14 @@ public class CompositionTests
 
         Assert.Equal(StorageNames.ScoringQueue, scoring.Name);
         Assert.Equal(StorageNames.ChatQueue, chat.Name);
+    }
+
+    [Fact]
+    public void The_chat_agent_is_built_from_the_container_with_the_keyed_chat_client()
+    {
+        using var provider = BuildProvider();
+
+        Assert.NotNull(provider.GetRequiredService<IChatAgent>());
     }
 
     [Fact]

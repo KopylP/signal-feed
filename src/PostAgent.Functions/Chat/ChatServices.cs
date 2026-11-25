@@ -6,5 +6,8 @@ namespace PostAgent.Chat;
 public static class ChatServices
 {
     public static IServiceCollection AddChat(this IServiceCollection services) =>
-        services.AddSingleton<IChatStateStore, BlobChatStateStore>();
+        services
+            .AddSingleton<IChatStateStore, BlobChatStateStore>()
+            .AddSingleton<ChatTools>()
+            .AddSingleton<IChatAgent, ChatAgent>();
 }
