@@ -25,5 +25,16 @@ resource "azurerm_key_vault_key" "session" {
   key_size     = 3072
   key_opts     = ["wrapKey", "unwrapKey"]
 
+  # Key Vault makes a new version on its own every 90 days; no function or pipeline is needed. Old versions stay enabled,
+  # so blobs wrapped with them can still be read, and every rewrite moves a blob to the newest version.
+  # A version expires a year after it is created: from then it no longer wraps, but it still unwraps.
+  rotation_policy {
+    automatic {
+      time_after_creation = "P90D"
+    }
+    expire_after         = "P1Y"
+    notify_before_expiry = "P30D"
+  }
+
   depends_on = [azurerm_role_assignment.terraform_keys]
 }

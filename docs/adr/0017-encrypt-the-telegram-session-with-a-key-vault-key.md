@@ -19,12 +19,15 @@ The header and the blob name are authenticated. A process wraps one data key and
 Terraform creates the key (Key Vault generates it, so no secret reaches the state) and grants "Key Vault Crypto Service Encryption User" on that key only
 to the function and the deployer (`TgLogin`). The app setting `SessionKeyId` names the versionless key; the app refuses to start in Azure without it.
 A session stored before this change is read once and written back encrypted.
+The key rotates itself: a Key Vault rotation policy makes a new version every 90 days (versions expire after a year), with no function or pipeline of ours.
+A process always writes with its own data key wrapped by the current version, never with a key it read, so every rewritten blob moves to the newest version.
 
 ## Options considered
 
 - **Customer-managed key for the storage account**: Terraform only, but Azure decrypts for every reader, so storage access alone still reads the session.
 - **Encrypt with a secret (a symmetric key) in Key Vault**: simple, but the key itself would be readable by the function and handed around; a Key Vault key never leaves the vault.
 - **Wrap every write in Key Vault**: no key in memory between writes, but a call to Key Vault on every session flush and every poll of the sign-in.
+- **A timer function that rotates the key and re-encrypts the blobs**: full control, but more code and a broader role for the function; Key Vault already rotates on a schedule, and the blobs are rewritten often enough.
 - **Envelope encryption with a cached data key (chosen)**: storage access alone shows ciphertext, Key Vault is called about once per process, and the key can be rotated.
 
 ## Consequences
@@ -32,7 +35,8 @@ A session stored before this change is read once and written back encrypted.
 Reading the session now needs both blob access and the key role, and Key Vault audit logs show who unwrapped. The function and the deployer keep both, so this
 protects against storage-only access (keys, SAS, a leaked connection string, a backup), not against a compromised function. A blob names its key version, and only
 versions of `SessionKeyId` are accepted, so a blob cannot make the app send its token to another vault. Deleting or disabling the key makes the session unreadable:
-sign in again. Rotating the key needs no migration: new writes use the new version. Locally against Azurite (no `SessionKeyId`) the blobs stay in clear.
+sign in again. Rotating the key needs no migration: new writes use the new version, the session within an hour. Disabling old versions after a rotation
+makes old copies unreadable (`docs/user-guide/configuration.md`, "Rotating the session key"). Locally against Azurite (no `SessionKeyId`) the blobs stay in clear.
 `TgLogin` needs `SESSION_KEY_ID`. Whoever runs Terraform needs "Key Vault Crypto Officer" on the vault, which Terraform grants; the first apply may need a rerun
 while that role propagates.
 

@@ -56,6 +56,9 @@ If you use a fixed chat (`telegram_chat_id` in `terraform.tfvars`, or the `TF_TE
 4. The old owner opens Telegram → Settings → Devices and ends the Signal Feed session.
 5. Join the groups that the new account cannot read yet.
 
+Also rotate the session key, so that a copy of the old session someone kept cannot be opened with it later
+([Rotating the session key](configuration.md#rotating-the-session-key)).
+
 ## Step 3. New pairing key
 
 The old pairing link must stop working. Rotate the key, even in the minimal case:

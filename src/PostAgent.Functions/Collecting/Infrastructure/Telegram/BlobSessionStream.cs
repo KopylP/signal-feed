@@ -33,7 +33,11 @@ public sealed class BlobSessionStream : MemoryStream
         var stored = (await blob.DownloadContentAsync(ct)).Value.Content.ToArray();
         if (!cipher.Encrypts || SessionEnvelope.IsSealed(stored))
         {
-            return new BlobSessionStream(blob, cipher, await cipher.UnprotectAsync(stored, StorageNames.SessionBlob, ct));
+            var session = await cipher.UnprotectAsync(stored, StorageNames.SessionBlob, ct);
+
+            // Wrap this process's data key now: Flush is synchronous and should not wait for Key Vault.
+            await cipher.ProtectAsync([], StorageNames.SessionBlob, ct);
+            return new BlobSessionStream(blob, cipher, session);
         }
 
         // A session from before encryption: encrypt it right away rather than wait for the library to flush.

@@ -2,8 +2,9 @@ using System.Collections.Concurrent;
 
 namespace PostAgent.Shared.TelegramSession;
 
-// Envelope encryption with one data key per process: it is wrapped by Key Vault once, and every blob gets a fresh nonce.
-// A data key read from a blob is unwrapped once and reused while the process lives, so polling a blob costs no Key Vault call.
+// Envelope encryption with one data key per process: it is wrapped by Key Vault once, with the current key version, and every blob
+// gets a fresh nonce. A data key read from a blob is unwrapped once and cached for reading only: writing always uses the process's
+// own key, so after a rotation every rewritten blob moves to the new key version (the session is rewritten on every collection).
 public sealed class EnvelopeCipher(IKeyWrapper wrapper) : ISessionCipher
 {
     private const int MaxCachedKeys = 16;
@@ -41,11 +42,7 @@ public sealed class EnvelopeCipher(IKeyWrapper wrapper) : ISessionCipher
             _unwrapped[cacheKey] = dataKey;
         }
 
-        var plaintext = SessionEnvelope.Open(dataKey, data, purpose);
-
-        // Writing back under the key we just read saves a wrap: the session stream then flushes without calling Key Vault.
-        _current ??= new SessionDataKey(dataKey, wrapped);
-        return plaintext;
+        return SessionEnvelope.Open(dataKey, data, purpose);
     }
 
     private async Task<SessionDataKey> CreateCurrentAsync(CancellationToken ct)

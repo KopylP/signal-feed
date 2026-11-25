@@ -49,6 +49,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Enable: on in Azure once `SessionKeyId` is set; a session stored in clear is encrypted on the first collection
   - Settings: `SessionKeyId` (set by Terraform)
   - Limits: the function and the deployer can still read it; deleting the key makes the session unreadable (sign in again)
+  - Rotation: Key Vault rotates the key every 90 days on its own; to rotate at once, see [Rotating the session key](docs/user-guide/configuration.md#rotating-the-session-key)
 
 ### Logic
 - **Collecting: which account the session may hold**

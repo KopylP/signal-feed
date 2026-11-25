@@ -143,3 +143,28 @@ The prompts are English and ask the model to answer in Ukrainian.
 ## Next
 
 Something not working as expected? See [troubleshooting](troubleshooting.md).
+
+## Rotating the session key
+
+The Telegram session and the sign-in in progress are encrypted with the Key Vault key `tg-session` ([ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md)).
+Nothing needs to run for its rotation: Key Vault creates a new version every 90 days (the rotation policy in `infra/keyvault.tf`).
+Old versions stay enabled so that older blobs can still be read, and every rewrite uses the newest version: the session is rewritten on every collection,
+so within an hour after a rotation everything is encrypted with it. A version expires a year after it is created; an expired version no longer encrypts new data.
+
+To rotate now (for example after a handover, or if you think a storage key or a backup leaked):
+
+```bash
+KV=$(terraform -chdir=infra output -raw key_vault_name)
+az keyvault key rotate --vault-name $KV --name tg-session
+```
+
+Then wait for the next collection, check in the log that it succeeded, and disable the older versions so that old copies of the session cannot be opened:
+
+```bash
+CURRENT=$(az keyvault key show --vault-name $KV --name tg-session --query key.kid -o tsv)
+az keyvault key list-versions --vault-name $KV --name tg-session --query "[?kid!='$CURRENT'].kid" -o tsv |
+  while read -r kid; do az keyvault key set-attributes --id "$kid" --enabled false >/dev/null; done
+```
+
+If the session cannot be read afterwards (a collection fails with a Key Vault error), sign in again with `/login`: a new session is written with the current version.
+Your account needs "Key Vault Crypto Officer" on the vault for these commands; `terraform apply` grants it to whoever runs Terraform.

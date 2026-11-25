@@ -36,15 +36,17 @@ public class EnvelopeCipherTests
     }
 
     [Fact]
-    public async Task Writes_back_under_the_key_it_read_without_asking_key_vault()
+    public async Task Writes_with_its_own_key_so_a_rotated_key_version_takes_over()
     {
-        var sealedBlob = await new EnvelopeCipher(_vault).ProtectAsync([7], "p", CancellationToken.None);
+        var oldBlob = await new EnvelopeCipher(_vault).ProtectAsync([7], "p", CancellationToken.None);
+        _vault.KeyId = FakeKeyWrapper.RotatedKeyId;
         var session = new EnvelopeCipher(_vault);
-        await session.UnprotectAsync(sealedBlob, "p", CancellationToken.None);
+        await session.UnprotectAsync(oldBlob, "p", CancellationToken.None);
 
-        session.Protect([8], "p");
+        var rewritten = session.Protect([8], "p");
 
-        Assert.Equal(1, _vault.Wraps);
+        Assert.Equal(FakeKeyWrapper.RotatedKeyId, SessionEnvelope.ReadKey(rewritten).KeyId);
+        Assert.Equal([7], await session.UnprotectAsync(oldBlob, "p", CancellationToken.None));
     }
 
     [Fact]
