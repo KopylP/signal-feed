@@ -37,7 +37,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Dependencies
 - Added `Microsoft.Agents.AI` 1.28.0.
 
-## [birch] - 2026-11-25
+## [v2026.11.25.49-birch] - 2026-11-25
 
 ### Contract changes
 - **Setting `ChatMaxOutputTokens`: default 4000, range 1-32000** (compatible)
