@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
 
         return services
             .AddStorage(config)
+            .AddSettings()
             .AddAi()
             .AddPosts()
             .AddNotifications()

@@ -21,8 +21,9 @@ public sealed class BlobOverridesStore(BlobServiceClient blobs, ILogger<BlobOver
                 return new OverridesHandle(overrides, result.Details.ETag.ToString());
             }
 
+            // Empty overrides with the real ETag: the next save replaces the damaged blob instead of failing forever.
             log.LogWarning("Settings overrides could not be read and are ignored");
-            return null;
+            return new OverridesHandle(SettingsOverrides.Empty, result.Details.ETag.ToString());
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
