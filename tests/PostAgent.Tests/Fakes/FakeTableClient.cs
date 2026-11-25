@@ -19,6 +19,17 @@ public sealed class FakeTableClient : TableClient
         string? filter = null, int? maxPerPage = null, IEnumerable<string>? select = null, CancellationToken cancellationToken = default) =>
         AsyncPageable<T>.FromPages([Page<T>.FromValues(_rows.Values.Cast<T>().ToList(), null, new EmptyResponse())]);
 
+    public override Task<Response> AddEntityAsync<T>(T entity, CancellationToken cancellationToken = default)
+    {
+        var row = (TableEntity)(object)entity;
+        if (!_rows.TryAdd((row.PartitionKey, row.RowKey), row))
+        {
+            throw new RequestFailedException(409, "Entity already exists", "EntityAlreadyExists", null);
+        }
+
+        return Task.FromResult<Response>(new EmptyResponse());
+    }
+
     public override Task<Response> DeleteEntityAsync(
         string partitionKey, string rowKey, ETag ifMatch = default, CancellationToken cancellationToken = default)
     {

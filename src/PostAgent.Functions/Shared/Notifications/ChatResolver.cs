@@ -5,14 +5,19 @@ namespace PostAgent.Shared.Notifications;
 
 public sealed class ChatResolver(IOptions<AgentOptions> options, IChatBindingStore store)
 {
-    // TelegramChatId is an explicit override; without it the chat comes from pairing. Null while nothing is bound.
-    public async Task<long?> TryGetChatIdAsync(CancellationToken ct) =>
-        options.Value.TelegramChatId != 0 ? options.Value.TelegramChatId : await store.GetAsync(ct);
+    // TelegramChatId is an explicit override and means exactly one chat; without it the chats come from pairing. Empty while nothing is bound.
+    public async Task<IReadOnlyList<long>> GetChatIdsAsync(CancellationToken ct) =>
+        options.Value.TelegramChatId != 0 ? [options.Value.TelegramChatId] : await store.GetAllAsync(ct);
 
-    public async Task<long> GetChatIdAsync(CancellationToken ct)
+    public async Task<bool> IsBoundAsync(long chatId, CancellationToken ct) =>
+        (await GetChatIdsAsync(ct)).Contains(chatId);
+
+    public async Task<IReadOnlyList<long>> RequireChatIdsAsync(CancellationToken ct)
     {
-        return await TryGetChatIdAsync(ct)
-            ?? throw new InvalidOperationException(
+        var chats = await GetChatIdsAsync(ct);
+        return chats.Count > 0
+            ? chats
+            : throw new InvalidOperationException(
                 "No Telegram chat is bound yet. Send /start <TelegramPairingKey> to the bot, or set TelegramChatId.");
     }
 }

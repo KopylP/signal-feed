@@ -41,7 +41,7 @@ The agent runs by itself in your own Azure subscription. Nothing is shared with 
 - OpenAI receives post texts and, for groups, author names and participant usernames.
   This is personal data of third parties, even though the sources are public. Decide whether that is acceptable for the groups you follow.
 - The bot token never reaches logs or telemetry.
-- The bot answers only the chat that pairs first with your secret key; messages from anyone else are ignored.
+- The bot answers only chats that paired with your secret key (up to `TelegramMaxChats`); messages from anyone else are ignored. Change the key to stop new chats from joining.
 
 ## Where to go next
 

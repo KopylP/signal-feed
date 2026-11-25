@@ -27,8 +27,12 @@ internal sealed class MenuHarness
     public MenuController Controller { get; }
     public SettingsInbox Inbox { get; }
     public ChatResolver Resolver { get; }
+    public InMemoryChatBindingStore Bindings { get; }
+
+    // Binds more chats, as pairing does.
+    public void AlsoBind(params long[] chats) => Bindings.Bound.AddRange(chats.Where(c => !Bindings.Bound.Contains(c)));
     public SettingsToolsFactory ToolsFactory => new(Editor, Effective);
-    public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Resolver, Time, NullLogger<SettingsProposalSender>.Instance);
+    public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
     {
@@ -37,7 +41,8 @@ internal sealed class MenuHarness
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
         Editor = new SettingsEditor(Store, options, Effective, NullLogger<SettingsEditor>.Instance);
         Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
-        Resolver = new ChatResolver(options, new InMemoryChatBindingStore(bound));
+        Bindings = bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore();
+        Resolver = new ChatResolver(options, Bindings);
         Inbox = new SettingsInbox(Resolver, Store, Editor, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
     }
 

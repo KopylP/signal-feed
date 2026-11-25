@@ -18,7 +18,7 @@ public class SettingsProposalTests
     {
         await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8"), new SettingChange(SettingChangeKind.AddSource, "fresh")), CancellationToken.None);
 
-        var outcome = await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None);
+        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Applied, outcome.Status);
         Assert.Equal("8", _h.Store.Current?.Values["DigestSize"]);
@@ -30,10 +30,10 @@ public class SettingsProposalTests
     public async Task A_second_apply_finds_nothing_and_changes_nothing()
     {
         await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8")), CancellationToken.None);
-        await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None);
+        await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None);
         await _h.Editor.SetValueAsync("DigestSize", "5", CancellationToken.None);
 
-        var outcome = await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None);
+        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Gone, outcome.Status);
         Assert.Equal("5", _h.Store.Current?.Values["DigestSize"]);
@@ -45,7 +45,7 @@ public class SettingsProposalTests
         await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8")), CancellationToken.None);
         _h.Time.Advance(SettingsProposal.Lifetime + TimeSpan.FromMinutes(1));
 
-        var outcome = await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None);
+        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Expired, outcome.Status);
         Assert.Empty(_h.Store.Current!.Values);
@@ -57,7 +57,7 @@ public class SettingsProposalTests
         // Each step is fine on its own; together the alert threshold is above what the options allow after the other one.
         await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8"), Set("MinPostChars", "5000"), Set("MaxPostChars", "100")), CancellationToken.None);
 
-        var outcome = await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None);
+        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Failed, outcome.Status);
         Assert.Empty(_h.Store.Current!.Values);
@@ -68,9 +68,9 @@ public class SettingsProposalTests
     {
         await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8")), CancellationToken.None);
 
-        Assert.True(await _h.Editor.DeclineProposalAsync("1", CancellationToken.None));
-        Assert.False(await _h.Editor.DeclineProposalAsync("1", CancellationToken.None));
-        Assert.Equal(ProposalStatus.Gone, (await _h.Editor.ApplyProposalAsync("1", Now, CancellationToken.None)).Status);
+        Assert.True(await _h.Editor.DeclineProposalAsync("1", TestData.ChatId, CancellationToken.None));
+        Assert.False(await _h.Editor.DeclineProposalAsync("1", TestData.ChatId, CancellationToken.None));
+        Assert.Equal(ProposalStatus.Gone, (await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, Now, CancellationToken.None)).Status);
     }
 
     [Fact]
@@ -110,5 +110,24 @@ public class SettingsProposalTests
         Assert.DoesNotContain("<b>x</b>", html);
         Assert.Contains("Видалити джерело <b>@chat</b>", html);
         Assert.Equal(["pa:1", "pn:1"], SettingsProposalMessage.Keyboard(proposal).Rows.SelectMany(r => r).Select(b => b.Data));
+    }
+
+    [Fact]
+    public async Task A_proposal_can_be_applied_only_from_the_chat_that_got_it()
+    {
+        await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8")) with { ChatId = 42 }, CancellationToken.None);
+
+        Assert.Equal(ProposalStatus.Gone, (await _h.Editor.ApplyProposalAsync("1", 99, Now, CancellationToken.None)).Status);
+        Assert.False(await _h.Editor.DeclineProposalAsync("1", 99, CancellationToken.None));
+        Assert.Single(_h.Store.Current!.Proposals!);
+        Assert.Equal(ProposalStatus.Applied, (await _h.Editor.ApplyProposalAsync("1", 42, Now, CancellationToken.None)).Status);
+    }
+
+    [Fact]
+    public async Task A_proposal_stored_before_chats_were_recorded_can_be_applied_from_any_bound_chat()
+    {
+        await _h.Editor.ProposeAsync(Proposal("1", Set("DigestSize", "8")), CancellationToken.None);
+
+        Assert.Equal(ProposalStatus.Applied, (await _h.Editor.ApplyProposalAsync("1", 99, Now, CancellationToken.None)).Status);
     }
 }

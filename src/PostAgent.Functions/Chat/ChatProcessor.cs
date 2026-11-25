@@ -20,7 +20,7 @@ public sealed class ChatProcessor(
     {
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            var current = await store.LoadAsync(ct);
+            var current = await store.LoadAsync(request.ChatId, ct);
             if (current is null || current.State.Report.ReportId != request.ReportId)
             {
                 log.LogInformation("Chat question dropped: its digest is gone or was replaced");
@@ -41,16 +41,16 @@ public sealed class ChatProcessor(
             catch (Exception ex) when (IsFailure(ex, ct))
             {
                 log.LogError(ex, "The chat could not answer question {UpdateId}", request.UpdateId);
-                await TrySendAsync(ChatTexts.Failed, ct);
+                await TrySendAsync(request.ChatId, ChatTexts.Failed, ct);
                 return;
             }
 
-            if (await store.TrySaveAsync(current, current.State.WithProcessed(request.UpdateId, reply.Session), ct))
+            if (await store.TrySaveAsync(request.ChatId, current, current.State.WithProcessed(request.UpdateId, reply.Session), ct))
             {
-                await SendAsync(reply.Text, ct);
+                await SendAsync(request.ChatId, reply.Text, ct);
                 if (reply.Proposed is { Count: > 0 } changes)
                 {
-                    await proposals.SendAsync(request.UpdateId, changes, ct);
+                    await proposals.SendAsync(request.ChatId, request.UpdateId, changes, ct);
                 }
 
                 return;
@@ -66,11 +66,11 @@ public sealed class ChatProcessor(
     // anything else is a failure to answer once, never a reason to redeliver the question (each redelivery is another model call).
     private static bool IsFailure(Exception ex, CancellationToken ct) => ex is not OperationCanceledException || !ct.IsCancellationRequested;
 
-    private async Task SendAsync(string text, CancellationToken ct)
+    private async Task SendAsync(long chatId, string text, CancellationToken ct)
     {
         foreach (var part in ChatReplyFormatter.Split(text))
         {
-            if (!await TrySendAsync(part, ct))
+            if (!await TrySendAsync(chatId, part, ct))
             {
                 return;
             }
@@ -78,12 +78,12 @@ public sealed class ChatProcessor(
     }
 
     // Never repeated and never thrown: the answer is already saved, and the reader can ask again.
-    private async Task<bool> TrySendAsync(string html, CancellationToken ct)
+    private async Task<bool> TrySendAsync(long chatId, string html, CancellationToken ct)
     {
         var started = time.GetTimestamp();
         try
         {
-            await notifier.SendAsync(html, ct);
+            await notifier.SendToAsync(chatId, html, ct);
             return true;
         }
         catch (Exception ex) when (IsFailure(ex, ct))

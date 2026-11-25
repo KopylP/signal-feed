@@ -18,13 +18,13 @@ public sealed class SettingsInbox(
     public async Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
         var chat = update.CallbackQuery?.Message?.Chat ?? update.Message?.Chat;
-        if (chat is null || await resolver.TryGetChatIdAsync(ct) is not { } bound)
+        if (chat is null || (await resolver.GetChatIdsAsync(ct)).Count == 0)
         {
             return false;
         }
 
-        // Only the bound private chat: a button press from anywhere else is swallowed, a message goes on and is ignored by the chat as well.
-        if (chat.Type != ChatType.Private || chat.Id != bound)
+        // Only a bound private chat: a button press from anywhere else is swallowed, a message goes on and is ignored by the chat as well.
+        if (chat.Type != ChatType.Private || !await resolver.IsBoundAsync(chat.Id, ct))
         {
             return update.CallbackQuery is not null;
         }
@@ -98,8 +98,8 @@ public sealed class SettingsInbox(
                 return true;
             }
 
-            // Any other command abandons the question; the command itself is not ours.
-            if (state.Pending is not null)
+            // Any other command abandons the question of this chat; the command itself is not ours.
+            if (state.Pending is { } asked && asked.IsFor(chatId))
             {
                 await editor.SetPendingAsync(null, ct);
             }
@@ -107,7 +107,8 @@ public sealed class SettingsInbox(
             return false;
         }
 
-        if (state.Pending is not { } pending)
+        // A question that another chat was asked is not ours to answer.
+        if (state.Pending is not { } pending || !pending.IsFor(chatId))
         {
             return false;
         }

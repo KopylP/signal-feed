@@ -14,12 +14,12 @@ public class ChatProcessorTests
 
     private static ReportSnapshot Report(string id = "r1") => new(id, Now, "Огляд", [], []);
 
-    private static ChatRequest Request(long updateId, string text = "питання", string reportId = "r1") => new(updateId, text, reportId);
+    private static ChatRequest Request(long updateId, string text = "питання", string reportId = "r1", long chatId = TestData.ChatId) => new(updateId, text, reportId, chatId);
 
     private ChatProcessor Create(FakeChatAgent agent) =>
         new(_state, agent, _notifier, new PostAgent.Tests.SettingsMenu.MenuHarness().ProposalSender, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
 
-    private async Task Started(string id = "r1") => await _state.StartNewAsync(Report(id), CancellationToken.None);
+    private async Task Started(string id = "r1") => await _state.StartNewAsync(TestData.ChatId, Report(id), CancellationToken.None);
 
     [Fact]
     public async Task Replies_with_the_answer_and_remembers_the_update()
@@ -29,7 +29,7 @@ public class ChatProcessorTests
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Equal(["відповідь на питання"], _notifier.Sent);
+        Assert.Equal(["відповідь на питання"], _notifier.Replies);
         Assert.Equal([10L], _state.Current?.ProcessedUpdateIds);
         Assert.NotNull(_state.Current?.Session);
     }
@@ -44,7 +44,7 @@ public class ChatProcessorTests
         await processor.HandleAsync(Request(10), CancellationToken.None);
         await processor.HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Single(_notifier.Sent);
+        Assert.Single(_notifier.Replies);
         Assert.Equal(1, agent.Calls);
     }
 
@@ -67,7 +67,7 @@ public class ChatProcessorTests
 
         await processor.HandleAsync(Request(10, "A"), CancellationToken.None);
 
-        Assert.Equal(["ans:B", "ans:A"], _notifier.Sent);
+        Assert.Equal(["ans:B", "ans:A"], _notifier.Replies);
         Assert.Equal([11L, 10L], _state.Current?.ProcessedUpdateIds);
     }
 
@@ -91,7 +91,7 @@ public class ChatProcessorTests
 
         await processor.HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Equal(["ans"], _notifier.Sent);
+        Assert.Equal(["ans"], _notifier.Replies);
     }
 
     [Fact]
@@ -100,13 +100,13 @@ public class ChatProcessorTests
         await Started();
         var agent = new FakeChatAgent(async (_, _) =>
         {
-            await _state.StartNewAsync(Report("r2"), CancellationToken.None);
+            await _state.StartNewAsync(TestData.ChatId, Report("r2"), CancellationToken.None);
             return new ChatReply("стара відповідь", FakeChatAgent.Session());
         });
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
         Assert.Equal("r2", _state.Current?.Report.ReportId);
         Assert.Empty(_state.Current!.ProcessedUpdateIds);
     }
@@ -123,7 +123,7 @@ public class ChatProcessorTests
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
         Assert.Null(_state.Current);
     }
 
@@ -136,7 +136,7 @@ public class ChatProcessorTests
         await Create(agent).HandleAsync(Request(10, reportId: "r1"), CancellationToken.None);
 
         Assert.Equal(0, agent.Calls);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class ChatProcessorTests
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
         Assert.Equal(0, agent.Calls);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
     }
 
     [Fact]
@@ -156,14 +156,14 @@ public class ChatProcessorTests
         await Started();
         var agent = new FakeChatAgent(async (_, _) =>
         {
-            await _state.StartNewAsync(Report(), CancellationToken.None); // same report, new version
+            await _state.StartNewAsync(TestData.ChatId, Report(), CancellationToken.None); // same report, new version
             return new ChatReply("відповідь", FakeChatAgent.Session());
         });
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
         Assert.Equal(3, agent.Calls);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public class ChatProcessorTests
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Equal([ChatTexts.Failed], _notifier.Sent);
+        Assert.Equal([ChatTexts.Failed], _notifier.Replies);
         Assert.Equal(0, _state.Saves);
     }
 
@@ -189,7 +189,7 @@ public class ChatProcessorTests
         await processor.HandleAsync(Request(10), CancellationToken.None);
         await processor.HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
         Assert.Equal(1, agent.Calls);
         Assert.Equal(1, _state.Saves);
     }
@@ -202,10 +202,10 @@ public class ChatProcessorTests
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.True(_notifier.Sent.Count >= 3);
-        Assert.StartsWith("а", _notifier.Sent[0]);
-        Assert.EndsWith("б", _notifier.Sent[^1]);
-        Assert.All(_notifier.Sent, part => Assert.True(part.Length <= 4096));
+        Assert.True(_notifier.Replies.Count >= 3);
+        Assert.StartsWith("а", _notifier.Replies[0]);
+        Assert.EndsWith("б", _notifier.Replies[^1]);
+        Assert.All(_notifier.Replies, part => Assert.True(part.Length <= 4096));
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public class ChatProcessorTests
 
         await Create(agent).HandleAsync(Request(10), CancellationToken.None);
 
-        Assert.Equal([ChatTexts.Failed], _notifier.Sent);
+        Assert.Equal([ChatTexts.Failed], _notifier.Replies);
         Assert.Equal(0, _state.Saves);
     }
 
@@ -260,5 +260,30 @@ public class ChatProcessorTests
         }
 
         public Task SendAsync(string html, PostAgent.Shared.Notifications.InlineKeyboard keyboard, CancellationToken ct) => SendAsync(html, ct);
+
+        public Task SendToAsync(long chatId, string html, CancellationToken ct) => SendAsync(html, ct);
+    }
+
+    [Fact]
+    public async Task Answers_in_the_chat_that_asked_and_leaves_the_conversation_of_the_other_chat_alone()
+    {
+        await _state.StartNewAsync(42, Report(), CancellationToken.None);
+        await _state.StartNewAsync(43, Report(), CancellationToken.None);
+
+        await Create(new FakeChatAgent(text => "ans:" + text)).HandleAsync(Request(10, "питання", chatId: 43), CancellationToken.None);
+
+        Assert.Equal([(43L, "ans:питання")], _notifier.SentTo);
+        Assert.Equal([10L], _state.Of(43)?.ProcessedUpdateIds);
+        Assert.Empty(_state.Of(42)!.ProcessedUpdateIds);
+    }
+
+    [Fact]
+    public async Task A_question_from_a_chat_without_a_conversation_is_dropped_even_when_another_chat_has_one()
+    {
+        await _state.StartNewAsync(42, Report(), CancellationToken.None);
+
+        await Create(new FakeChatAgent(text => "ans")).HandleAsync(Request(10, chatId: 43), CancellationToken.None);
+
+        Assert.Empty(_notifier.SentTo);
     }
 }

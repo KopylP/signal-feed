@@ -31,7 +31,8 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `ChatSearchMaxHits` | 8 | posts returned by one search of stored posts |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
-| `TelegramChatId` | empty | optional fixed chat id; when set it overrides the paired chat and turns pairing off |
+| `TelegramChatId` | empty | optional fixed chat id; when set it overrides the paired chats, turns pairing off and means exactly one chat |
+| `TelegramMaxChats` | 5 | how many chats can be paired at once (1-20); each gets the digest, alerts and failure messages |
 | `TelegramApiId`, `TelegramPhone` | | account data for reading |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
 | `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
@@ -89,7 +90,7 @@ Send `/settings` to the bot in the private chat. One message with buttons opens 
 - A combination that breaks a rule is refused with the names of the fields, for example `AlertWindowHours + AlertCooldownHours` above `RetentionDays * 24`.
 
 Precedence: the bot, then the App Setting, then the default in code. Once you change the source list in the bot, a later change of the `Sources` App Setting is ignored until you reset the sources group.
-Not available in the bot: schedules, prompts, secrets, `RetentionDays`, `ManualRunsEnabled`, `TelegramChatId`, the Telegram account data and storage names.
+Not available in the bot: schedules, prompts, secrets, `RetentionDays`, `ManualRunsEnabled`, `TelegramChatId`, `TelegramMaxChats`, the Telegram account data and storage names.
 
 ### By asking the agent
 

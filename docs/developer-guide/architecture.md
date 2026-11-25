@@ -49,12 +49,12 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 |---|---|---|
 | Table | `Posts` | Posts and bundles, partitioned by day so cleanup deletes whole partitions; status, score, topic, reason, duplicate link, alert mark |
 | Table | `ChannelState` | Per-source read cursor (never cleaned up) |
-| Table | `ChatBinding` | One row (`chat`/`digest`) with the paired chat id; inserted once, deleted by the operator to rebind |
+| Table | `ChatBinding` | One row per paired chat (`chat`/`<chat id>`; an earlier version's `chat`/`digest` row still counts), at most `TelegramMaxChats`; deleted by the operator to unbind ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)) |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
-| Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about); messages live one hour |
+| Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about, chat id); messages live one hour |
 | Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
 | Blob | `settings` / `overrides.json` | What the owner set from the bot (values, sources with a verified flag, alert sources, the pending question, the ids of the last handled menu updates); written with an ETag, read by `IEffectiveOptions` ([ADR-0012](../adr/0012-override-settings-from-the-telegram-bot-through-a-blob.md)) |
-| Blob | `chat-state` / `current.json` | The conversation about the latest digest: snapshot of the digest, ids of the last 20 handled updates, serialized agent session; overwritten by every digest |
+| Blob | `chat-state` / `<chat id>.json` | The conversation of one chat about the latest digest: snapshot of the digest, ids of the last 20 handled updates, serialized agent session; overwritten by every digest |
 | Blob | `var.session_blob_container` | The Telegram MTProto session, uploaded by `TgLogin`, and `collect.lock`, leased for the length of a collection so that two collections never share the session (two connections on one auth key can make Telegram revoke it) |
 | Blob | `deployment-package` | The code package of the Flex Consumption app |
 
@@ -90,7 +90,7 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Function App (system-assigned) | Key Vault | Key Vault Secrets User |
 | Deployer (`var.deployer_object_id`) | Key Vault | Key Vault Secrets Officer |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Blob Data Contributor |
-| Deployer (`var.deployer_object_id`) | Storage account | Storage Table Data Contributor (to reset `ChatBinding`) |
+| Deployer (`var.deployer_object_id`) | Storage account | Storage Table Data Contributor (to edit `ChatBinding`) |
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Queue Data Contributor (to start a job with `tools/run-now.cs`) |
 
 `AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. The secrets are App Settings of the form

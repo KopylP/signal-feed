@@ -11,7 +11,8 @@ public static class StorageNames
     public const string RunNowQueue = "run-now";
     public const string ChatQueue = "chat-messages";
     public const string ChatStateContainer = "chat-state";
-    public const string ChatStateBlob = "current.json";
+    // One conversation per chat (ADR-0014). The old single blob, "current.json", is only deleted by the cleanup once it is stale.
+    public static string ChatStateBlobName(long chatId) => chatId.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".json";
     public const string SettingsContainer = "settings";
     public const string SettingsBlob = "overrides.json";
     public const string SessionBlob = "wtelegram.session";

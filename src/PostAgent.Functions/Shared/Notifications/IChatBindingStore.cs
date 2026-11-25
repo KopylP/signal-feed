@@ -1,10 +1,11 @@
 namespace PostAgent.Shared.Notifications;
 
-// The chat that receives the digest and alerts, remembered after pairing (ADR-0008).
+// The chats that receive the digest and alerts, remembered after pairing (ADR-0008, ADR-0014).
 public interface IChatBindingStore
 {
-    Task<long?> GetAsync(CancellationToken ct);
+    // Every bound chat, oldest first.
+    Task<IReadOnlyList<long>> GetAllAsync(CancellationToken ct);
 
-    // False when a chat is already bound: the first pairing wins.
-    Task<bool> TryBindAsync(long chatId, CancellationToken ct);
+    // Adds the chat unless it is bound already or "max" chats are bound.
+    Task<BindResult> TryBindAsync(long chatId, int max, CancellationToken ct);
 }

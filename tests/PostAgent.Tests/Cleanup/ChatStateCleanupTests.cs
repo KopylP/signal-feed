@@ -11,7 +11,7 @@ public class ChatStateCleanupTests
     private static async Task<(ChatStateCleanup Task, InMemoryChatStateStore Store)> Create(DateTimeOffset reportCreatedAt, int retentionDays = 1)
     {
         var store = new InMemoryChatStateStore();
-        await store.StartNewAsync(new ReportSnapshot("r", reportCreatedAt, null, [], []), CancellationToken.None);
+        await store.StartNewAsync(TestData.ChatId, new ReportSnapshot("r", reportCreatedAt, null, [], []), CancellationToken.None);
         var options = Microsoft.Extensions.Options.Options.Create(new AgentOptions { RetentionDays = retentionDays });
         return (new ChatStateCleanup(store, options), store);
     }
@@ -53,5 +53,16 @@ public class ChatStateCleanupTests
         var (task, _) = await Create(Now);
 
         Assert.Equal("ChatState", task.Name);
+    }
+
+    [Fact]
+    public async Task Deletes_the_stale_conversation_of_every_chat_and_keeps_the_fresh_one()
+    {
+        var (task, store) = await Create(Now.AddDays(-2));
+        await store.StartNewAsync(43, new ReportSnapshot("r", Now.AddDays(-2), null, [], []), CancellationToken.None);
+        await store.StartNewAsync(44, new ReportSnapshot("r", Now, null, [], []), CancellationToken.None);
+
+        Assert.Equal(2, await task.RunAsync(Now, CancellationToken.None));
+        Assert.NotNull(store.Of(44));
     }
 }

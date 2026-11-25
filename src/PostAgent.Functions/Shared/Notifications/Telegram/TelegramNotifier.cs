@@ -19,11 +19,36 @@ public sealed class TelegramNotifier(
 
     public async Task SendAsync(string html, InlineKeyboard keyboard, CancellationToken ct)
     {
+        var chats = await chat.RequireChatIdsAsync(ct);
+        var failures = new List<Exception>();
+        foreach (var chatId in chats)
+        {
+            try
+            {
+                await SendOneAsync(chatId, html, keyboard, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // One chat that cannot be reached (the bot was blocked) must not keep the others from their message.
+                failures.Add(ex);
+            }
+        }
+
+        if (failures.Count == chats.Count)
+        {
+            throw failures.Count == 1 ? failures[0] : new AggregateException("The message reached no chat", failures);
+        }
+    }
+
+    public Task SendToAsync(long chatId, string html, CancellationToken ct) => SendOneAsync(chatId, html, InlineKeyboard.Empty, ct);
+
+    private async Task SendOneAsync(long chatId, string html, InlineKeyboard keyboard, CancellationToken ct)
+    {
         var started = time.GetTimestamp();
         try
         {
             await _bot.SendMessage(
-                new ChatId(await chat.GetChatIdAsync(ct)),
+                new ChatId(chatId),
                 html,
                 ParseMode.Html,
                 linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },

@@ -76,14 +76,14 @@ public sealed class SettingsEditor(
             ct);
 
     // The owner pressed "apply": all the changes go in as one write, checked as a whole, and the proposal is removed with them.
-    public async Task<ProposalOutcome> ApplyProposalAsync(string id, DateTimeOffset now, CancellationToken ct)
+    public async Task<ProposalOutcome> ApplyProposalAsync(string id, long chatId, DateTimeOffset now, CancellationToken ct)
     {
         SettingsProposal? found = null;
         string? error = null;
         var result = await UpdateAsync(
             o =>
             {
-                found = o.Proposals?.FirstOrDefault(p => p.Id == id);
+                found = o.Proposals?.FirstOrDefault(p => p.Id == id && p.IsFor(chatId));
                 error = null;
                 if (found is null || found.ExpiresAt <= now)
                 {
@@ -115,13 +115,13 @@ public sealed class SettingsEditor(
     }
 
     // False when there was nothing to decline (a second tap).
-    public async Task<bool> DeclineProposalAsync(string id, CancellationToken ct)
+    public async Task<bool> DeclineProposalAsync(string id, long chatId, CancellationToken ct)
     {
         var existed = false;
         var result = await UpdateAsync(
             o =>
             {
-                existed = o.Proposals?.Any(p => p.Id == id) ?? false;
+                existed = o.Proposals?.Any(p => p.Id == id && p.IsFor(chatId)) ?? false;
                 return existed ? o with { Proposals = o.Proposals!.Where(p => p.Id != id).ToList() } : o;
             },
             validate: false,

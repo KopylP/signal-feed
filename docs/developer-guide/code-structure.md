@@ -28,7 +28,7 @@ src/PostAgent.Functions/
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
-│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share

@@ -74,7 +74,7 @@ public class PairingWebhookRoutingTests
         await Webhook(store, handler).HandleAsync(Secret, Body(start), CancellationToken.None);
 
         Assert.Empty(handler.Handled);
-        Assert.Equal(42, store.Bound);
+        Assert.Equal([42L], store.Bound);
     }
 
     [Fact]

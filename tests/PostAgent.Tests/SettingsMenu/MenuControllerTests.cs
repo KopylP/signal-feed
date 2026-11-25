@@ -38,7 +38,7 @@ public class MenuControllerTests
         await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AskText("AlertQuietHours"), CancellationToken.None);
 
         var pending = h.Store.Current?.Pending;
-        Assert.Equal(new PendingInput("AlertQuietHours", "set", MenuMessage, TestData.Now.AddMinutes(10)), pending);
+        Assert.Equal(new PendingInput("AlertQuietHours", "set", MenuMessage, TestData.Now.AddMinutes(10), TestData.ChatId), pending);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class MenuControllerTests
 
         await h.Controller.HandleCallbackAsync(Chat, 8, MenuAction.AskText("AlertTimeZone"), CancellationToken.None);
 
-        Assert.Equal(new PendingInput("AlertTimeZone", "set", 8, TestData.Now.AddMinutes(10)), h.Store.Current?.Pending);
+        Assert.Equal(new PendingInput("AlertTimeZone", "set", 8, TestData.Now.AddMinutes(10), TestData.ChatId), h.Store.Current?.Pending);
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public class MenuControllerTests
 
         await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AddSource, CancellationToken.None);
 
-        Assert.Equal(new PendingInput("Sources", "add-source", MenuMessage, TestData.Now.AddMinutes(10)), h.Store.Current?.Pending);
+        Assert.Equal(new PendingInput("Sources", "add-source", MenuMessage, TestData.Now.AddMinutes(10), TestData.ChatId), h.Store.Current?.Pending);
     }
 
     [Fact]

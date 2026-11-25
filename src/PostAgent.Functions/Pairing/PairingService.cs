@@ -36,25 +36,22 @@ public sealed class PairingService(
         }
 
         var chatId = message.Chat.Id;
-        var bound = await store.GetAsync(ct);
-        var justPaired = bound is null && await store.TryBindAsync(chatId, ct);
-        if (justPaired)
+        var result = await store.TryBindAsync(chatId, settings.TelegramMaxChats, ct);
+        switch (result)
         {
-            bound = chatId;
+            case BindResult.Added:
+                log.LogInformation("Chat bound");
+                await notifier.SendToAsync(chatId, PairingMessage.Paired, ct);
+                break;
+            case BindResult.AlreadyBound:
+                log.LogInformation("Chat was already bound");
+                await notifier.SendToAsync(chatId, PairingMessage.AlreadyPaired, ct);
+                break;
+            default:
+                // The key was right, so telling the sender is not a leak.
+                log.LogWarning("Pairing rejected: {Max} chats are bound already", settings.TelegramMaxChats);
+                await notifier.SendToAsync(chatId, PairingMessage.Full, ct);
+                break;
         }
-        else if (bound is null)
-        {
-            // Lost a race with another pairing: whoever won is the bound chat.
-            bound = await store.GetAsync(ct);
-        }
-
-        if (bound != chatId)
-        {
-            log.LogWarning("Pairing rejected: the agent is already bound to another chat");
-            return;
-        }
-
-        log.LogInformation(justPaired ? "Chat bound" : "Chat was already bound");
-        await notifier.SendAsync(justPaired ? PairingMessage.Paired : PairingMessage.AlreadyPaired, ct);
     }
 }

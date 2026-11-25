@@ -36,3 +36,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0011](0011-call-the-chat-model-through-the-responses-api.md) | Call the chat model through the Responses API without stored output | Accepted |
 | [0012](0012-override-settings-from-the-telegram-bot-through-a-blob.md) | Override settings from the Telegram bot through a blob | Accepted |
 | [0013](0013-let-the-chat-agent-propose-settings-changes-the-owner-confirms.md) | Let the chat agent propose settings changes that the owner confirms | Accepted |
+| [0014](0014-serve-several-chats-with-shared-settings.md) | Serve several Telegram chats with shared settings | Accepted |

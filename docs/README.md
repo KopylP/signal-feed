@@ -26,6 +26,7 @@ No knowledge of the code is needed.
 3. [Installation](user-guide/installation.md): from an empty Azure subscription to the first digest.
 4. [Configuration](user-guide/configuration.md): every setting, and how to change schedules, sources and prompts.
 5. [Troubleshooting](user-guide/troubleshooting.md): symptoms, causes, fixes, and known limitations.
+6. [Handover](user-guide/handover.md): move the agent to another person, clear the history, get the first report.
 
 ## Developer Guide
 

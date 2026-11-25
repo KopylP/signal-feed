@@ -63,6 +63,7 @@ and the answer says so. It does not browse the web.
 
 - **Settings.** You can also ask the agent to change settings and sources; it only prepares a plan, and you confirm it with a button ([configuration](configuration.md#by-asking-the-agent)).
 - **One conversation per digest.** A new digest starts a new conversation and the old one is forgotten, so answers never mix two digests. Alerts do not reset it.
+- **Several chats.** Every paired chat gets the digest and the alerts and can ask questions or open `/settings`. Each chat has its own conversation, so questions and answers are not shared, but settings and sources are: a change made in one chat applies to all, and a plan the agent prepares can be confirmed only in the chat that got it.
 - **Private chat only.** The bot answers in the private chat with it. If `TelegramChatId` points to a group, the digest still goes there, but questions in the group are not answered.
 - **Bounds.** A conversation keeps the last `ChatMaxMessages` messages; a question is cut at 2000 characters; a question that waited in the queue for more than an hour is dropped.
 - **Cost.** A question the digest answers is one model call, about 2 to 4 cents with the default `OpenAIChatModel` and `medium` reasoning. When the assistant uses tools it makes one more call per round, up to `ChatMaxToolCalls + 1`, and every call resends the digest and the conversation, so a tool-heavy question can cost several times more (see [configuration](configuration.md#settings)).

@@ -14,8 +14,10 @@ public class DigestJobTests
     private RecordingNotifier _notifier = new();
     private InMemoryChatStateStore _chatState = new();
 
+    private static readonly PostAgent.Shared.Notifications.ChatResolver Chats = new(Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new InMemoryChatBindingStore(TestData.ChatId));
+
     private DigestJob CreateJob(InMemoryPostRepository repo, IDigestSummarizer summarizer) =>
-        new(repo, summarizer, _notifier, _chatState, new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
+        new(repo, summarizer, _notifier, _chatState, Chats, new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
 
     private static IDigestSummarizer WithOverview(string overview, string text = "Пояснення") =>
         new FakeDigestSummarizer(items => new DigestReport(
@@ -32,7 +34,7 @@ public class DigestJobTests
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2), Post("b", score: 8, hoursAgo: 2));
         var effective = new FakeEffectiveOptions(new AgentOptions { DigestSize = 1 });
 
-        await new DigestJob(repo, WithOverview("О"), _notifier, _chatState, effective, new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+        await new DigestJob(repo, WithOverview("О"), _notifier, _chatState, Chats, effective, new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
             .RunAsync(CancellationToken.None);
 
         Assert.Single(Assert.Single(repo.SentMarks).Posts);
@@ -158,7 +160,7 @@ public class DigestJobTests
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
         var store = new OrderRecordingStore(() => repo.SentMarks.Count);
 
-        await new DigestJob(repo, WithOverview("Огляд дня"), _notifier, store,
+        await new DigestJob(repo, WithOverview("Огляд дня"), _notifier, store, Chats,
             new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
             .RunAsync(CancellationToken.None);
 
@@ -175,7 +177,7 @@ public class DigestJobTests
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
         var store = new OrderRecordingStore(() => 0) { Fail = true };
 
-        await new DigestJob(repo, WithOverview("О"), _notifier, store,
+        await new DigestJob(repo, WithOverview("О"), _notifier, store, Chats,
             new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
             .RunAsync(CancellationToken.None);
 
@@ -186,7 +188,7 @@ public class DigestJobTests
     [Fact]
     public async Task Does_not_touch_the_conversation_when_there_were_no_posts()
     {
-        await _chatState.StartNewAsync(new ReportSnapshot("old", Now, null, [], []), CancellationToken.None);
+        await _chatState.StartNewAsync(TestData.ChatId, new ReportSnapshot("old", Now, null, [], []), CancellationToken.None);
 
         await CreateJob(new InMemoryPostRepository(), WithOverview("О")).RunAsync(CancellationToken.None);
 
@@ -210,7 +212,7 @@ public class DigestJobTests
         public int MarksWhenStarted { get; private set; }
         public bool Fail { get; init; }
 
-        public Task StartNewAsync(ReportSnapshot report, CancellationToken ct)
+        public Task StartNewAsync(long chatId, ReportSnapshot report, CancellationToken ct)
         {
             if (Fail)
             {
@@ -222,10 +224,24 @@ public class DigestJobTests
             return Task.CompletedTask;
         }
 
-        public Task<ChatStateHandle?> LoadAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<ChatStateHandle?> LoadAsync(long chatId, CancellationToken ct) => throw new NotSupportedException();
 
-        public Task<bool> TrySaveAsync(ChatStateHandle current, ChatState updated, CancellationToken ct) => throw new NotSupportedException();
+        public Task<bool> TrySaveAsync(long chatId, ChatStateHandle current, ChatState updated, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task Starts_a_conversation_in_every_bound_chat()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+        var chats = new PostAgent.Shared.Notifications.ChatResolver(
+            Microsoft.Extensions.Options.Options.Create(new AgentOptions()), new InMemoryChatBindingStore(42, 43));
+
+        await new DigestJob(repo, WithOverview("О"), _notifier, _chatState, chats, new FakeEffectiveOptions(new AgentOptions()), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance)
+            .RunAsync(CancellationToken.None);
+
+        Assert.NotNull(_chatState.Of(42));
+        Assert.Equal(_chatState.Of(42)!.Report.ReportId, _chatState.Of(43)!.Report.ReportId);
     }
 }

@@ -14,8 +14,8 @@ public class PairingServiceTests
 
     private readonly RecordingNotifier _notifier = new();
 
-    private PairingService Service(InMemoryChatBindingStore store, long configuredChat = 0) =>
-        new(store, _notifier, Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramChatId = configuredChat }),
+    private PairingService Service(InMemoryChatBindingStore store, long configuredChat = 0, int maxChats = 5) =>
+        new(store, _notifier, Options.Create(new AgentOptions { TelegramPairingKey = Key, TelegramChatId = configuredChat, TelegramMaxChats = maxChats }),
             NullLogger<PairingService>.Instance);
 
     private static Message Start(long chatId, string key = Key, ChatType type = ChatType.Private, string? text = null) =>
@@ -28,8 +28,8 @@ public class PairingServiceTests
 
         await Service(store).HandleAsync(Start(42), CancellationToken.None);
 
-        Assert.Equal(42, store.Bound);
-        Assert.Equal([PairingMessage.Paired], _notifier.Sent);
+        Assert.Equal([42L], store.Bound);
+        Assert.Equal([(42L, PairingMessage.Paired)], _notifier.SentTo);
     }
 
     [Fact]
@@ -39,8 +39,8 @@ public class PairingServiceTests
 
         await Service(store).HandleAsync(Start(42, key: "guess"), CancellationToken.None);
 
-        Assert.Null(store.Bound);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(store.Bound);
+        Assert.Empty(_notifier.SentTo);
     }
 
     [Fact]
@@ -50,8 +50,8 @@ public class PairingServiceTests
 
         await Service(store).HandleAsync(Start(42, text: "hello"), CancellationToken.None);
 
-        Assert.Null(store.Bound);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(store.Bound);
+        Assert.Empty(_notifier.SentTo);
     }
 
     [Theory]
@@ -64,30 +64,52 @@ public class PairingServiceTests
 
         await Service(store).HandleAsync(Start(-100, type: type), CancellationToken.None);
 
-        Assert.Null(store.Bound);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(store.Bound);
+        Assert.Empty(_notifier.SentTo);
     }
 
     [Fact]
-    public async Task Another_chat_cannot_take_over_a_bound_agent_even_with_the_right_key()
+    public async Task Another_chat_with_the_right_key_is_added_and_confirmed_while_the_first_stays()
     {
-        var store = new InMemoryChatBindingStore(bound: 42);
+        var store = new InMemoryChatBindingStore(42);
 
         await Service(store).HandleAsync(Start(99), CancellationToken.None);
 
-        Assert.Equal(42, store.Bound);
-        Assert.Empty(_notifier.Sent);
+        Assert.Equal([42L, 99L], store.Bound);
+        Assert.Equal([(99L, PairingMessage.Paired)], _notifier.SentTo);
+    }
+
+    [Fact]
+    public async Task Another_chat_with_a_wrong_key_is_not_added()
+    {
+        var store = new InMemoryChatBindingStore(42);
+
+        await Service(store).HandleAsync(Start(99, key: "guess"), CancellationToken.None);
+
+        Assert.Equal([42L], store.Bound);
+        Assert.Empty(_notifier.SentTo);
+    }
+
+    [Fact]
+    public async Task A_chat_over_the_limit_is_told_so_and_not_added()
+    {
+        var store = new InMemoryChatBindingStore(42, 43);
+
+        await Service(store, maxChats: 2).HandleAsync(Start(99), CancellationToken.None);
+
+        Assert.Equal([42L, 43L], store.Bound);
+        Assert.Equal([(99L, PairingMessage.Full)], _notifier.SentTo);
     }
 
     [Fact]
     public async Task The_bound_chat_gets_a_repeated_confirmation()
     {
-        var store = new InMemoryChatBindingStore(bound: 42);
+        var store = new InMemoryChatBindingStore(42);
 
         await Service(store).HandleAsync(Start(42), CancellationToken.None);
 
-        Assert.Equal(42, store.Bound);
-        Assert.Equal([PairingMessage.AlreadyPaired], _notifier.Sent);
+        Assert.Equal([42L], store.Bound);
+        Assert.Equal([(42L, PairingMessage.AlreadyPaired)], _notifier.SentTo);
     }
 
     [Fact]
@@ -97,8 +119,8 @@ public class PairingServiceTests
 
         await Service(store, configuredChat: 7).HandleAsync(Start(42), CancellationToken.None);
 
-        Assert.Null(store.Bound);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(store.Bound);
+        Assert.Empty(_notifier.SentTo);
     }
 
     [Fact]
@@ -108,6 +130,6 @@ public class PairingServiceTests
 
         await Service(store).HandleAsync(new Message { Chat = new Telegram.Bot.Types.Chat { Id = 42, Type = ChatType.Private } }, CancellationToken.None);
 
-        Assert.Null(store.Bound);
+        Assert.Empty(store.Bound);
     }
 }

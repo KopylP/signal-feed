@@ -20,11 +20,11 @@ public class ChatFunctionTests
     [Fact]
     public async Task A_valid_message_is_answered()
     {
-        await _state.StartNewAsync(new ReportSnapshot("r1", Now, null, [], []), CancellationToken.None);
+        await _state.StartNewAsync(TestData.ChatId, new ReportSnapshot("r1", Now, null, [], []), CancellationToken.None);
 
-        await Create().Run(new ChatRequest(1, "питання", "r1").ToMessage(), CancellationToken.None);
+        await Create().Run(new ChatRequest(1, "питання", "r1", TestData.ChatId).ToMessage(), CancellationToken.None);
 
-        Assert.Equal(["відповідь"], _notifier.Sent);
+        Assert.Equal(["відповідь"], _notifier.Replies);
     }
 
     [Theory]
@@ -35,6 +35,6 @@ public class ChatFunctionTests
         await Create().Run(message, CancellationToken.None);
 
         Assert.Equal(0, _agent.Calls);
-        Assert.Empty(_notifier.Sent);
+        Assert.Empty(_notifier.Replies);
     }
 }
