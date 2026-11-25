@@ -34,6 +34,30 @@ public class ChatInboxTests
         new() { Id = updateId, Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text } };
 
     [Fact]
+    public async Task A_quoted_part_goes_to_the_model_with_the_question()
+    {
+        var inbox = await Create();
+        var update = Incoming("expand on this");
+        update.Message!.Quote = new TextQuote { Text = "AI authorship <b>Google</b>" };
+
+        await inbox.HandleAsync(update, CancellationToken.None);
+
+        Assert.Equal("<quote>AI authorship &lt;b>Google&lt;/b></quote>\nexpand on this", _queue.Enqueued.Single().Text);
+    }
+
+    [Fact]
+    public async Task The_message_replied_to_is_used_when_there_is_no_quote()
+    {
+        var inbox = await Create();
+        var update = Incoming("expand on this");
+        update.Message!.ReplyToMessage = new Message { Text = "AI authorship Google" };
+
+        await inbox.HandleAsync(update, CancellationToken.None);
+
+        Assert.Equal("<quote>AI authorship Google</quote>\nexpand on this", _queue.Enqueued.Single().Text);
+    }
+
+    [Fact]
     public async Task A_text_message_from_the_bound_private_chat_is_queued_with_the_report_id()
     {
         var inbox = await Create();

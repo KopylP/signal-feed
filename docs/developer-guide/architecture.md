@@ -40,6 +40,21 @@ The webhook only checks and queues, so Telegram gets its answer fast and does no
 Handled update ids are a set of the last 20 (not a watermark): messages run in parallel and Telegram may restart its ids. A new digest or a cleanup that replaces the blob makes a running turn drop its answer.
 Text written by channels (the snapshot and tool results) reaches the model only inside a `<report>` or `<post>` block with `<` escaped.
 
+#### Principles of the chat
+
+- **One conversation per chat and per digest.** Every bound chat has its own blob; a new digest replaces it with a fresh snapshot, so there is no history of old digests ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)). Settings and sources are shared by all chats, the conversation and the menu are not.
+- **The conversation is ours, not OpenAI's.** The chat client uses the Responses API with `store=false` and encrypted reasoning, and we serialize the agent session ourselves ([ADR-0011](../adr/0011-call-the-chat-model-through-the-responses-api.md)).
+- **The model sees the digest first.** The first message of a session is the snapshot of the digest; `ChatHistoryReducer` caps the history at `ChatMaxMessages` and never drops that first message or leaves a tool result without its call.
+- **Tools are small and bounded.** `get_post` and `search_posts` read stored posts (`ChatSearchMaxHits`), the settings tools only build a plan. A turn is bounded by `ChatMaxToolCalls` and `ChatMaxOutputTokens`.
+- **The model never changes anything alone.** A settings change is a proposal shown by code and applied only by the owner's button ([ADR-0013](../adr/0013-let-the-chat-agent-propose-settings-changes-the-owner-confirms.md)).
+- **Channel text is data.** It reaches the model only inside `<report>` or `<post>` blocks.
+
+#### What the agent remembers
+
+![Memory of the agent: for each store, who writes it, what it holds, how long it lives and who reads it, plus what is not stored](images/memory.drawio.svg)
+
+Only the blob `chat-state/<chat id>.json` is conversation memory; the other stores are the data the chat reads or the state around it. The model's context for a turn is rebuilt from the blob and is never stored as such.
+
 Scoring is decoupled from collection by the queue, so a slow or failing model call never blocks reading Telegram, and failed messages retry and end in `to-score-poison` after 5 attempts.
 Schedules are read through `%Name%` bindings, so they change without a rebuild.
 

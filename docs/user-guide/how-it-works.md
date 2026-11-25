@@ -56,7 +56,7 @@ The digest then adds a separate message «⚠️ Не оцінено N пост�
 
 ## Asking about the digest
 
-After a digest arrives, reply to the bot in the same private chat to ask more: «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?».
+After a digest arrives, reply to the bot in the same private chat to ask more: «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?». You can also use Telegram's reply or quote on any message: the quoted part (or the message you replied to) goes to the model with your question, so «розкрий цю тему» knows which topic you mean.
 An AI assistant answers in Ukrainian, plain text, using the digest you received. If the digest is not enough, it can open the full text of a post and
 search the posts stored for the last `RetentionDays` days (for example «що ще писали про це вчора?»). A question the posts do not cover is answered from the model's own knowledge,
 and the answer says so. It does not browse the web.

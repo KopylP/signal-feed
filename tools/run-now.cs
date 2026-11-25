@@ -9,12 +9,13 @@
 //   dotnet run tools/run-now.cs -- <collect|digest|alert|cleanup> [--storage <account | connection string>] [--yes]
 //
 // --storage defaults to the AzureWebJobsStorage environment variable, then to Azurite. A bare account
-// name uses DefaultAzureCredential (az login), which needs "Storage Queue Data Contributor" on the account;
+// name signs in with the Azure CLI (az login) or Azure PowerShell, which needs "Storage Queue Data Contributor" on the account;
 // no storage keys. A connection string is for Azurite only: never pass an account key on the command line.
 // The job runs only if the app has ManualRunsEnabled=true. The command does not wait for the job:
 // read the result in the function logs.
 // Keep the queue name and the job names in sync with StorageNames.RunNowQueue and the IJob names (a test checks it).
 
+using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Queues;
 
@@ -41,7 +42,7 @@ var storage = storageIndex >= 0 && storageIndex + 1 < args.Length
 var options = new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 };
 var queue = storage.Contains('=')
     ? new QueueClient(storage, queueName, options)
-    : new QueueClient(new Uri($"https://{storage}.queue.core.windows.net/{queueName}"), new DefaultAzureCredential(), options);
+    : new QueueClient(new Uri($"https://{storage}.queue.core.windows.net/{queueName}"), Credential(), options);
 
 if (sendsToTelegram.Contains(job) && !args.Contains("--yes"))
 {
@@ -56,3 +57,7 @@ await queue.CreateIfNotExistsAsync();
 await queue.SendMessageAsync(job);
 Console.WriteLine($"Queued '{job}' in {queue.Uri}. It runs only if ManualRunsEnabled is true; see the function logs.");
 return 0;
+
+// Not DefaultAzureCredential: on a developer machine it probes managed identity first and waits for the IMDS timeout before it fails,
+// unless AZURE_TOKEN_CREDENTIALS is set. The tool is run by hand, so the signed-in CLI is the only source it needs.
+static TokenCredential Credential() => new ChainedTokenCredential(new AzureCliCredential(), new AzurePowerShellCredential());

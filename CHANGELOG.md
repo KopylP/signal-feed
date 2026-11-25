@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [heather] - 2026-11-25
+
+### Fixed
+- **The chat understands a reply and a quote**
+  - Before: a message that replied to another one, or quoted a part of it, reached the model without the quoted text, so "expand on this" had nothing to point at
+  - After: the quoted part (or, with no quote, the message replied to) goes to the model with the question, as data
+  - Affects: the chat about the digest
+
 ## [v2026.11.25.56-sorrel] - 2026-11-25
 
 ### Setup required

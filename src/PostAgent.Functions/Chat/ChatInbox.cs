@@ -39,7 +39,7 @@ public sealed class ChatInbox(
 
         try
         {
-            await queue.EnqueueAsync(new ChatRequest(update.Id, text.Trim().Truncate(MaxQuestionChars), current.State.Report.ReportId, message.Chat.Id), ct);
+            await queue.EnqueueAsync(new ChatRequest(update.Id, QuestionText.From(message, text.Trim().Truncate(MaxQuestionChars)), current.State.Report.ReportId, message.Chat.Id), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
