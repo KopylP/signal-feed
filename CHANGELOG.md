@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [sage] - 2026-11-25
+## [v2026.11.25.87-sage] - 2026-11-25
 
 ### Fixed
 - Fixed the live answer placeholder: it says «💭 Думаю» without the three dots, because the client already shows its own
