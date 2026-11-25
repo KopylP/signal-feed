@@ -11,7 +11,7 @@ public static class CollectionFailureMessage
     public static InlineKeyboard RemovalKeyboard(IEnumerable<string> usernames) =>
         new(usernames
             .Take(MaxLines)
-            .Select(name => (IReadOnlyList<KeyboardButton>)[new KeyboardButton($"🗑 Видалити @{name}", MenuCallbacks.RemoveSource(name))])
+            .Select(name => (IReadOnlyList<KeyboardButton>)[new KeyboardButton($"🗑 Видалити @{name}", MenuCallbacks.RemoveSource(name), ButtonStyle.Danger)])
             .ToList());
 
     public static string Format(IReadOnlyList<string> failures)

@@ -27,6 +27,8 @@ public class ChatModelRequestTests
         var settings = Options(o =>
         {
             o.OpenAIApiKey = "key";
+            // The recording transport answers with plain JSON, not a stream of events.
+            o.ChatStreamEnabled = false;
             configure?.Invoke(o);
         });
         // The same construction as production, with only the transport replaced.
@@ -34,7 +36,7 @@ public class ChatModelRequestTests
         var options = Microsoft.Extensions.Options.Options.Create(settings);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(ChatId, state, "питання", CancellationToken.None);
+        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(ChatId, state, "питання", CancellationToken.None);
         return (handler, reply);
     }
 
@@ -77,10 +79,14 @@ public class ChatModelRequestTests
         // With nothing stored at OpenAI, a function call must be followed by its reasoning item, in the same turn and after the
         // conversation went through the blob (JSON) between two questions; OpenAI answers HTTP 400 otherwise.
         var handler = new RecordingHandler(ReasoningAndToolCall, Message("Перша відповідь"), Message("Друга відповідь"));
-        var settings = Options(o => o.OpenAIApiKey = "key");
+        var settings = Options(o =>
+        {
+            o.OpenAIApiKey = "key";
+            o.ChatStreamEnabled = false;
+        });
         var chat = AiServices.CreateChatClient(settings, new OpenAIClientOptions { Transport = new HttpClientPipelineTransport(new HttpClient(handler)) });
         var options = Microsoft.Extensions.Options.Options.Create(settings);
-        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
+        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
         var first = await agent.AskAsync(ChatId, state, "перше", CancellationToken.None);

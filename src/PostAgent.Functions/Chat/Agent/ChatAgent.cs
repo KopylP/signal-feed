@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -16,6 +17,7 @@ public sealed class ChatAgent(
     ChatToolFactory toolFactory,
     IPromptProvider prompts,
     IProfileStore profile,
+    ChatDraftStreams streams,
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
@@ -34,8 +36,10 @@ public sealed class ChatAgent(
 
         messages.Add(new ChatMessage(ChatRole.User, userText));
 
-        var response = await agent.RunAsync(messages, session, cancellationToken: ct);
-        if (string.IsNullOrWhiteSpace(response.Text))
+        var text = settings.ChatStreamEnabled
+            ? await RunStreamingAsync(agent, messages, session, streams.Open(chatId), ct)
+            : (await agent.RunAsync(messages, session, cancellationToken: ct)).Text;
+        if (string.IsNullOrWhiteSpace(text))
         {
             // After ChatMaxToolCalls the function-calling layer asks once more without tools, so a model normally still answers in text;
             // this is a truly empty answer.
@@ -43,7 +47,45 @@ public sealed class ChatAgent(
         }
 
         var serialized = await agent.SerializeSessionAsync(session, cancellationToken: ct);
-        return new ChatReply(response.Text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
+        return new ChatReply(text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
+    }
+
+    // The same run, read update by update: the text so far goes to the reader as a draft. The answer itself is still one message, sent by the caller.
+    private static async Task<string> RunStreamingAsync(AIAgent agent, List<ChatMessage> messages, AgentSession session, ChatDraftStream stream, CancellationToken ct)
+    {
+        await stream.StartAsync(ct);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var keepAlive = stream.RunKeepAliveAsync(stop.Token);
+        try
+        {
+            var updates = new List<AgentResponseUpdate>();
+            var preview = new StringBuilder();
+            string? lastMessage = null;
+            await foreach (var update in agent.RunStreamingAsync(messages, session, cancellationToken: ct))
+            {
+                updates.Add(update);
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    // Messages of one answer are joined by a newline, as in the finished response.
+                    if (preview.Length > 0 && update.MessageId is not null && lastMessage is not null && update.MessageId != lastMessage)
+                    {
+                        preview.Append('\n');
+                    }
+
+                    preview.Append(update.Text);
+                    lastMessage = update.MessageId ?? lastMessage;
+                    await stream.OnTextAsync(preview.ToString(), ct);
+                }
+            }
+
+            // The same text RunAsync gives: the finished response is built from the updates.
+            return updates.ToAgentResponse().Text;
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            await keepAlive;
+        }
     }
 
     // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question: a profile edit applies at once, a prompt edit within the cache time of the provider.

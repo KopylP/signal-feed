@@ -7,7 +7,7 @@ public sealed record KeyboardButton
 {
     public const int MaxDataBytes = 64;
 
-    public KeyboardButton(string text, string data)
+    public KeyboardButton(string text, string data, ButtonStyle style = ButtonStyle.Default)
     {
         if (Encoding.UTF8.GetByteCount(data) > MaxDataBytes)
         {
@@ -16,9 +16,12 @@ public sealed record KeyboardButton
 
         Text = text;
         Data = data;
+        Style = style;
     }
 
     public string Text { get; }
 
     public string Data { get; }
+
+    public ButtonStyle Style { get; }
 }

@@ -25,11 +25,12 @@ public class ChatAgentTests
         return post;
     }
 
-    private static ChatAgent Create(ScriptedChatClient client, Action<AgentOptions>? configure = null, IProfileStore? profile = null)
+    private static ChatAgent Create(ScriptedChatClient client, Action<AgentOptions>? configure = null, IProfileStore? profile = null, RecordingDrafts? drafts = null, FakeTimeProvider? time = null)
     {
         var options = Microsoft.Extensions.Options.Options.Create(Options(configure));
         var tools = new PostAgent.Tests.SettingsMenu.MenuHarness(configure) { Posts = new InMemoryPostRepository(Stored) }.ToolsFactory;
-        return new ChatAgent(client, tools, new DefaultPrompts(), profile ?? new InMemoryProfileStore(), new FakeEffectiveOptions(options.Value), NullLogger<ChatAgent>.Instance);
+        return new ChatAgent(client, tools, new DefaultPrompts(), profile ?? new InMemoryProfileStore(),
+            new ChatDraftStreams(drafts ?? new RecordingDrafts(), time ?? new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(options.Value), NullLogger<ChatAgent>.Instance);
     }
 
     private static ChatState Fresh() => new(
@@ -65,6 +66,57 @@ public class ChatAgentTests
         Assert.Contains("Питання", first[^1].Text);
         Assert.DoesNotContain("Огляд дня", client.LastOptions?.Instructions ?? string.Empty);
         Assert.False(string.IsNullOrWhiteSpace(client.LastOptions?.Instructions));
+    }
+
+    [Fact]
+    public async Task The_answer_is_shown_as_a_growing_draft_and_comes_back_whole()
+    {
+        var drafts = new RecordingDrafts();
+        var time = new FakeTimeProvider(Now) { AutoAdvanceAmount = TimeSpan.FromSeconds(1) };
+        var client = new ScriptedChatClient(Reply("один два три"));
+
+        var reply = await Create(client, drafts: drafts, time: time).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("один два три", reply.Text);
+        Assert.Equal(["", "один ", "один два ", "один два три"], drafts.Sent.Select(d => d.Text));
+        Assert.All(drafts.Sent, d => Assert.Equal((ChatId, drafts.Sent[0].DraftId), (d.ChatId, d.DraftId)));
+    }
+
+    [Fact]
+    public async Task With_streaming_off_there_are_no_drafts_and_the_answer_is_the_same()
+    {
+        var drafts = new RecordingDrafts();
+        var client = new ScriptedChatClient(Reply("один два три"));
+
+        var reply = await Create(client, o => o.ChatStreamEnabled = false, drafts: drafts).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("один два три", reply.Text);
+        Assert.Empty(drafts.Sent);
+    }
+
+    [Fact]
+    public async Task A_draft_that_cannot_be_sent_does_not_fail_the_answer()
+    {
+        var drafts = new RecordingDrafts { Fail = true };
+        var client = new ScriptedChatClient(Reply("відповідь"));
+
+        var reply = await Create(client, drafts: drafts).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("відповідь", reply.Text);
+    }
+
+    [Fact]
+    public async Task A_tool_call_in_the_middle_still_gives_the_final_answer_and_the_session()
+    {
+        var drafts = new RecordingDrafts();
+        var client = new ScriptedChatClient(CallTool("get_post", "id", StoredId), Reply("готово"));
+
+        var reply = await Create(client, drafts: drafts).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("готово", reply.Text);
+        Assert.Equal(JsonValueKind.Object, reply.Session.ValueKind);
+        var toolResults = client.Calls[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Select(r => r.Result?.ToString() ?? string.Empty);
+        Assert.Contains(toolResults, r => r.Contains("Повний текст про Google"));
     }
 
     [Fact]
@@ -160,7 +212,7 @@ public class ChatAgentTests
         var options = Microsoft.Extensions.Options.Options.Create(Options());
         var agent = new ChatAgent(
             new ScriptedChatClient(CallTool("propose_remove_source", "name", "@Chat"), Reply("Підготував, підтверди кнопкою")),
-            harness.ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(),
+            harness.ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance),
             new FakeEffectiveOptions(options.Value),
             NullLogger<ChatAgent>.Instance);
 

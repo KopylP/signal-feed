@@ -36,7 +36,7 @@ Blue lines go to Telegram, green lines to OpenAI, dashed lines are reads or side
 
 ![Chat about the digest: question, webhook, chat-messages queue, Chat function with its tools, chat-state blob replaced by every new digest](images/chat-flow.drawio.svg)
 
-The webhook only checks and queues, so Telegram gets its answer fast and does not resend. `ChatProcessor` asks the model, saves the conversation with the blob ETag and only then sends the answer: a failed save never repeats a send.
+The webhook only checks and queues, so Telegram gets its answer fast and does not resend. While the model writes, `ChatAgent` reads the answer as a stream and shows the text so far as a Telegram message draft (`sendMessageDraft`, first an empty one that shows «Thinking…», then updates at most every 0.7 s, plain text); a draft is a 30-second preview, so it is sent again every 20 s while the model thinks without writing, a text over 4000 characters shows its end, and the real message replaces it. A draft has a short HTTP budget and no retry, and its failure turns the preview off but never fails or slows the answer (`ChatStreamEnabled` turns it off). `ChatProcessor` asks the model, saves the conversation with the blob ETag and only then sends the answer: a failed save never repeats a send.
 Handled update ids are a set of the last 20 (not a watermark): messages run in parallel and Telegram may restart its ids. A new digest or a cleanup that replaces the blob makes a running turn drop its answer.
 Text written by channels (the snapshot and tool results) reaches the model only inside a `<report>` or `<post>` block with `<` escaped.
 

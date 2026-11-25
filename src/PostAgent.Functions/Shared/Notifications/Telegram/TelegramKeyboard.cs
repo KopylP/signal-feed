@@ -8,5 +8,18 @@ public static class TelegramKeyboard
     public static InlineKeyboardMarkup? ToMarkup(InlineKeyboard keyboard) =>
         keyboard.Rows.Count == 0
             ? null
-            : new InlineKeyboardMarkup(keyboard.Rows.Select(row => row.Select(b => InlineKeyboardButton.WithCallbackData(b.Text, b.Data))));
+            : new InlineKeyboardMarkup(keyboard.Rows.Select(row => row.Select(ToButton)));
+
+    private static InlineKeyboardButton ToButton(KeyboardButton button)
+    {
+        var result = InlineKeyboardButton.WithCallbackData(button.Text, button.Data);
+        result.Style = button.Style switch
+        {
+            ButtonStyle.Primary => KeyboardButtonStyle.Primary,
+            ButtonStyle.Success => KeyboardButtonStyle.Success,
+            ButtonStyle.Danger => KeyboardButtonStyle.Danger,
+            _ => null,
+        };
+        return result;
+    }
 }
