@@ -33,6 +33,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Dedupe handled updates by the set in `ChatState.ProcessedUpdateIds`, never by a watermark. A chat queue message that cannot be parsed is dropped, not retried.
 - Anything a channel wrote (the snapshot, tool results) goes to the model through `DataBlock.Wrap`, never into the instructions. A tool gets a cap on its output (`ChatSearchMaxHits`).
 - `ChatMaxToolCalls`, `ChatMaxOutputTokens` and `ChatMaxMessages` bound the cost of a turn; the chat model is `OpenAIChatModel` (keyed `IChatClient`, `AiServices.ChatClientKey`), scoring and the digest use `OpenAIModel`.
+- The chat client uses the OpenAI Responses API with `store=false` and encrypted reasoning (ADR-0011). Chat Completions rejects tools together with reasoning, and a stored response makes the agent framework refuse our own history. `ChatModelRequestTests` checks the real request; keep it green when the client or the agent changes.
 
 ## Data and queues
 

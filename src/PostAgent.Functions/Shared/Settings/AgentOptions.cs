@@ -54,7 +54,10 @@ public sealed class AgentOptions
     // Chat about the digest: a stronger model than the one that scores posts, and the bounds of one conversation.
     public string OpenAIChatModel { get; set; } = "gpt-6.1-terra";
     [Range(1, 100)] public int ChatMaxMessages { get; set; } = 20;
-    [Range(1, 4000)] public int ChatMaxOutputTokens { get; set; } = 800;
+    // Hidden reasoning tokens count against this limit, so it is well above the length of a Telegram answer.
+    [Range(1, 32000)] public int ChatMaxOutputTokens { get; set; } = 4000;
+    // None, Low, Medium or High (case does not matter). The chat uses the Responses API, the only one that allows tools together with reasoning.
+    [RegularExpression("(?i)^(none|low|medium|high)$")] public string ChatReasoningEffort { get; set; } = "medium";
     [Range(1, 20)] public int ChatMaxToolCalls { get; set; } = 5;
     [Range(1, 200)] public int ChatSearchMaxHits { get; set; } = 8;
 

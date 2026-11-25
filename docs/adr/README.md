@@ -33,3 +33,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0008](0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md) | Bind the Telegram chat with a pairing key over a webhook | Accepted |
 | [0009](0009-send-the-digest-as-sections-in-several-messages.md) | Send the digest as sections in several messages | Accepted |
 | [0010](0010-chat-about-the-digest-with-one-conversation-blob.md) | Chat about the digest with one conversation blob | Accepted |
+| [0011](0011-call-the-chat-model-through-the-responses-api.md) | Call the chat model through the Responses API without stored output | Accepted |

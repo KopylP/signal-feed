@@ -37,6 +37,24 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Dependencies
 - Added `Microsoft.Agents.AI` 1.28.0.
 
+## [birch] - 2026-11-25
+
+### Contract changes
+- **Setting `ChatMaxOutputTokens`: default 4000, range 1-32000** (compatible)
+  - Before: 800 (1-4000)
+  - After: 4000, because the hidden reasoning of the chat model counts against it
+  - Affects: nothing; the chat was released a few hours ago
+  - Migration: none
+
+### Added
+- **`ChatReasoningEffort` setting**: how much the chat model thinks before answering, `none`, `low`, `medium` (default), `high`.
+  - Enable: on by default (`medium`)
+  - Settings: `ChatReasoningEffort` (`medium`)
+  - Limits: a question costs about 2 to 4 cents; `none` is the fallback if the chat fails after a model change
+
+### Fixed
+- Fixed the chat answering «Не вдалося відповісти» to every question: OpenAI rejects function tools together with reasoning on Chat Completions (HTTP 400). The chat now uses the Responses API without stored output ([ADR-0011](docs/adr/0011-call-the-chat-model-through-the-responses-api.md)).
+
 ## [v2026.11.25.44-lilac] - 2026-11-25
 
 ### Added

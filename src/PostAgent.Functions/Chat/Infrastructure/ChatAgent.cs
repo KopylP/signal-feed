@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
+using OpenAI.Responses;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Settings;
@@ -57,6 +58,15 @@ public sealed class ChatAgent(
             {
                 Instructions = _instructions,
                 MaxOutputTokens = settings.ChatMaxOutputTokens,
+                // The conversation is ours (the blob), not OpenAI's: without this the Responses API returns a response id that the agent framework
+                // takes for server-side history and refuses to combine with our own. With nothing stored on their side, the hidden reasoning
+                // must come back encrypted so that it can be sent along with the next request after a tool call.
+                RawRepresentationFactory = _ => new CreateResponseOptions
+                {
+                    StoredOutputEnabled = false,
+                    IncludedProperties = { IncludedResponseProperty.ReasoningEncryptedContent },
+                },
+                Reasoning = new ReasoningOptions { Effort = Enum.Parse<ReasoningEffort>(settings.ChatReasoningEffort, ignoreCase: true) },
                 Tools =
                 [
                     AIFunctionFactory.Create(tools.GetPost, "get_post"),
