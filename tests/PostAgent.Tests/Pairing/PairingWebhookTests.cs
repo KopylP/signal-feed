@@ -34,7 +34,7 @@ public class PairingWebhookTests
         var status = await Webhook(store).HandleAsync(Secret, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.Equal(42, store.Bound);
+        Assert.Equal([42L], store.Bound);
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public class PairingWebhookTests
         var status = await Webhook(store).HandleAsync(token, Body(StartUpdate()), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, status);
-        Assert.Null(store.Bound);
+        Assert.Empty(store.Bound);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class PairingWebhookTests
         var status = await Webhook(store).HandleAsync(Secret, Body(padded), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.Equal(42, store.Bound);
+        Assert.Equal([42L], store.Bound);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class PairingWebhookTests
         var status = await Webhook(store).HandleAsync(Secret, huge, CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, status);
-        Assert.Null(store.Bound);
+        Assert.Empty(store.Bound);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class PairingWebhookTests
         var update = Assert.Single(handler.Handled);
         Assert.Equal(7, update.Id);
         Assert.Equal("Розкажи більше", update.Message?.Text);
-        Assert.Null(store.Bound);
+        Assert.Empty(store.Bound);
     }
 
     [Theory]
@@ -187,15 +187,15 @@ public class PairingWebhookTests
 
     private sealed class FailingStore : IChatBindingStore
     {
-        public Task<long?> GetAsync(CancellationToken ct) => throw new InvalidOperationException("storage is down");
+        public Task<IReadOnlyList<long>> GetAllAsync(CancellationToken ct) => throw new InvalidOperationException("storage is down");
 
-        public Task<bool> TryBindAsync(long chatId, CancellationToken ct) => throw new InvalidOperationException("storage is down");
+        public Task<BindResult> TryBindAsync(long chatId, int max, CancellationToken ct) => throw new InvalidOperationException("storage is down");
     }
 
     private sealed class CancellingStore : IChatBindingStore
     {
-        public Task<long?> GetAsync(CancellationToken ct) => throw new OperationCanceledException(ct);
+        public Task<IReadOnlyList<long>> GetAllAsync(CancellationToken ct) => throw new OperationCanceledException(ct);
 
-        public Task<bool> TryBindAsync(long chatId, CancellationToken ct) => throw new OperationCanceledException(ct);
+        public Task<BindResult> TryBindAsync(long chatId, int max, CancellationToken ct) => throw new OperationCanceledException(ct);
     }
 }

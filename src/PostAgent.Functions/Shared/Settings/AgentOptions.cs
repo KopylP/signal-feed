@@ -66,6 +66,8 @@ public sealed class AgentOptions
     // Необов'язковий: якщо не задано, чат береться з прив'язки (/start <TelegramPairingKey>).
     public long TelegramChatId { get; set; }
     [Required] public string TelegramPairingKey { get; set; } = string.Empty;
+    // How many chats can be paired at once (ADR-0014). Every bound chat gets the digest and alerts.
+    [Range(1, 20)] public int TelegramMaxChats { get; set; } = 5;
     [Required] public string TelegramWebhookSecret { get; set; } = string.Empty;
     [Range(1, int.MaxValue)] public int TelegramApiId { get; set; }
     [Required] public string TelegramApiHash { get; set; } = string.Empty;

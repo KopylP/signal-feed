@@ -23,12 +23,13 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 ## Public endpoint
 
 - `PairingFunction` is anonymous because Telegram cannot send a function key. Every check lives in `PairingWebhook`: the secret token header first, compared with `SecretComparison` (constant time), before the body is read (the body is passed as a `Stream` for that reason, capped at 64 KB).
-- Never reply to a wrong key and never log a key or the secret. The first pairing wins; `TelegramChatId`, when set, overrides the stored chat and turns pairing off (ADR-0008).
+- Never reply to a wrong key and never log a key or the secret. Every chat with the right key is added up to `TelegramMaxChats`; `TelegramChatId`, when set, overrides the stored chats and turns pairing off (ADR-0008, ADR-0014).
 
 ## Chat about the digest (ADR-0010)
 
 - The webhook routes `/start` to pairing and every other update to the `IIncomingMessageHandler` list in registration order, the first that returns true wins (`Shared/Notifications`; the settings menu is registered before the chat); `Pairing`, `Digest`, `Chat` and `Cleanup` never reference each other, they share only types in `Shared/` (`Shared/Chat`).
-- The conversation is one blob (`chat-state/current.json`): `Digest` overwrites it with a snapshot after the digest is sent, `Cleanup` deletes it when stale. Keep it that way: no history of old conversations.
+- The conversation is one blob per chat (`chat-state/<chat id>.json`, ADR-0014): `Digest` overwrites each with a snapshot after the digest is sent, `Cleanup` deletes the stale ones. Keep it that way: no history of old conversations.
+- A message to every chat goes through `ITelegramNotifier.SendAsync` (one failing chat does not stop the others); an answer or a reply goes through `SendToAsync` to the chat that asked. Never read "the" chat from `ChatResolver`: ask for the list, or check `IsBoundAsync`.
 - `ChatProcessor` order is ask the model, save with the blob ETag, then send. Never send before the save succeeds. A turn whose digest changed is dropped, not redelivered.
 - Dedupe handled updates by the set in `ChatState.ProcessedUpdateIds`, never by a watermark. A chat queue message that cannot be parsed is dropped, not retried.
 - Anything a channel wrote (the snapshot, tool results) goes to the model through `DataBlock.Wrap`, never into the instructions. A tool gets a cap on its output (`ChatSearchMaxHits`).
@@ -40,7 +41,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - A parameter the bot may change goes into `SettingsCatalog` (ranges come from the `Range` attributes); secrets, schedules and infrastructure values never do.
 - A job reads `IEffectiveOptions.GetAsync` once at the start of a run and passes the snapshot down; never hold `AgentOptions` in a singleton field. Secrets and infrastructure values keep `IOptions<AgentOptions>`.
 - Every write to `settings/overrides.json` goes through `SettingsEditor` (ETag, up to 3 retries, validated as a whole); reset is never refused. A button's `callback_data` is at most 64 bytes and carries the target value, not a step.
-- The menu answers only the bound private chat and records the ids of the updates it claimed (the last 30, a set, never a watermark: ids can restart and arrive out of order); a resent one is claimed and ignored, an ordinary chat question is never recorded. A blob that cannot be read is never overwritten except by "reset all". Models are chosen from a fixed list, the model is set per request by `ModelSelectingChatClient`.
+- The menu answers only bound private chats (the question it waits for and a proposal belong to one chat and are not touched by another) and records the ids of the updates it claimed (the last 30, a set, never a watermark: ids can restart and arrive out of order); a resent one is claimed and ignored, an ordinary chat question is never recorded. A blob that cannot be read is never overwritten except by "reset all". Models are chosen from a fixed list, the model is set per request by `ModelSelectingChatClient`.
 
 - The chat agent changes settings only through `SettingsTools` (ADR-0013): they build a plan of `SettingChange` and never write. The plan is stored and shown by code (`SettingsProposalSender`, `SettingsProposalMessage`), applied only by the button (`SettingsEditor.ApplyProposalAsync`, one checked write). Never put model text into that message, never add an apply tool.
 

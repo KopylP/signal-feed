@@ -202,4 +202,40 @@ public class SettingsInboxTests
 
         Assert.Null(h.Store.Current?.Pending);
     }
+
+    [Fact]
+    public async Task A_second_bound_chat_gets_its_own_menu()
+    {
+        var h = new MenuHarness();
+        h.AlsoBind(43);
+
+        Assert.True(await h.Inbox.HandleAsync(MenuHarness.Text("/settings", chatId: 43), CancellationToken.None));
+
+        Assert.Equal(43, Assert.Single(h.Panel.Sent).ChatId);
+    }
+
+    [Fact]
+    public async Task The_typed_answer_of_one_chat_is_not_taken_for_the_answer_to_the_question_of_another()
+    {
+        var h = new MenuHarness();
+        h.AlsoBind(43);
+        await h.Inbox.HandleAsync(MenuHarness.Callback(CallbackData.Encode(MenuAction.AskText("AlertQuietHours")), chatId: 42), CancellationToken.None);
+
+        var handled = await h.Inbox.HandleAsync(MenuHarness.Text("23:00-07:00", updateId: 2, chatId: 43), CancellationToken.None);
+
+        Assert.False(handled);
+        Assert.NotNull(h.Store.Current?.Pending);
+    }
+
+    [Fact]
+    public async Task Opening_the_menu_in_one_chat_keeps_the_question_asked_in_another()
+    {
+        var h = new MenuHarness();
+        h.AlsoBind(43);
+        await h.Inbox.HandleAsync(MenuHarness.Callback(CallbackData.Encode(MenuAction.AskText("AlertQuietHours")), chatId: 42), CancellationToken.None);
+
+        await h.Inbox.HandleAsync(MenuHarness.Text("/settings", updateId: 2, chatId: 43), CancellationToken.None);
+
+        Assert.Equal(42, h.Store.Current?.Pending?.ChatId);
+    }
 }

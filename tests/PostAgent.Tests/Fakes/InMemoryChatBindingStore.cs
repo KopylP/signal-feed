@@ -2,20 +2,25 @@ using PostAgent.Shared.Notifications;
 
 namespace PostAgent.Tests.Fakes;
 
-internal sealed class InMemoryChatBindingStore(long? bound = null) : IChatBindingStore
+internal sealed class InMemoryChatBindingStore(params long[] bound) : IChatBindingStore
 {
-    public long? Bound { get; private set; } = bound;
+    public List<long> Bound { get; } = [.. bound];
 
-    public Task<long?> GetAsync(CancellationToken ct) => Task.FromResult(Bound);
+    public Task<IReadOnlyList<long>> GetAllAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<long>>(Bound.ToList());
 
-    public Task<bool> TryBindAsync(long chatId, CancellationToken ct)
+    public Task<BindResult> TryBindAsync(long chatId, int max, CancellationToken ct)
     {
-        if (Bound is not null)
+        if (Bound.Contains(chatId))
         {
-            return Task.FromResult(false);
+            return Task.FromResult(BindResult.AlreadyBound);
         }
 
-        Bound = chatId;
-        return Task.FromResult(true);
+        if (Bound.Count >= max)
+        {
+            return Task.FromResult(BindResult.Full);
+        }
+
+        Bound.Add(chatId);
+        return Task.FromResult(BindResult.Added);
     }
 }

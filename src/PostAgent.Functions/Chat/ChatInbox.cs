@@ -25,21 +25,21 @@ public sealed class ChatInbox(
         }
 
         // Only the private chat with the bot is served: in a group every member's message would cost a model call.
-        if (message.Chat.Type != ChatType.Private || await resolver.TryGetChatIdAsync(ct) != message.Chat.Id)
+        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
         {
             return false;
         }
 
-        var current = await state.LoadAsync(ct);
+        var current = await state.LoadAsync(message.Chat.Id, ct);
         if (current is null)
         {
-            await notifier.SendAsync(ChatTexts.NoReport, ct);
+            await notifier.SendToAsync(message.Chat.Id, ChatTexts.NoReport, ct);
             return true;
         }
 
         try
         {
-            await queue.EnqueueAsync(new ChatRequest(update.Id, text.Trim().Truncate(MaxQuestionChars), current.State.Report.ReportId), ct);
+            await queue.EnqueueAsync(new ChatRequest(update.Id, text.Trim().Truncate(MaxQuestionChars), current.State.Report.ReportId, message.Chat.Id), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

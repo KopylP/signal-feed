@@ -23,7 +23,7 @@ public sealed class MenuController(
 
     public async Task HandleCommandAsync(long chatId, string text, CancellationToken ct)
     {
-        await editor.UpdateAsync(o => o.Pending is null ? o : o with { Pending = null }, validate: false, ct);
+        await ClearPendingAsync(chatId, ct);
 
         if (CommandName(text) == "/cancel")
         {
@@ -37,7 +37,7 @@ public sealed class MenuController(
 
     public async Task HandleCallbackAsync(long chatId, int messageId, MenuAction action, CancellationToken ct)
     {
-        var screen = await ActAsync(action, messageId, ct);
+        var screen = await ActAsync(action, chatId, messageId, ct);
         if (screen is not null)
         {
             await ShowAsync(chatId, messageId, screen, ct);
@@ -48,7 +48,7 @@ public sealed class MenuController(
     public async Task<bool> HandleTextAsync(long chatId, string text, CancellationToken ct)
     {
         var pending = (await store.LoadAsync(ct))?.Value.Pending;
-        if (pending is null || pending.ExpiresAt <= time.GetUtcNow())
+        if (pending is null || !pending.IsFor(chatId) || pending.ExpiresAt <= time.GetUtcNow())
         {
             return false;
         }
@@ -60,7 +60,7 @@ public sealed class MenuController(
 
         if (SettingsCatalog.Find(pending.Key) is not { } definition)
         {
-            await editor.SetPendingAsync(null, ct);
+            await ClearPendingAsync(chatId, ct);
             return false;
         }
 
@@ -72,18 +72,22 @@ public sealed class MenuController(
             return true;
         }
 
-        await editor.SetPendingAsync(null, ct);
+        await ClearPendingAsync(chatId, ct);
         await ShowAsync(chatId, pending.MessageId, await GroupAsync(definition.Group, SettingsMenuTexts.Saved, ct), ct);
         return true;
     }
 
-    private async Task<Screen?> ActAsync(MenuAction action, int messageId, CancellationToken ct)
+    // Only the question of this chat: another chat's menu must not cancel it.
+    private Task<EditResult> ClearPendingAsync(long chatId, CancellationToken ct) =>
+        editor.UpdateAsync(o => o.Pending is { } p && p.IsFor(chatId) ? o with { Pending = null } : o, validate: false, ct);
+
+    private async Task<Screen?> ActAsync(MenuAction action, long chatId, int messageId, CancellationToken ct)
     {
         switch (action.Kind)
         {
             case MenuActionKind.Main:
             case MenuActionKind.Cancel:
-                await editor.SetPendingAsync(null, ct);
+                await ClearPendingAsync(chatId, ct);
                 return await HomeAsync(ct);
 
             case MenuActionKind.ResetAll:
@@ -91,15 +95,15 @@ public sealed class MenuController(
                 return await HomeAsync(ct);
 
             case MenuActionKind.OpenGroup when Enum.TryParse<SettingGroup>(action.Arg, out var group):
-                await editor.SetPendingAsync(null, ct);
+                await ClearPendingAsync(chatId, ct);
                 return group == SettingGroup.Sources ? await SourcesAsync(null, ct) : await GroupAsync(group, null, ct);
 
             case MenuActionKind.OpenSources:
-                await editor.SetPendingAsync(null, ct);
+                await ClearPendingAsync(chatId, ct);
                 return await SourcesAsync(null, ct);
 
             case MenuActionKind.AddSource:
-                await editor.SetPendingAsync(new PendingInput(SourcesKey, "add-source", messageId, time.GetUtcNow() + PendingLifetime), ct);
+                await editor.SetPendingAsync(new PendingInput(SourcesKey, "add-source", messageId, time.GetUtcNow() + PendingLifetime, chatId), ct);
                 return MenuScreens.AskSource(null);
 
             case MenuActionKind.RemoveSource:
@@ -119,7 +123,7 @@ public sealed class MenuController(
                 return await AfterSetAsync(definition, definition.Choices[action.Number].Value, ct);
 
             case MenuActionKind.AskText when SettingsCatalog.Find(action.Arg) is { Kind: SettingKind.Text or SettingKind.QuietHours } definition:
-                await editor.SetPendingAsync(new PendingInput(definition.Key, "set", messageId, time.GetUtcNow() + PendingLifetime), ct);
+                await editor.SetPendingAsync(new PendingInput(definition.Key, "set", messageId, time.GetUtcNow() + PendingLifetime, chatId), ct);
                 return MenuScreens.Ask(definition, null);
 
             case MenuActionKind.Reset when SettingsCatalog.Find(action.Arg) is { } definition:
@@ -131,10 +135,10 @@ public sealed class MenuController(
                 return group == SettingGroup.Sources ? await SourcesAsync(null, ct) : await GroupAsync(group, null, ct);
 
             case MenuActionKind.ApplyProposal:
-                return await ApplyProposalAsync(action.Arg, ct);
+                return await ApplyProposalAsync(action.Arg, chatId, ct);
 
             case MenuActionKind.DeclineProposal:
-                return await editor.DeclineProposalAsync(action.Arg, ct) ? new Screen(SettingsProposalMessage.Declined, InlineKeyboard.Empty) : null;
+                return await editor.DeclineProposalAsync(action.Arg, chatId, ct) ? new Screen(SettingsProposalMessage.Declined, InlineKeyboard.Empty) : null;
 
             default:
                 // An unknown key or a value outside the catalog (an old or forged button): nothing changes.
@@ -143,9 +147,9 @@ public sealed class MenuController(
     }
 
     // A second tap finds the proposal gone and changes nothing, so it cannot overwrite the "applied" text.
-    private async Task<Screen?> ApplyProposalAsync(string id, CancellationToken ct)
+    private async Task<Screen?> ApplyProposalAsync(string id, long chatId, CancellationToken ct)
     {
-        var outcome = await editor.ApplyProposalAsync(id, time.GetUtcNow(), ct);
+        var outcome = await editor.ApplyProposalAsync(id, chatId, time.GetUtcNow(), ct);
         return outcome.Status switch
         {
             ProposalStatus.Applied => new Screen(SettingsProposalMessage.Applied(outcome.Proposal!), InlineKeyboard.Empty),
@@ -184,7 +188,7 @@ public sealed class MenuController(
             return true;
         }
 
-        await editor.SetPendingAsync(null, ct);
+        await ClearPendingAsync(chatId, ct);
         await ShowAsync(chatId, pending.MessageId, await SourcesAsync(SettingsMenuTexts.SourceAdded, ct), ct);
         return true;
     }

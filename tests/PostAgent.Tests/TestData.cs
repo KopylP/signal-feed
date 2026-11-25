@@ -8,6 +8,9 @@ internal static class TestData
 {
     public static readonly DateTimeOffset Now = new(2026, 11, 24, 8, 0, 0, TimeSpan.Zero);
 
+    // The chat that most tests talk to.
+    public const long ChatId = 42;
+
     public static AgentOptions Options(Action<AgentOptions>? configure = null)
     {
         var options = new AgentOptions();

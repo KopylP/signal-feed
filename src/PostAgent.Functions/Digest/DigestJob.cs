@@ -11,6 +11,7 @@ public sealed class DigestJob(
     IDigestSummarizer summarizer,
     ITelegramNotifier notifier,
     IChatStateStore chatState,
+    ChatResolver chats,
     IEffectiveOptions options,
     TimeProvider time,
     ILogger<DigestJob> log) : IJob
@@ -59,7 +60,11 @@ public sealed class DigestJob(
     {
         try
         {
-            await chatState.StartNewAsync(report.ToSnapshot(now), ct);
+            var snapshot = report.ToSnapshot(now);
+            foreach (var chatId in await chats.GetChatIdsAsync(ct))
+            {
+                await chatState.StartNewAsync(chatId, snapshot, ct);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

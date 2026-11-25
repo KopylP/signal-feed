@@ -8,6 +8,52 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [sorrel] - 2026-11-25
+
+### Setup required
+- **`TelegramMaxChats`**: optional (default `5`)
+  - Where: App Setting (`app_settings`)
+  - Value: how many chats can be paired at once, 1 to 20
+  - Apply: nothing is needed; to change it, set it in `app_settings` and run the `infra` workflow. Nothing in Azure has to exist before the code deploys.
+
+### Contract changes
+- **Storage: table `ChatBinding` holds one row per chat** (compatible)
+  - Before: one row `chat`/`digest` with the paired chat
+  - After: one row `chat`/`<chat id>` per paired chat; the old `digest` row still counts as a chat
+  - Affects: the command that unbinds a chat (the row key is now the chat id, not `digest`), see [installation](docs/user-guide/installation.md#step-6-connect-your-chat)
+  - Migration: none
+- **Storage: one conversation blob per chat** (compatible)
+  - Before: `chat-state/current.json`
+  - After: `chat-state/<chat id>.json`
+  - Affects: the conversation that was open at the deploy is not carried over; the next digest starts a new one in every chat, and the cleanup removes the old file
+  - Migration: none
+- **Storage: `chat-messages` queue message carries `chatId`** (breaking for queued messages)
+  - Before: `updateId`, `text`, `reportId`
+  - After: also `chatId`
+  - Affects: a question that waits in the queue at the deploy is dropped (it lives one hour at most)
+  - Migration: none; ask again
+- **Storage: `settings/overrides.json` gets an optional `ChatId` in the pending question and in each proposal** (compatible)
+  - Before: they belonged to "the" chat
+  - After: they belong to the chat that was asked; a value without it can be used by any chat
+  - Affects: nothing; an old blob reads as before
+  - Migration: none
+
+### Added
+- **Several chats**: every chat that sends `/start <TelegramPairingKey>` is added and gets the same digest, alerts and failure messages; each has its own conversation and `/settings`, while settings and sources are shared. Use it for a second reader or a test account.
+  - Enable: on by default; send the pairing link to each chat
+  - Settings: `TelegramMaxChats` (5)
+  - Limits: a chat over the limit is told so and not added; a plan prepared by the agent can be confirmed only in the chat that got it; `TelegramChatId`, when set, still means exactly one chat. See [how it works](docs/user-guide/how-it-works.md#asking-about-the-digest) and [ADR-0014](docs/adr/0014-serve-several-chats-with-shared-settings.md).
+- **Handover guide**: [moving the agent to another person](docs/user-guide/handover.md), with clearing the history and getting the first digest.
+  - Enable: documentation only
+  - Settings: none
+  - Limits: none
+
+### Logic
+- **Pairing: no longer "the first chat wins"**
+  - Before: the first chat that paired was the only one; others were ignored even with the right key
+  - After: every chat with the right key is added until `TelegramMaxChats`
+  - Effect: whoever has the pairing key can join, so change `TelegramPairingKey` (and restart the app) when the key must stop working
+
 ## [v2026.11.25.54-thistle] - 2026-11-25
 
 ### Contract changes

@@ -98,16 +98,16 @@ echo "https://t.me/<your_bot_username>?start=$(secret TelegramPairingKey)"
 ```
 
 `callback_query` is what makes the buttons of `/settings` work. If you installed the webhook earlier with `["message"]` only, run this call again. `setWebhook` answers `{"ok":true,...}`. Open the printed link on the phone or desktop where you want the digest, press **Start**, and the bot replies «✅ Чат прив'язано».
-(Typing `/start <key>` to the bot works too.) The first chat that pairs wins. Other chats are ignored, even with the right key.
+(Typing `/start <key>` to the bot works too.) Every chat that sends the right key is added (up to `TelegramMaxChats`, 5 by default) and gets the same digest and alerts; each chat has its own conversation and menu, and the settings are shared ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)). Wrong keys are ignored.
 
-To move the digest to another chat, delete the binding and pair again:
+To add a second chat (a test account, a colleague), send it the same link. To move the digest to another chat, delete the binding of the old one and pair the new one; `<chat id>` is the number the row key shows in the `ChatBinding` table (a row written by an earlier version has the key `digest`):
 
 ```bash
 az storage entity delete --account-name $(terraform -chdir=infra output -raw storage_account_name) --auth-mode login \
-  --table-name ChatBinding --partition-key chat --row-key digest
+  --table-name ChatBinding --partition-key chat --row-key <chat id>
 ```
 
-Prefer a fixed chat? Set `telegram_chat_id` instead (see [Configuration](configuration.md)): pairing is then off.
+Prefer a fixed chat? Set `telegram_chat_id` instead (see [Configuration](configuration.md)): pairing is then off and exactly that one chat is served.
 
 ## What to expect
 

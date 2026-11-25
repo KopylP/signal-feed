@@ -9,20 +9,14 @@ public sealed class SettingsProposalSender(
     SettingsEditor editor,
     IEffectiveOptions effective,
     ITelegramPanel panel,
-    ChatResolver resolver,
     TimeProvider time,
     ILogger<SettingsProposalSender> log)
 {
-    public async Task SendAsync(long updateId, IReadOnlyList<SettingChange> changes, CancellationToken ct)
+    public async Task SendAsync(long chatId, long updateId, IReadOnlyList<SettingChange> changes, CancellationToken ct)
     {
         try
         {
-            if (await resolver.TryGetChatIdAsync(ct) is not { } chatId)
-            {
-                return;
-            }
-
-            var proposal = new SettingsProposal(updateId.ToString(System.Globalization.CultureInfo.InvariantCulture), changes, time.GetUtcNow() + SettingsProposal.Lifetime);
+            var proposal = new SettingsProposal(updateId.ToString(System.Globalization.CultureInfo.InvariantCulture), changes, time.GetUtcNow() + SettingsProposal.Lifetime, chatId);
             var saved = await editor.ProposeAsync(proposal, ct);
             if (!saved.Ok)
             {
