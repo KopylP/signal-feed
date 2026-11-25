@@ -19,7 +19,7 @@ public class DigestSummarizerTests
     {
         var items = new[] { new DigestItem(Post("src_1"), IsInteresting: true), new DigestItem(Post("src_2"), IsInteresting: true) };
 
-        var report = await new DigestSummarizer(new FakeChatClient(OneHeadline)).SummarizeAsync(items, CancellationToken.None);
+        var report = await new DigestSummarizer(new FakeChatClient(OneHeadline), new DefaultPrompts()).SummarizeAsync(items, CancellationToken.None);
 
         Assert.Equal("Головне", report.Overview);
         Assert.Equal("Суть", Assert.Single(report.Headlines).Text);
@@ -37,7 +37,7 @@ public class DigestSummarizerTests
         post.Text = new string('я', 5000);
         var chat = new FakeChatClient("""{"overview":"О","headlines":[],"for_marketplace":[],"notable":[],"recommended":[],"needs_verification":[]}""");
 
-        await new DigestSummarizer(chat).SummarizeAsync([new DigestItem(post, true)], CancellationToken.None);
+        await new DigestSummarizer(chat, new DefaultPrompts()).SummarizeAsync([new DigestItem(post, true)], CancellationToken.None);
 
         using var json = JsonDocument.Parse(chat.Messages[1].Text);
         var sent = json.RootElement[0];
@@ -61,7 +61,7 @@ public class DigestSummarizerTests
 
         // The job then falls back to the plain digest instead of an empty one that still marks the posts as sent.
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            new DigestSummarizer(chat).SummarizeAsync(items, CancellationToken.None));
+            new DigestSummarizer(chat, new DefaultPrompts()).SummarizeAsync(items, CancellationToken.None));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class DigestSummarizerTests
         var items = new[] { new DigestItem(Post("src_1"), IsInteresting: false) };
         var chat = new FakeChatClient("""{"overview":"Тихий день","headlines":[],"for_marketplace":[],"notable":[],"recommended":[],"needs_verification":[]}""");
 
-        var report = await new DigestSummarizer(chat).SummarizeAsync(items, CancellationToken.None);
+        var report = await new DigestSummarizer(chat, new DefaultPrompts()).SummarizeAsync(items, CancellationToken.None);
 
         Assert.Empty(report.Headlines);
         Assert.Equal(1, report.Skipped.Other);

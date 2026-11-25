@@ -8,4 +8,7 @@ public enum SettingChangeKind
     AddSource,
     RemoveSource,
     ToggleAlertSource,
+    EditPrompt,
+    ResetPrompt,
+    EditProfile,
 }

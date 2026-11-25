@@ -18,7 +18,7 @@ public class PostScorerTests
     {
         var posts = new[] { Unscored("src_1"), Unscored("src_2") };
 
-        var missing = await new PostScorer(new FakeChatClient(TwoScores)).ScoreAsync(posts, CancellationToken.None);
+        var missing = await new PostScorer(new FakeChatClient(TwoScores), new DefaultPrompts()).ScoreAsync(posts, CancellationToken.None);
 
         Assert.Empty(missing);
         Assert.Equal([9, 3], posts.Select(p => p.Score));
@@ -30,7 +30,7 @@ public class PostScorerTests
     {
         var posts = new[] { Unscored("src_1"), Unscored("src_9") };
 
-        var missing = await new PostScorer(new FakeChatClient(TwoScores)).ScoreAsync(posts, CancellationToken.None);
+        var missing = await new PostScorer(new FakeChatClient(TwoScores), new DefaultPrompts()).ScoreAsync(posts, CancellationToken.None);
 
         Assert.Equal(["src_9"], missing);
     }
@@ -42,7 +42,7 @@ public class PostScorerTests
         var post = Unscored("src_1");
         post.Text = "Текст посту";
 
-        await new PostScorer(chat).ScoreAsync([post], CancellationToken.None);
+        await new PostScorer(chat, new DefaultPrompts()).ScoreAsync([post], CancellationToken.None);
 
         Assert.Equal([ChatRole.System, ChatRole.User], chat.Messages.Select(m => m.Role));
         Assert.Contains("## Scale", chat.Messages[0].Text);
@@ -55,7 +55,7 @@ public class PostScorerTests
     [Fact]
     public async Task Fails_loudly_on_a_malformed_response_so_the_queue_retries()
     {
-        var scorer = new PostScorer(new FakeChatClient("not json"));
+        var scorer = new PostScorer(new FakeChatClient("not json"), new DefaultPrompts());
 
         await Assert.ThrowsAnyAsync<Exception>(() => scorer.ScoreAsync([Unscored("src_1")], CancellationToken.None));
     }

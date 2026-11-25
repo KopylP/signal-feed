@@ -1,10 +1,13 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using PostAgent.Chat;
 using PostAgent.Chat.Infrastructure;
+using PostAgent.Chat.Infrastructure.Tools;
 using PostAgent.SettingsMenu;
 using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
 using PostAgent.Tests.Shared.Settings;
@@ -19,6 +22,7 @@ internal sealed class MenuHarness
     public const long BoundChat = 42;
 
     public InMemoryOverridesStore Store { get; } = new();
+    public InMemoryProfileStore Profile { get; } = new();
     public FakeTimeProvider Time { get; } = new(TestData.Now);
     public RecordingPanel Panel { get; } = new();
     public AgentOptions App { get; }
@@ -31,7 +35,16 @@ internal sealed class MenuHarness
 
     // Binds more chats, as pairing does.
     public void AlsoBind(params long[] chats) => Bindings.Bound.AddRange(chats.Where(c => !Bindings.Bound.Contains(c)));
-    public SettingsToolsFactory ToolsFactory => new(Editor, Effective);
+    // The posts the post tools read; set it when the test needs stored posts.
+    public InMemoryPostRepository Posts { get; set; } = new();
+
+    public ChatToolFactory ToolsFactory => new(
+        new ServiceCollection()
+            .AddSingleton(Editor).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
+            .AddSingleton<IOverridesStore>(Store).AddSingleton<IProfileStore>(Profile)
+            .AddSingleton<IPostRepository>(Posts).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
+            .AddChatTools().BuildServiceProvider().GetServices<IChatTool>(),
+        Editor);
     public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
@@ -39,7 +52,7 @@ internal sealed class MenuHarness
         App = OverridesApplierTests.ValidApp(configure);
         var options = Options.Create(App);
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
-        Editor = new SettingsEditor(Store, options, Effective, NullLogger<SettingsEditor>.Instance);
+        Editor = new SettingsEditor(Store, options, Effective, DefaultPrompts.Library, Profile, NullLogger<SettingsEditor>.Instance);
         Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
         Bindings = bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore();
         Resolver = new ChatResolver(options, Bindings);

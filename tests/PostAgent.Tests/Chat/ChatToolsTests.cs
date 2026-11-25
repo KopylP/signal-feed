@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
-using PostAgent.Chat.Infrastructure;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
@@ -11,8 +10,8 @@ namespace PostAgent.Tests.Chat;
 
 public class ChatToolsTests
 {
-    private static ChatTools Create(InMemoryPostRepository repo, Action<AgentOptions>? configure = null) =>
-        new(repo, Microsoft.Extensions.Options.Options.Create(Options(configure)), new FakeTimeProvider(Now));
+    private static ToolShim Create(InMemoryPostRepository repo, Action<AgentOptions>? configure = null) =>
+        new(new PostAgent.Tests.SettingsMenu.MenuHarness(configure) { Posts = repo }.ToolsFactory.Create([]));
 
     private static PostEntity Found(string rowKey, string text, double hoursAgo = 1)
     {

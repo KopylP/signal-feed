@@ -21,7 +21,7 @@ public class CollectorJobTests
     {
         var app = new AgentOptions { Sources = sources, ScoringBatchSize = 2 };
         _effective = new FakeEffectiveOptions(app);
-        var editor = new SettingsEditor(Overrides, Microsoft.Extensions.Options.Options.Create(app), _effective, NullLogger<SettingsEditor>.Instance);
+        var editor = new SettingsEditor(Overrides, Microsoft.Extensions.Options.Options.Create(app), _effective, DefaultPrompts.Library, new InMemoryProfileStore(), NullLogger<SettingsEditor>.Instance);
         var collector = new SourceCollector(reader, _repo, cursors, _queue, editor, NullLogger<SourceCollector>.Instance);
         return new(collector, _lock, _notifier, _effective, editor, cursors, NullLogger<CollectorJob>.Instance);
     }

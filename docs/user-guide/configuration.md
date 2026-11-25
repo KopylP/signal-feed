@@ -90,7 +90,7 @@ Send `/settings` to the bot in the private chat. One message with buttons opens 
 - A combination that breaks a rule is refused with the names of the fields, for example `AlertWindowHours + AlertCooldownHours` above `RetentionDays * 24`.
 
 Precedence: the bot, then the App Setting, then the default in code. Once you change the source list in the bot, a later change of the `Sources` App Setting is ignored until you reset the sources group.
-Not available in the bot: schedules, prompts, secrets, `RetentionDays`, `ManualRunsEnabled`, `TelegramChatId`, `TelegramMaxChats`, the Telegram account data and storage names.
+Not available in the bot: schedules, the fixed parts of the prompts, secrets, `RetentionDays`, `ManualRunsEnabled`, `TelegramChatId`, `TelegramMaxChats`, the Telegram account data and storage names.
 
 ### By asking the agent
 
@@ -117,9 +117,24 @@ az functionapp config appsettings set -g <rg> -n <function-app> --settings Manua
 The command only queues the job and does not wait for it: read the result in the function logs (a manual run is logged under `RunNowFunction`, not under the timer function). `collect` moves the read cursors and reports failed sources to Telegram, and running `digest` right after the scheduled digest sends the "no posts" message. Two runs at the same time (or one together with the timer) can send a message twice. Two collections never run at once: they share the Telegram session, so a `collect` that starts while another holds it is skipped with a warning in the log. While `ManualRunsEnabled` is `false`, a message is dropped with a warning.
 A job that fails is logged and not retried, like a scheduled run. Access to the queue is controlled by Azure roles, there is no key.
 
-### Prompts
+### Prompts from the chat
 
-The files [`prompts/scoring.md`](../../prompts/scoring.md) (scoring) and [`prompts/digest.md`](../../prompts/digest.md) (digest summary) are copied into the build, so a change
+Parts of the prompts can be tuned by asking the agent, without a deploy. The editable sections are: *scoring*: my work, my interests, the scale; *digest*: about me; *chat*: the style of the answers.
+Everything else (the output fields and limits, the rules that treat post text as data, the tool names) is fixed in the files and cannot be changed from the bot.
+
+- Ask what is in a prompt: «що в мене в промпті оцінювання?». The agent reads it (`get_prompt`) and tells you, naming the sections you can change.
+- Ask for a change: «додай у мої інтереси Bing та Yandex». The agent finds the section and proposes **one fragment replaced by another**. The bot then sends «⚙️ Агент пропонує змінити налаштування» with the exact old text (−) and the new text (+) and the buttons «✅ Застосувати» / «✖ Скасувати». Nothing changes until you tap.
+- A plan holds at most 3 text edits, each fragment up to 500 characters, a section up to 2000. A section cannot get headings and cannot be empty; to go back, ask «поверни стандартний промпт секції …» (a reset).
+- The change applies from the next model call. «Скинути все» in `/settings` returns the prompts to the shipped text.
+
+### About me
+
+A short text about you (your work, goals, what you do not care about) that the chat always sees as context, so answers fit you. It is stored in its own blob (`settings/profile.txt`), not in the settings, and «Скинути все» does not clear it.
+Tell the agent: «запам'ятай, що я працюю над каталогом майданчиків», or ask what it knows: «що ти про мене знаєш?». Changes work like prompt edits: the agent proposes an exact before and after, and you confirm with the button. The profile is used by the chat only, not by scoring or the digest.
+
+### Prompt files
+
+The files [`prompts/scoring.md`](../../prompts/scoring.md) (scoring), [`prompts/digest.md`](../../prompts/digest.md) (digest summary) and [`prompts/chat.md`](../../prompts/chat.md) are copied into the build, so a change
 needs a new deploy (a push to `main` is enough when [automatic deployment](../developer-guide/ci-cd.md#deploy-is-off-by-default) is on). **Before the first deploy**, check the topics under `My interests` in `scoring.md`: the model scores every post against them.
 The prompts are English and ask the model to answer in Ukrainian.
 

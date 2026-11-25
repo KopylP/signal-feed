@@ -33,10 +33,9 @@ public class ChatModelRequestTests
         // The same construction as production, with only the transport replaced.
         var chat = AiServices.CreateChatClient(settings, new OpenAIClientOptions { Transport = new HttpClientPipelineTransport(new HttpClient(handler)) });
         var options = Microsoft.Extensions.Options.Options.Create(settings);
-        var tools = new ChatTools(new InMemoryPostRepository(), options, new FakeTimeProvider(Now));
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var reply = await new ChatAgent(chat, tools, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(state, "питання", CancellationToken.None);
+        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(state, "питання", CancellationToken.None);
         return (handler, reply);
     }
 
@@ -82,7 +81,7 @@ public class ChatModelRequestTests
         var settings = Options(o => o.OpenAIApiKey = "key");
         var chat = AiServices.CreateChatClient(settings, new OpenAIClientOptions { Transport = new HttpClientPipelineTransport(new HttpClient(handler)) });
         var options = Microsoft.Extensions.Options.Options.Create(settings);
-        var agent = new ChatAgent(chat, new ChatTools(new InMemoryPostRepository(), options, new FakeTimeProvider(Now)), new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
+        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
         var first = await agent.AskAsync(state, "перше", CancellationToken.None);

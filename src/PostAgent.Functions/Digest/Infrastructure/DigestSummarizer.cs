@@ -4,15 +4,14 @@ using PostAgent.Shared.Common;
 
 namespace PostAgent.Digest.Infrastructure;
 
-public sealed class DigestSummarizer(IChatClient chat) : IDigestSummarizer
+public sealed class DigestSummarizer(IChatClient chat, IPromptProvider prompts) : IDigestSummarizer
 {
     private const int MaxTextChars = 1500;
 
-    private readonly string _systemPrompt = Prompts.Load("digest.md");
 
     public async Task<DigestReport> SummarizeAsync(IReadOnlyList<DigestItem> items, CancellationToken ct)
     {
-        var summary = await chat.AskAsync<DigestSummary>(_systemPrompt, ToUserMessage(items), ct);
+        var summary = await chat.AskAsync<DigestSummary>(await prompts.GetAsync("digest.md", ct), ToUserMessage(items), ct);
         var report = DigestReport.From(items, summary);
 
         // Strict mode checks the shape, not the ids. If every named id is unknown, the digest would be empty

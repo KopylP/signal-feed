@@ -8,6 +8,29 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [yarrow] - 2026-11-25
+
+### Setup required
+None. The new blob `settings/profile.txt` is created on the first save, in the container the app already uses.
+
+### Contract changes
+- **Storage: `settings/overrides.json` gets `promptSections`** (compatible)
+  - Before: values, sources, alert sources, pending question, proposals
+  - After: also the owner's text for editable prompt sections (section id to text); a missing field means the shipped prompts
+  - Affects: nothing to do; "Скинути все" in `/settings` now also returns the prompts to the shipped text
+  - Migration: none
+- **Storage: new blob `settings/profile.txt`** (compatible)
+  - Holds what the reader wrote about themselves; not cleared by "Скинути все"
+
+### Added
+- **Edit prompt sections from the chat**: the agent shows a prompt (`get_prompt`) and proposes one fragment replaced by another in an editable section; the bot shows the exact before and after, and a tap applies it ([configuration](docs/user-guide/configuration.md#prompts-from-the-chat), ADR-0015)
+  - Editable: scoring (my work, my interests, the scale), digest (about me), chat (style of the answers); the output fields, limits and data rules stay fixed
+- **Reader profile**: a short "about me" the chat always sees; changed through the same confirmed edit
+
+### Logic
+- Scoring, the digest and the chat read their prompt through a provider that applies the owner's edits (cached for 30 seconds), so a change needs no deploy
+- The chat prompt keeps the answer style in its own section and has a rule for `<about_me>`
+
 ## [v2026.11.25.58-heather] - 2026-11-25
 
 ### Fixed

@@ -4,13 +4,16 @@ Score each one by the rules below. The goal: I should not have to read every cha
 really worth my attention may get a high score.
 
 ## My work
+<!-- editable: scoring-work | Scoring: my work -->
 I work on the site catalog (assortment) of Collaborator, a marketplace for buying and selling links and placements on websites.
 My job is to grow the catalog, find new sites and media outlets, judge the quality, SEO potential and commercial appeal of sites,
 work with webmasters and site owners, and develop the offer in the US, Europe, Kazakhstan and other markets.
 I look for large, high-quality, expensive sites, and I follow advertiser demand and the SEO market trends that can affect the marketplace.
 Judge a post not only as an SEO specialist but also as someone who develops a product in a competitive market.
+<!-- /editable -->
 
 ## My interests
+<!-- editable: scoring-interests | Scoring: my interests -->
 1. Google updates: core and spam updates, algorithm changes, indexing, ranking and their effect on sites.
 2. Link building: new strategies, how well links work, Google's attitude to backlinks, PBN, guest posting, digital PR, outreach.
 3. SEO market: trends, changes in demand, promising niches and countries.
@@ -20,13 +23,16 @@ Judge a post not only as an SEO specialist but also as someone who develops a pr
 7. Tools and analytics: new SEO tools, metrics, studies, updates of Ahrefs, Semrush, Majestic and similar platforms.
 8. Practical cases: studies, experiments, real results and unusual approaches I can apply.
 Something unexpected but useful for the catalog or the marketplace is also welcome, if the text really supports it.
+<!-- /editable -->
 
 ## Scale
+<!-- editable: scoring-scale | Scoring: the scale -->
 9–10 — must read: new, concrete information that changes how I should work (a confirmed update, a competitor's move, a market shift, a study with numbers).
 7–8 — interesting: on topic, with facts, numbers or practical value.
 4–6 — fine: on topic, but vague, already-known news, or an opinion without evidence.
 1–3 — weak: off topic or without substance.
 0 — junk: ads, giveaways, fundraisers, "subscribe", a repost without a comment, promotion of someone's own service.
+<!-- /editable -->
 
 ## How to score
 - Score the substance, not the presentation. Emoji, caps lock and "URGENT" do not raise the score.
