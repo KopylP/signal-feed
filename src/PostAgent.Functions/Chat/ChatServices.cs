@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Http.Resilience;
 using PostAgent.Chat.Agent;
 using PostAgent.Chat.Agent.Tools;
 using PostAgent.Chat.Answering;
@@ -16,12 +17,12 @@ public static class ChatServices
             .AddChatTools()
             .AddChatDrafts()
             .AddSingleton<ChatToolFactory>()
-            .AddSingleton<IChatAgent, ChatAgent>()
+            .AddScoped<IChatAgent, ChatAgent>()
             .AddSingleton<IChatQueue, ChatQueue>()
             .AddScoped<IIncomingMessageHandler, ClearInbox>()
             .AddScoped<IIncomingMessageHandler, ChatInbox>()
             .AddScoped<SettingsProposalSender>()
-            .AddSingleton<ChatDraftStreams>()
+            .AddScoped<ChatDraftStreams>()
             .AddScoped<ChatDelivery>()
             .AddScoped<ChatProcessor>();
 
@@ -31,8 +32,17 @@ public static class ChatServices
         services
             .AddHttpClient<IChatDrafts, TelegramChatDrafts>()
             .RemoveAllLoggers()
-            .AddStandardResilienceHandler(NotificationsServices.ConfigureTelegramResilience);
+            .AddStandardResilienceHandler(ConfigureDraftResilience);
         return services;
+    }
+
+    // A draft is awaited inside the model loop, so it gets a short budget and no retry.
+    public static void ConfigureDraftResilience(HttpStandardResilienceOptions options)
+    {
+        options.Retry.DisableForUnsafeHttpMethods();
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(8);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(10); // at least twice the attempt timeout
     }
 
     // Every IChatTool in the assembly is a tool of the agent: a new tool is a new file, with nothing to register by hand.

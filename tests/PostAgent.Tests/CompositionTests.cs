@@ -121,8 +121,10 @@ public class CompositionTests
     public void The_chat_agent_is_built_from_the_container_with_the_keyed_chat_client()
     {
         using var provider = BuildProvider();
+        using var scope = provider.CreateScope();
 
-        Assert.NotNull(provider.GetRequiredService<IChatAgent>());
+        // Scoped: its Telegram client is a typed HttpClient, which must not live as long as the process.
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IChatAgent>());
     }
 
     [Fact]

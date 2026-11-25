@@ -54,14 +54,38 @@ public sealed class ChatAgent(
     private static async Task<string> RunStreamingAsync(AIAgent agent, List<ChatMessage> messages, AgentSession session, ChatDraftStream stream, CancellationToken ct)
     {
         await stream.StartAsync(ct);
-        var text = new StringBuilder();
-        await foreach (var update in agent.RunStreamingAsync(messages, session, cancellationToken: ct))
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var keepAlive = stream.RunKeepAliveAsync(stop.Token);
+        try
         {
-            text.Append(update.Text);
-            await stream.OnTextAsync(text.ToString(), ct);
-        }
+            var updates = new List<AgentResponseUpdate>();
+            var preview = new StringBuilder();
+            string? lastMessage = null;
+            await foreach (var update in agent.RunStreamingAsync(messages, session, cancellationToken: ct))
+            {
+                updates.Add(update);
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    // Messages of one answer are joined by a newline, as in the finished response.
+                    if (preview.Length > 0 && update.MessageId is not null && lastMessage is not null && update.MessageId != lastMessage)
+                    {
+                        preview.Append('\n');
+                    }
 
-        return text.ToString();
+                    preview.Append(update.Text);
+                    lastMessage = update.MessageId ?? lastMessage;
+                    await stream.OnTextAsync(preview.ToString(), ct);
+                }
+            }
+
+            // The same text RunAsync gives: the finished response is built from the updates.
+            return updates.ToAgentResponse().Text;
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            await keepAlive;
+        }
     }
 
     // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question: a profile edit applies at once, a prompt edit within the cache time of the provider.

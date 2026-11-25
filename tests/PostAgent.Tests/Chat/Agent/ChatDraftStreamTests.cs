@@ -80,15 +80,98 @@ public class ChatDraftStreamTests
     }
 
     [Fact]
-    public async Task A_cancelled_send_is_not_swallowed()
+    public async Task A_timeout_reported_as_a_cancellation_ends_the_preview_but_not_the_answer()
     {
-        var stream = new ChatDraftStream(new CancellingDrafts(), _time, NullLogger<ChatDraftStream>.Instance, ChatId, 7);
+        _drafts.CancelSends = true;
+        var stream = Create();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => stream.StartAsync(CancellationToken.None));
+        await stream.StartAsync(CancellationToken.None);
+        _drafts.CancelSends = false;
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("a", CancellationToken.None);
+
+        Assert.Empty(_drafts.Sent);
     }
 
-    private sealed class CancellingDrafts : IChatDrafts
+    [Fact]
+    public async Task When_the_host_is_stopping_the_cancellation_is_not_swallowed()
     {
-        public Task SendAsync(long chatId, long draftId, string text, CancellationToken ct) => throw new OperationCanceledException();
+        _drafts.CancelSends = true;
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Create().StartAsync(cts.Token));
+    }
+
+    [Fact]
+    public async Task The_interval_restarts_after_every_send()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("a", CancellationToken.None);
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        await stream.OnTextAsync("a b", CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("a b c", CancellationToken.None);
+
+        Assert.Equal(["", "a", "a b c"], _drafts.Sent.Select(s => s.Text));
+    }
+
+    [Fact]
+    public async Task A_text_over_the_limit_shows_its_end()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+
+        await stream.OnTextAsync(new string('a', 100) + new string('z', ChatDraftStream.MaxChars), CancellationToken.None);
+
+        var sent = _drafts.Sent[^1].Text;
+        Assert.Equal(ChatDraftStream.MaxChars, sent.Length);
+        Assert.Equal(new string('z', ChatDraftStream.MaxChars), sent);
+    }
+
+    [Fact]
+    public async Task While_nothing_is_written_the_last_text_is_sent_again_to_keep_the_preview_alive()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+        using var stop = new CancellationTokenSource();
+        var keepAlive = stream.RunKeepAliveAsync(stop.Token);
+
+        _time.Advance(ChatDraftStream.KeepAliveEvery);
+        await WaitForAsync(() => _drafts.Sent.Count >= 2);
+        _time.Advance(ChatDraftStream.KeepAliveEvery);
+        await WaitForAsync(() => _drafts.Sent.Count >= 3);
+        await stop.CancelAsync();
+        await keepAlive;
+
+        Assert.Equal(3, _drafts.Sent.Count);
+        Assert.All(_drafts.Sent, s => Assert.Equal((ChatId, 7L, string.Empty), (s.ChatId, s.DraftId, s.Text)));
+    }
+
+    [Fact]
+    public async Task The_keep_alive_ends_quietly_when_the_answer_is_done()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+        using var stop = new CancellationTokenSource();
+        var keepAlive = stream.RunKeepAliveAsync(stop.Token);
+
+        await stop.CancelAsync();
+        await keepAlive;
+
+        Assert.Single(_drafts.Sent);
+    }
+
+    // The keep-alive runs on its own task, so the test waits for what it does.
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(10);
+        }
     }
 }

@@ -78,7 +78,7 @@ public class ChatAgentTests
         var reply = await Create(client, drafts: drafts, time: time).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
 
         Assert.Equal("один два три", reply.Text);
-        Assert.Equal(["", "один ", "один два ", "один два три "], drafts.Sent.Select(d => d.Text));
+        Assert.Equal(["", "один ", "один два ", "один два три"], drafts.Sent.Select(d => d.Text));
         Assert.All(drafts.Sent, d => Assert.Equal((ChatId, drafts.Sent[0].DraftId), (d.ChatId, d.DraftId)));
     }
 
