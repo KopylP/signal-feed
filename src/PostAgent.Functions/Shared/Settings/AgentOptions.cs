@@ -51,6 +51,13 @@ public sealed class AgentOptions
     public string OpenAIModel { get; set; } = "gpt-5.4-nano";
     [Required] public string OpenAIApiKey { get; set; } = string.Empty;
 
+    // Chat about the digest: a stronger model than the one that scores posts, and the bounds of one conversation.
+    public string OpenAIChatModel { get; set; } = "gpt-6.1-terra";
+    [Range(1, 100)] public int ChatMaxMessages { get; set; } = 20;
+    [Range(1, 4000)] public int ChatMaxOutputTokens { get; set; } = 800;
+    [Range(1, 20)] public int ChatMaxToolCalls { get; set; } = 5;
+    [Range(1, 200)] public int ChatSearchMaxHits { get; set; } = 8;
+
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = string.Empty;
     // Необов'язковий: якщо не задано, чат береться з прив'язки (/start <TelegramPairingKey>).

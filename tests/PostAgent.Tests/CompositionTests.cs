@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Azure.Storage.Queues;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PostAgent.Alerts;
@@ -9,6 +11,7 @@ using PostAgent.Digest;
 using PostAgent.Pairing;
 using PostAgent.RunNow;
 using PostAgent.Scoring;
+using PostAgent.Shared.Ai;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Settings;
@@ -73,6 +76,65 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PairingFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
+    }
+
+    [Fact]
+    public void The_chat_has_its_own_model_client_next_to_the_scoring_one()
+    {
+        using var provider = BuildProvider();
+
+        var scoring = provider.GetRequiredService<IChatClient>();
+        var chat = provider.GetRequiredKeyedService<IChatClient>(AiServices.ChatClientKey);
+
+        Assert.NotSame(scoring, chat);
+        Assert.Equal("gpt-5.4-nano", scoring.GetService<ChatClientMetadata>()?.DefaultModelId);
+        Assert.Equal("gpt-6.1-terra", chat.GetService<ChatClientMetadata>()?.DefaultModelId);
+    }
+
+    [Fact]
+    public void The_chat_model_follows_the_setting()
+    {
+        using var provider = BuildProvider(s => s["OpenAIChatModel"] = "gpt-6.1-sol");
+
+        var chat = provider.GetRequiredKeyedService<IChatClient>(AiServices.ChatClientKey);
+
+        Assert.Equal("gpt-6.1-sol", chat.GetService<ChatClientMetadata>()?.DefaultModelId);
+    }
+
+    [Fact]
+    public void The_chat_queue_is_a_separate_keyed_client_and_the_scoring_queue_stays_unkeyed()
+    {
+        using var provider = BuildProvider();
+
+        var scoring = provider.GetRequiredService<QueueClient>();
+        var chat = provider.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue);
+
+        Assert.Equal(StorageNames.ScoringQueue, scoring.Name);
+        Assert.Equal(StorageNames.ChatQueue, chat.Name);
+    }
+
+    [Fact]
+    public void Chat_settings_have_their_defaults()
+    {
+        using var provider = BuildProvider();
+
+        var options = provider.GetRequiredService<IOptions<AgentOptions>>().Value;
+
+        Assert.Equal("gpt-6.1-terra", options.OpenAIChatModel);
+        Assert.Equal(20, options.ChatMaxMessages);
+        Assert.Equal(800, options.ChatMaxOutputTokens);
+        Assert.Equal(5, options.ChatMaxToolCalls);
+        Assert.Equal(8, options.ChatSearchMaxHits);
+    }
+
+    [Fact]
+    public void A_chat_setting_out_of_range_stops_the_application_with_its_name()
+    {
+        using var provider = BuildProvider(s => s["ChatMaxToolCalls"] = "0");
+
+        var error = Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IOptions<AgentOptions>>().Value);
+
+        Assert.Contains("ChatMaxToolCalls", error.Message);
     }
 
     [Fact]
