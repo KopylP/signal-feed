@@ -18,6 +18,11 @@ public static class NotificationsServices
             .RemoveAllLoggers()
             .AddStandardResilienceHandler(ConfigureTelegramResilience);
 
+        services
+            .AddHttpClient<ITelegramPanel, TelegramPanel>()
+            .RemoveAllLoggers()
+            .AddStandardResilienceHandler(ConfigureTelegramResilience);
+
         return services;
     }
 

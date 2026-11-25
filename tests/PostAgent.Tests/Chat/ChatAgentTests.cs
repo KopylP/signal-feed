@@ -29,7 +29,7 @@ public class ChatAgentTests
     {
         var options = Microsoft.Extensions.Options.Options.Create(Options(configure));
         var tools = new ChatTools(new InMemoryPostRepository(Stored), options, new FakeTimeProvider(Now));
-        return new ChatAgent(client, tools, options, NullLogger<ChatAgent>.Instance);
+        return new ChatAgent(client, tools, new FakeEffectiveOptions(options.Value), NullLogger<ChatAgent>.Instance);
     }
 
     private static ChatState Fresh() => new(

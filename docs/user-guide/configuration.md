@@ -1,6 +1,6 @@
 # Configuration
 
-**Audience:** operators tuning their agent. Every parameter is an Azure Function App Setting.
+**Audience:** operators tuning their agent. Every parameter is an Azure Function App Setting. Many of them can also be changed from the Telegram bot ([see below](#from-telegram)); a value set there wins over the App Setting.
 New to the behavior behind these names? Read [How it works](how-it-works.md) first.
 
 ## Settings reference
@@ -75,6 +75,22 @@ az functionapp config appsettings set -g <rg> -n <function-app> \
 az functionapp config appsettings set -g <rg> -n <function-app> \
   --settings Sources="channel_one,channel_two,some_group" AlertSources="some_group"
 ```
+
+### From Telegram
+
+Send `/settings` to the bot in the private chat. One message with buttons opens and is edited as you tap: 📡 Sources, 📰 Digest, 🚨 Alerts, 📥 Collecting, 💬 Chat, 🧠 Models.
+
+- **Numbers** change with the `−` and `+` buttons, inside the allowed range (the same ranges as in the table above).
+- **Fixed choices** (the models, the chat's reasoning effort) are buttons; you never type a model name.
+- **Typed values** (quiet hours, time zone, a new channel): the bot asks you to send the value. You have 10 minutes; `/cancel` or any other command abandons the question. For quiet hours send `-` to switch them off.
+- **✎** marks a value set from the bot, **↺** returns it to the App Setting.
+- **Sources**: add a channel by `@name`, `t.me/name` or a link. It shows ⏳ until the first collection reads it (✅); if the read fails the bot tells you and offers «🗑 Видалити». 🚨 turns a source into an alert source. The last source cannot be removed.
+- A change reaches the jobs on their next run (a running job can use the old value for about 30 seconds).
+- A combination that breaks a rule is refused with the names of the fields, for example `AlertWindowHours + AlertCooldownHours` above `RetentionDays * 24`.
+
+Precedence: the bot, then the App Setting, then the default in code. Once you change the source list in the bot, a later change of the `Sources` App Setting is ignored until you reset the sources group.
+Not available in the bot: schedules, prompts, secrets, `RetentionDays`, `ManualRunsEnabled`, `TelegramChatId`, the Telegram account data and storage names.
+The buttons need the webhook to receive `callback_query` updates ([installation](installation.md#step-6-connect-your-chat)).
 
 ### Run a job now
 

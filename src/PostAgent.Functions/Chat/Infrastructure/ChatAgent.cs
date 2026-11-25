@@ -14,14 +14,14 @@ namespace PostAgent.Chat.Infrastructure;
 public sealed class ChatAgent(
     [FromKeyedServices(AiServices.ChatClientKey)] IChatClient chat,
     ChatTools tools,
-    IOptions<AgentOptions> options,
+    IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
     private readonly string _instructions = Prompts.Load("chat.md");
 
     public async Task<ChatReply> AskAsync(ChatState state, string userText, CancellationToken ct)
     {
-        var settings = options.Value;
+        var settings = await options.GetAsync(ct);
         var agent = CreateAgent(settings);
 
         var (session, hasHistory) = await OpenSessionAsync(agent, state.Session, ct);

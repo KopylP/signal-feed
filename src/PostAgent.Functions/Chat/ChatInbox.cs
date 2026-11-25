@@ -16,25 +16,25 @@ public sealed class ChatInbox(
 {
     private const int MaxQuestionChars = 2000;
 
-    public async Task HandleAsync(Update update, CancellationToken ct)
+    public async Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
         // A message that starts with "/" is a bot command (pairing's /start, for one), not a question.
         if (update.Message is not { Text: { } text } message || string.IsNullOrWhiteSpace(text) || text.TrimStart().StartsWith('/'))
         {
-            return;
+            return false;
         }
 
         // Only the private chat with the bot is served: in a group every member's message would cost a model call.
         if (message.Chat.Type != ChatType.Private || await resolver.TryGetChatIdAsync(ct) != message.Chat.Id)
         {
-            return;
+            return false;
         }
 
         var current = await state.LoadAsync(ct);
         if (current is null)
         {
             await notifier.SendAsync(ChatTexts.NoReport, ct);
-            return;
+            return true;
         }
 
         try
@@ -46,5 +46,7 @@ public sealed class ChatInbox(
             // Telegram would resend the update on a 5xx, but only for a while; the reader can just ask again.
             log.LogError(ex, "A chat question could not be queued");
         }
+
+        return true;
     }
 }

@@ -6,6 +6,7 @@ using PostAgent.Collecting;
 using PostAgent.Digest;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
+using PostAgent.SettingsMenu;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Notifications;
@@ -28,10 +29,12 @@ public static class ServiceCollectionExtensions
 
         return services
             .AddStorage(config)
+            .AddSettings()
             .AddAi()
             .AddPosts()
             .AddNotifications()
             .AddPairing()
+            .AddSettingsMenu()
             .AddChat()
             .AddCollecting()
             .AddScoring()

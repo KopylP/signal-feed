@@ -23,4 +23,17 @@ public class SourceCursorsTests
 
         Assert.Equal(42, await new SourceCursors(tables).GetLastPostIdAsync("badseo", CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Deletes_the_cursors_of_sources_that_are_not_kept()
+    {
+        var tables = new FakeTableServiceClient();
+        var table = tables.Table(StorageNames.CursorsTable);
+        table.Add(new TableEntity("source", "kept") { ["LastPostId"] = 1 });
+        table.Add(new TableEntity("source", "removed") { ["LastPostId"] = 2 });
+
+        await new SourceCursors(tables).DeleteExceptAsync(["kept"], CancellationToken.None);
+
+        Assert.Equal(["kept"], table.RowKeys);
+    }
 }

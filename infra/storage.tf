@@ -51,6 +51,12 @@ resource "azurerm_storage_container" "chat_state" {
   container_access_type = "private"
 }
 
+resource "azurerm_storage_container" "settings" {
+  name                  = "settings"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+}
+
 resource "azurerm_storage_queue" "run_now" {
   name               = "run-now"
   storage_account_id = azurerm_storage_account.main.id

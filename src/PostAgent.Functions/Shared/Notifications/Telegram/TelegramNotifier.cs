@@ -15,7 +15,9 @@ public sealed class TelegramNotifier(
 {
     private readonly TelegramBotClient _bot = new(options.Value.TelegramBotToken, http);
 
-    public async Task SendAsync(string html, CancellationToken ct)
+    public Task SendAsync(string html, CancellationToken ct) => SendAsync(html, InlineKeyboard.Empty, ct);
+
+    public async Task SendAsync(string html, InlineKeyboard keyboard, CancellationToken ct)
     {
         var started = time.GetTimestamp();
         try
@@ -25,6 +27,7 @@ public sealed class TelegramNotifier(
                 html,
                 ParseMode.Html,
                 linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
+                replyMarkup: TelegramKeyboard.ToMarkup(keyboard),
                 cancellationToken: ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

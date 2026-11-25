@@ -72,6 +72,9 @@ public sealed class AgentOptions
     [Required] public string TelegramPhone { get; set; } = string.Empty;
     public string SessionBlobContainer { get; set; } = StorageNames.DefaultSessionContainer;
 
+    // A shallow copy is enough: every property is a value or an immutable string.
+    public AgentOptions Clone() => (AgentOptions)MemberwiseClone();
+
     public IReadOnlyList<string> SourceList => SourceNames.Parse(Sources);
     public IReadOnlySet<string> AlertSourceSet => SourceNames.Parse(AlertSources).ToHashSet();
 }

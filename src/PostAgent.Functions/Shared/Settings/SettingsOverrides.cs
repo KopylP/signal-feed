@@ -1,0 +1,13 @@
+namespace PostAgent.Shared.Settings;
+
+// HandledUpdateIds are the last ids of the updates the menu claimed (a small set, never a watermark: Telegram may restart ids and deliver in parallel).
+// What the owner set from the Telegram bot. A null list means "not overridden, use the App Setting".
+public sealed record SettingsOverrides(
+    IReadOnlyDictionary<string, string> Values,
+    IReadOnlyList<SourceEntry>? Sources,
+    IReadOnlyList<string>? AlertSources,
+    PendingInput? Pending,
+    IReadOnlyList<long> HandledUpdateIds)
+{
+    public static readonly SettingsOverrides Empty = new(new Dictionary<string, string>(), null, null, null, []);
+}

@@ -32,6 +32,16 @@ internal sealed class FakeSourceCursors(Dictionary<string, int>? initial = null)
         Values[username] = lastPostId;
         return Task.CompletedTask;
     }
+
+    public Task DeleteExceptAsync(IReadOnlyCollection<string> keep, CancellationToken ct)
+    {
+        foreach (var name in Values.Keys.Where(k => !keep.Contains(k)).ToList())
+        {
+            Values.Remove(name);
+        }
+
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakeScoringQueue : IScoringQueue

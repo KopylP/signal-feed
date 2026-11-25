@@ -12,6 +12,8 @@ public static class StorageNames
     public const string ChatQueue = "chat-messages";
     public const string ChatStateContainer = "chat-state";
     public const string ChatStateBlob = "current.json";
+    public const string SettingsContainer = "settings";
+    public const string SettingsBlob = "overrides.json";
     public const string SessionBlob = "wtelegram.session";
     public const string CollectionLockBlob = "collect.lock";
     public const string DefaultSessionContainer = "tg-session";

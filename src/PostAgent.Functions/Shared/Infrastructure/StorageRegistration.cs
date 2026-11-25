@@ -59,5 +59,6 @@ public static class StorageRegistration
         var blobs = services.GetRequiredService<BlobServiceClient>();
         await blobs.GetBlobContainerClient(container).CreateIfNotExistsAsync(cancellationToken: ct);
         await blobs.GetBlobContainerClient(StorageNames.ChatStateContainer).CreateIfNotExistsAsync(cancellationToken: ct);
+        await blobs.GetBlobContainerClient(StorageNames.SettingsContainer).CreateIfNotExistsAsync(cancellationToken: ct);
     }
 }

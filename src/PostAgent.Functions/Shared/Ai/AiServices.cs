@@ -11,15 +11,21 @@ public static class AiServices
     // Key of the chat client: the chat feature uses a stronger model than scoring and the digest (which use the unkeyed one).
     public const string ChatClientKey = "chat";
 
-    // Модель чи провайдера міняють лише тут: решта коду знає тільки IChatClient.
+    // The provider is changed only here; the model is picked on every request (ModelSelectingChatClient), so the bot can change it.
     public static IServiceCollection AddAi(this IServiceCollection services)
     {
         services.AddChatClient(sp =>
         {
             var settings = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
-            return new OpenAI.Chat.ChatClient(settings.OpenAIModel, settings.OpenAIApiKey).AsIChatClient();
+            return new ModelSelectingChatClient(
+                new OpenAI.Chat.ChatClient(settings.OpenAIModel, settings.OpenAIApiKey).AsIChatClient(),
+                sp.GetRequiredService<IEffectiveOptions>(),
+                o => o.OpenAIModel);
         });
-        services.AddKeyedChatClient(ChatClientKey, sp => CreateChatClient(sp.GetRequiredService<IOptions<AgentOptions>>().Value));
+        services.AddKeyedChatClient(ChatClientKey, sp => new ModelSelectingChatClient(
+            CreateChatClient(sp.GetRequiredService<IOptions<AgentOptions>>().Value),
+            sp.GetRequiredService<IEffectiveOptions>(),
+            o => o.OpenAIChatModel));
         return services;
     }
 

@@ -23,15 +23,16 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    agent (Microsoft Agent Framework), tools, history cap, queue, conversation blob
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
+├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
 ├── Pairing/               the bot webhook that binds the chat (PairingFunction, PairingWebhook: auth and parsing, PairingService: the rules)
 ├── Cleanup/               cleanup of old data
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
-│   ├── Notifications/     sending to Telegram, ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chat (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
-│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours)
+│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob
 │   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
 │   └── Common/            small extensions
 ├── Program.cs

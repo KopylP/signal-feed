@@ -1,4 +1,5 @@
 using Azure;
+using Azure.Core;
 using Azure.Data.Tables;
 
 namespace PostAgent.Tests.Fakes;
@@ -10,6 +11,47 @@ public sealed class FakeTableClient : TableClient
     private readonly Dictionary<(string Partition, string Row), TableEntity> _rows = [];
 
     public void Add(TableEntity entity) => _rows[(entity.PartitionKey, entity.RowKey)] = entity;
+
+    public IReadOnlyList<string> RowKeys => _rows.Keys.Select(k => k.Row).ToList();
+
+    // The filter is ignored: the tests that query keep every row in the partition they ask for.
+    public override AsyncPageable<T> QueryAsync<T>(
+        string? filter = null, int? maxPerPage = null, IEnumerable<string>? select = null, CancellationToken cancellationToken = default) =>
+        AsyncPageable<T>.FromPages([Page<T>.FromValues(_rows.Values.Cast<T>().ToList(), null, new EmptyResponse())]);
+
+    public override Task<Response> DeleteEntityAsync(
+        string partitionKey, string rowKey, ETag ifMatch = default, CancellationToken cancellationToken = default)
+    {
+        _rows.Remove((partitionKey, rowKey));
+        return Task.FromResult<Response>(new EmptyResponse());
+    }
+
+    private sealed class EmptyResponse : Response
+    {
+        public override int Status => 204;
+        public override string ReasonPhrase => string.Empty;
+        public override Stream? ContentStream { get; set; }
+        public override string ClientRequestId { get; set; } = string.Empty;
+        public override void Dispose()
+        {
+        }
+
+        protected override bool TryGetHeader(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? value)
+        {
+            value = null;
+            return false;
+        }
+
+        protected override bool TryGetHeaderValues(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IEnumerable<string>? values)
+        {
+            values = null;
+            return false;
+        }
+
+        protected override bool ContainsHeader(string name) => false;
+
+        protected override IEnumerable<HttpHeader> EnumerateHeaders() => [];
+    }
 
     public override Task<NullableResponse<T>> GetEntityIfExistsAsync<T>(
         string partitionKey, string rowKey, IEnumerable<string>? select = null, CancellationToken cancellationToken = default)
