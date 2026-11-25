@@ -8,6 +8,11 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [willow] - 2026-11-25
+
+### Fixed
+- **The live answer shows a placeholder first**: an empty draft was not displayed as «Thinking…» by the clients, so the preview now starts with «💭 Думаю…» and shows the text only once it has three words, instead of jumping on the first one or two
+
 ## [v2026.11.25.70-bramble] - 2026-11-25
 
 ### Setup required

@@ -173,9 +173,9 @@ public class ChatStreamingRequestTests
         var (_, drafts, first, _) = await RunAsync(stream: true, preamble: true);
 
         var ofFirstAnswer = drafts.Sent.Where(d => d.DraftId == drafts.Sent[0].DraftId).Select(d => d.Text).ToList();
-        Assert.Equal(string.Empty, ofFirstAnswer[0]);
-        Assert.Contains(ofFirstAnswer, t => t.StartsWith("Зараз гляну.", StringComparison.Ordinal));
+        Assert.Equal(ChatDraftStream.Placeholder, ofFirstAnswer[0]);
+        Assert.DoesNotContain(ofFirstAnswer.Skip(1), t => t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length < ChatDraftStream.MinWords);
         Assert.Contains(ofFirstAnswer, t => t.StartsWith("Зараз гляну.\nПерша", StringComparison.Ordinal));
-        Assert.All(ofFirstAnswer, t => Assert.StartsWith(t.TrimEnd(), first));
+        Assert.All(ofFirstAnswer.Skip(1), t => Assert.StartsWith(t.TrimEnd(), first));
     }
 }

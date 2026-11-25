@@ -14,11 +14,11 @@ public class ChatDraftStreamTests
     private ChatDraftStream Create() => new(_drafts, _time, NullLogger<ChatDraftStream>.Instance, ChatId, 7);
 
     [Fact]
-    public async Task Starting_sends_an_empty_draft_that_shows_thinking()
+    public async Task Starting_sends_the_thinking_placeholder()
     {
         await Create().StartAsync(CancellationToken.None);
 
-        Assert.Equal([(ChatId, 7L, string.Empty)], _drafts.Sent);
+        Assert.Equal([(ChatId, 7L, ChatDraftStream.Placeholder)], _drafts.Sent);
     }
 
     [Fact]
@@ -28,11 +28,11 @@ public class ChatDraftStreamTests
         await stream.StartAsync(CancellationToken.None);
 
         _time.Advance(ChatDraftStream.MinInterval);
-        await stream.OnTextAsync("Перша частина", CancellationToken.None);
+        await stream.OnTextAsync("Перша частина тексту", CancellationToken.None);
         _time.Advance(ChatDraftStream.MinInterval);
-        await stream.OnTextAsync("Перша частина і друга", CancellationToken.None);
+        await stream.OnTextAsync("Перша частина тексту і друга", CancellationToken.None);
 
-        Assert.Equal(["", "Перша частина", "Перша частина і друга"], _drafts.Sent.Select(s => s.Text));
+        Assert.Equal([ChatDraftStream.Placeholder, "Перша частина тексту", "Перша частина тексту і друга"], _drafts.Sent.Select(s => s.Text));
         Assert.All(_drafts.Sent, s => Assert.Equal((ChatId, 7L), (s.ChatId, s.DraftId)));
     }
 
@@ -42,13 +42,39 @@ public class ChatDraftStreamTests
         var stream = Create();
         await stream.StartAsync(CancellationToken.None);
 
-        await stream.OnTextAsync("a", CancellationToken.None);
-        _time.Advance(TimeSpan.FromMilliseconds(100));
-        await stream.OnTextAsync("a b", CancellationToken.None);
-        _time.Advance(ChatDraftStream.MinInterval);
         await stream.OnTextAsync("a b c", CancellationToken.None);
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        await stream.OnTextAsync("a b c d", CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("a b c d e", CancellationToken.None);
 
-        Assert.Equal(["", "a b c"], _drafts.Sent.Select(s => s.Text));
+        Assert.Equal([ChatDraftStream.Placeholder, "a b c d e"], _drafts.Sent.Select(s => s.Text));
+    }
+
+    [Fact]
+    public async Task One_or_two_words_are_not_shown_and_the_placeholder_stays()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+
+        await stream.OnTextAsync("Так", CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("Так, це", CancellationToken.None);
+
+        Assert.Equal([ChatDraftStream.Placeholder], _drafts.Sent.Select(s => s.Text));
+    }
+
+    [Fact]
+    public async Task The_third_word_replaces_the_placeholder_with_the_text()
+    {
+        var stream = Create();
+        await stream.StartAsync(CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+
+        await stream.OnTextAsync("Так, це ось", CancellationToken.None);
+
+        Assert.Equal([ChatDraftStream.Placeholder, "Так, це ось"], _drafts.Sent.Select(s => s.Text));
     }
 
     [Fact]
@@ -56,10 +82,10 @@ public class ChatDraftStreamTests
     {
         var stream = Create();
         _time.Advance(ChatDraftStream.MinInterval);
-        await stream.OnTextAsync("a", CancellationToken.None);
+        await stream.OnTextAsync("a b c", CancellationToken.None);
         _time.Advance(ChatDraftStream.MinInterval);
 
-        await stream.OnTextAsync("a", CancellationToken.None);
+        await stream.OnTextAsync("a b c", CancellationToken.None);
         await stream.OnTextAsync(string.Empty, CancellationToken.None);
 
         Assert.Single(_drafts.Sent);
@@ -88,7 +114,7 @@ public class ChatDraftStreamTests
         await stream.StartAsync(CancellationToken.None);
         _drafts.CancelSends = false;
         _time.Advance(ChatDraftStream.MinInterval);
-        await stream.OnTextAsync("a", CancellationToken.None);
+        await stream.OnTextAsync("a b c", CancellationToken.None);
 
         Assert.Empty(_drafts.Sent);
     }
@@ -110,13 +136,13 @@ public class ChatDraftStreamTests
         await stream.StartAsync(CancellationToken.None);
 
         _time.Advance(ChatDraftStream.MinInterval);
-        await stream.OnTextAsync("a", CancellationToken.None);
-        _time.Advance(TimeSpan.FromMilliseconds(100));
-        await stream.OnTextAsync("a b", CancellationToken.None);
-        _time.Advance(ChatDraftStream.MinInterval);
         await stream.OnTextAsync("a b c", CancellationToken.None);
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        await stream.OnTextAsync("a b c d", CancellationToken.None);
+        _time.Advance(ChatDraftStream.MinInterval);
+        await stream.OnTextAsync("a b c d e", CancellationToken.None);
 
-        Assert.Equal(["", "a", "a b c"], _drafts.Sent.Select(s => s.Text));
+        Assert.Equal([ChatDraftStream.Placeholder, "a b c", "a b c d e"], _drafts.Sent.Select(s => s.Text));
     }
 
     [Fact]
@@ -126,7 +152,7 @@ public class ChatDraftStreamTests
         await stream.StartAsync(CancellationToken.None);
         _time.Advance(ChatDraftStream.MinInterval);
 
-        await stream.OnTextAsync(new string('a', 100) + new string('z', ChatDraftStream.MaxChars), CancellationToken.None);
+        await stream.OnTextAsync("a b c " + new string('a', 100) + new string('z', ChatDraftStream.MaxChars), CancellationToken.None);
 
         var sent = _drafts.Sent[^1].Text;
         Assert.Equal(ChatDraftStream.MaxChars, sent.Length);
@@ -149,7 +175,7 @@ public class ChatDraftStreamTests
         await keepAlive;
 
         Assert.Equal(3, _drafts.Sent.Count);
-        Assert.All(_drafts.Sent, s => Assert.Equal((ChatId, 7L, string.Empty), (s.ChatId, s.DraftId, s.Text)));
+        Assert.All(_drafts.Sent, s => Assert.Equal((ChatId, 7L, ChatDraftStream.Placeholder), (s.ChatId, s.DraftId, s.Text)));
     }
 
     [Fact]

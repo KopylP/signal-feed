@@ -8,6 +8,12 @@ public sealed class ChatDraftStream(IChatDrafts drafts, TimeProvider time, ILogg
     public static readonly TimeSpan MinInterval = TimeSpan.FromMilliseconds(700);
     public static readonly TimeSpan KeepAliveEvery = TimeSpan.FromSeconds(20);
 
+    // What the preview says until there is something worth reading. An empty draft is not shown as "Thinking" by the clients, so it says so itself.
+    public const string Placeholder = "💭 Думаю…";
+
+    // A text of one or two words is not shown: it jumps and says nothing, so the placeholder stays until the third word.
+    public const int MinWords = 3;
+
     // The Bot API takes 4096 characters; a longer answer shows its end, and the real message carries all of it.
     public const int MaxChars = 4000;
 
@@ -17,13 +23,13 @@ public sealed class ChatDraftStream(IChatDrafts drafts, TimeProvider time, ILogg
     private int _sent;
     private bool _failed;
 
-    // An empty draft: Telegram shows "Thinking..." while the model reasons or calls a tool.
+    // The placeholder, while the model reasons or calls a tool.
     public async Task StartAsync(CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
         {
-            await SendLockedAsync(string.Empty, ct);
+            await SendLockedAsync(Placeholder, ct);
         }
         finally
         {
@@ -31,14 +37,20 @@ public sealed class ChatDraftStream(IChatDrafts drafts, TimeProvider time, ILogg
         }
     }
 
-    // The whole text so far, not the new part. Sent when it changed and enough time has passed since the last send.
+    // The whole text so far, not the new part. Not sent until it has a few words. Sent when it changed and enough time has passed since the last send.
     public async Task OnTextAsync(string textSoFar, CancellationToken ct)
     {
+        if (textSoFar.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length < MinWords)
+        {
+            return;
+        }
+
         var text = textSoFar.Length > MaxChars ? textSoFar[^MaxChars..] : textSoFar;
+
         await _gate.WaitAsync(ct);
         try
         {
-            if (_failed || text.Length == 0 || text == _last || time.GetElapsedTime(_lastSentAt) < MinInterval)
+            if (_failed || text == _last || time.GetElapsedTime(_lastSentAt) < MinInterval)
             {
                 return;
             }
