@@ -18,6 +18,7 @@ public class ChatRequestTests
     [InlineData("null")]
     [InlineData("[]")]
     [InlineData("""{"updateId":1}""")]
+    [InlineData("""{"text":"питання","reportId":"r1"}""")]
     public void A_malformed_queue_message_does_not_parse(string message)
     {
         Assert.Null(ChatRequest.Parse(message));

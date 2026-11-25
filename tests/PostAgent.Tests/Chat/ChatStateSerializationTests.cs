@@ -60,6 +60,9 @@ public class ChatStateSerializationTests
     [InlineData("[]")]
     [InlineData("{}")]
     [InlineData("""{"report":"not an object"}""")]
+    [InlineData("""{"report":{}}""")]
+    [InlineData("""{"report":{"reportId":"r","createdAt":"2026-11-25T07:00:00+00:00","overview":null,"entries":[]}}""")]
+    [InlineData("""{"report":{"createdAt":"2026-11-25T07:00:00+00:00","entries":[],"needsVerification":[]}}""")]
     public void An_unreadable_snapshot_reads_as_missing(string raw)
     {
         Assert.False(ChatStateJson.TryRead(raw, out _));

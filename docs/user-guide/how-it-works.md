@@ -72,7 +72,7 @@ and the answer says so. It does not browse the web.
 - **One conversation per digest.** A new digest starts a new conversation and the old one is forgotten, so answers never mix two digests. Alerts do not reset it.
 - **Private chat only.** The bot answers in the private chat with it. If `TelegramChatId` points to a group, the digest still goes there, but questions in the group are not answered.
 - **Bounds.** A conversation keeps the last `ChatMaxMessages` messages; a question is cut at 2000 characters; a question that waited in the queue for more than an hour is dropped.
-- **Cost.** Every question is one model call (about 2 cents with the default `OpenAIChatModel`, see [configuration](configuration.md#settings)).
+- **Cost.** A question the digest answers is one model call, about 2 cents with the default `OpenAIChatModel`. When the assistant uses tools it makes one more call per round, up to `ChatMaxToolCalls + 1`, and every call resends the digest and the conversation, so a tool-heavy question can cost several times more (see [configuration](configuration.md#settings)).
 - Before the first digest the bot answers «Ще немає дайджесту, про який можна поговорити. Напишіть після наступного дайджесту.»
 
 ## Data retention

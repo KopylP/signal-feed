@@ -212,9 +212,51 @@ public class ChatProcessorTests
     public async Task Cancellation_is_not_swallowed()
     {
         await Started();
-        var agent = new FakeChatAgent((_, _) => throw new OperationCanceledException());
+        using var cts = new CancellationTokenSource();
+        var agent = new FakeChatAgent(async (_, _) =>
+        {
+            await cts.CancelAsync();
+            throw new OperationCanceledException(cts.Token);
+        });
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => Create(agent).HandleAsync(Request(10), CancellationToken.None));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Create(agent).HandleAsync(Request(10), cts.Token));
+    }
+
+    [Fact]
+    public async Task A_model_timeout_is_a_failure_with_one_message_and_not_a_redelivery()
+    {
+        await Started();
+        // HttpClient and the OpenAI client report their own timeout as TaskCanceledException while our token is not cancelled.
+        var agent = new FakeChatAgent((_, _) => throw new TaskCanceledException("timed out"));
+
+        await Create(agent).HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.Equal([ChatTexts.Failed], _notifier.Sent);
+        Assert.Equal(0, _state.Saves);
+    }
+
+    [Fact]
+    public async Task A_telegram_timeout_while_sending_is_swallowed_and_not_repeated()
+    {
+        await Started();
+        var notifier = new TimingOutNotifier();
+        var agent = new FakeChatAgent(_ => "відповідь");
+        var processor = new ChatProcessor(_state, agent, notifier, new FakeTimeProvider(Now), NullLogger<ChatProcessor>.Instance);
+
+        await processor.HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.Equal(1, notifier.Attempts);
+        Assert.Equal(1, agent.Calls);
+    }
+
+    private sealed class TimingOutNotifier : PostAgent.Shared.Notifications.ITelegramNotifier
+    {
+        public int Attempts { get; private set; }
+
+        public Task SendAsync(string html, CancellationToken ct)
+        {
+            Attempts++;
+            throw new TaskCanceledException("timed out");
+        }
     }
 }

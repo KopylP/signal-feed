@@ -32,7 +32,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 - **Chat about the digest**: reply to the bot after a digest to ask more; an AI assistant answers with the digest in mind, can open full posts and search the stored posts, and uses its own knowledge for the rest.
   - Enable: on by default
   - Settings: `OpenAIChatModel` (`gpt-6.1-terra`), `ChatMaxMessages` (20), `ChatMaxOutputTokens` (800), `ChatMaxToolCalls` (5), `ChatSearchMaxHits` (8)
-  - Limits: private chat only, no web search, one conversation per digest (a new digest forgets the old one), about 2 cents per question, no daily limit; see [how it works](docs/user-guide/how-it-works.md#asking-about-the-digest)
+  - Limits: private chat only, no web search, one conversation per digest (a new digest forgets the old one), about 2 cents for a question the digest answers and several times more when the assistant uses tools, no daily limit; see [how it works](docs/user-guide/how-it-works.md#asking-about-the-digest)
 
 ### Dependencies
 - Added `Microsoft.Agents.AI` 1.28.0.

@@ -24,7 +24,7 @@ public sealed class ChatTools(IPostRepository posts, IOptions<AgentOptions> opti
         }
 
         var post = (await posts.GetAsync([reference], ct)).FirstOrDefault();
-        return post is null ? NotFound : Describe(post) + "\n" + DataBlock.Wrap("post", post.Text);
+        return post is null ? NotFound : DataBlock.Wrap("post", Describe(post) + "\n" + post.Text);
     }
 
     [Description("Search the stored posts of the last days for the wider picture. Every word of the query must appear in the post. Returns a few short hits with ids.")]
@@ -52,18 +52,19 @@ public sealed class ChatTools(IPostRepository posts, IOptions<AgentOptions> opti
 
         return hits.Count == 0
             ? "No posts found."
-            : string.Join("\n\n", hits.Select(p => Describe(p) + "\n" + DataBlock.Wrap("post", p.Text.Truncate(ExcerptChars, "…"))));
+            : string.Join("\n\n", hits.Select(p => DataBlock.Wrap("post", Describe(p) + "\n" + p.Text.Truncate(ExcerptChars, "…"))));
     }
 
+    // The topic and the source name come from channel text too, so the details travel inside the block with the post.
     private static string Describe(PostEntity post)
     {
         var line = new StringBuilder();
         line.Append("id: ").Append(ChatPostId.Format(post.ToRef()));
-        line.Append(" | @").Append(DataBlock.Escape(post.Source));
+        line.Append(" | @").Append(post.Source);
         line.Append(" | ").Append(post.PublishedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).Append(" UTC");
         if (post.Topic is not null)
         {
-            line.Append(" | ").Append(DataBlock.Escape(post.Topic));
+            line.Append(" | ").Append(post.Topic);
         }
 
         if (post.Score is not null)

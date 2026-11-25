@@ -28,7 +28,7 @@ The agent has two tools, `get_post` and `search_posts`; everything channels wrot
 
 ## Consequences
 
-A question costs one model call (about 2 cents at the default model) and there is no daily limit; only the bound private chat reaches it. A question asked just before a new digest is dropped on purpose.
+A question costs one model call when the digest answers it (about 2 cents at the default model) and up to `ChatMaxToolCalls + 1` calls when the agent uses tools, each resending the digest and the conversation; there is no daily limit; only the bound private chat reaches it. A question asked just before a new digest is dropped on purpose.
 Between the last digest message and the snapshot write (a few seconds) the chat answers from the previous digest. A failed snapshot write is logged and does not fail the digest.
 A question whose enqueue failed is lost, and a send failure is never repeated, because a repeat would duplicate a delivered message. The chat works only in a private chat.
 Revisit if the agent has to serve several chats or keep history, or when durable agents hosting becomes stable.

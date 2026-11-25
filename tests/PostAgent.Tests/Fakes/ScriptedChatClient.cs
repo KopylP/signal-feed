@@ -9,6 +9,9 @@ internal sealed class ScriptedChatClient(params Func<IReadOnlyList<ChatMessage>,
     public List<List<ChatMessage>> Calls { get; } = [];
     public ChatOptions? LastOptions { get; private set; }
 
+    // What a real model does once the function-calling library takes the tools away: it answers in text.
+    public string? TextWhenNoTools { get; init; }
+
     public static Func<IReadOnlyList<ChatMessage>, ChatResponse> Reply(string text) =>
         _ => new ChatResponse(new ChatMessage(ChatRole.Assistant, text));
 
@@ -21,6 +24,11 @@ internal sealed class ScriptedChatClient(params Func<IReadOnlyList<ChatMessage>,
     {
         Calls.Add(messages.ToList());
         LastOptions = options;
+        if (TextWhenNoTools is not null && options?.Tools is not { Count: > 0 })
+        {
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, TextWhenNoTools)));
+        }
+
         return Task.FromResult(script[Math.Min(Calls.Count - 1, script.Length - 1)](Calls[^1]));
     }
 

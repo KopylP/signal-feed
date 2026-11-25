@@ -139,14 +139,16 @@ public class ChatAgentTests
     }
 
     [Fact]
-    public async Task A_model_that_keeps_asking_for_tools_is_stopped_at_the_cap_and_the_turn_fails()
+    public async Task A_model_that_keeps_asking_for_tools_is_stopped_at_the_cap_and_then_answers_without_tools()
     {
-        var client = new ScriptedChatClient(CallTool("search_posts", "query", "seo"));
+        // After the cap the library asks once more with the tools removed; a real model then answers in text.
+        var client = new ScriptedChatClient(CallTool("search_posts", "query", "seo")) { TextWhenNoTools = "Підсумок без інструментів" };
 
-        var ask = () => Create(client, o => o.ChatMaxToolCalls = 2).AskAsync(Fresh(), "q", CancellationToken.None);
+        var reply = await Create(client, o => o.ChatMaxToolCalls = 2).AskAsync(Fresh(), "q", CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(ask);
+        Assert.Equal("Підсумок без інструментів", reply.Text);
         Assert.Equal(3, client.Calls.Count);
+        Assert.Null(client.LastOptions?.Tools);
     }
 
     [Fact]

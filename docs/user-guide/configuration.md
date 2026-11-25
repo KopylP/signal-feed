@@ -26,7 +26,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `OpenAIModel` | `gpt-5.4-nano` | scoring and digest model |
 | `OpenAIChatModel` | `gpt-6.1-terra` | model that answers your questions about the digest (stronger than the scoring model; `gpt-6.1-sol` costs about twice as much) |
 | `ChatMaxMessages` | 20 | messages kept in one conversation (a new digest starts a new one) |
-| `ChatMaxOutputTokens` / `ChatMaxToolCalls` | 800 / 5 | longest model reply and tool calls per question |
+| `ChatMaxOutputTokens` / `ChatMaxToolCalls` | 800 / 5 | longest model reply, and how many times per question the model may stop to use tools (one round can call several tools); a question costs up to `ChatMaxToolCalls + 1` model calls |
 | `ChatSearchMaxHits` | 8 | posts returned by one search of stored posts |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |

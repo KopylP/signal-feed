@@ -37,7 +37,7 @@ public sealed class ChatProcessor(
             {
                 reply = await agent.AskAsync(current.State, request.Text, ct);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (IsFailure(ex, ct))
             {
                 log.LogError(ex, "The chat could not answer question {UpdateId}", request.UpdateId);
                 await TrySendAsync(ChatTexts.Failed, ct);
@@ -55,6 +55,10 @@ public sealed class ChatProcessor(
 
         log.LogWarning("Chat question {UpdateId} dropped: the conversation kept changing", request.UpdateId);
     }
+
+    // The OpenAI client and HttpClient report their own timeout as a cancellation. Only a cancelled token means the host is stopping;
+    // anything else is a failure to answer once, never a reason to redeliver the question (each redelivery is another model call).
+    private static bool IsFailure(Exception ex, CancellationToken ct) => ex is not OperationCanceledException || !ct.IsCancellationRequested;
 
     private async Task SendAsync(string text, CancellationToken ct)
     {
@@ -76,7 +80,7 @@ public sealed class ChatProcessor(
             await notifier.SendAsync(html, ct);
             return true;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (IsFailure(ex, ct))
         {
             log.LogError(ex, "A chat answer of {Length} characters was not sent after {ElapsedMs} ms",
                 html.Length, (long)time.GetElapsedTime(started).TotalMilliseconds);

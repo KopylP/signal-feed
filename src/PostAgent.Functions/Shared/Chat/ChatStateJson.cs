@@ -25,8 +25,9 @@ public static class ChatStateJson
                 return false;
             }
 
+            // A snapshot with missing fields (an older shape, a hand edit) would fail later on every question, so it counts as unreadable here.
             var report = reportElement.Deserialize<ReportSnapshot>(Options);
-            if (report is null)
+            if (report is not { ReportId: not null, Entries: not null, NeedsVerification: not null })
             {
                 return false;
             }

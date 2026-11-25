@@ -35,7 +35,8 @@ public sealed class ChatAgent(
         var response = await agent.RunAsync(messages, session, cancellationToken: ct);
         if (string.IsNullOrWhiteSpace(response.Text))
         {
-            // Also what a model that keeps asking for tools ends with once the cap on tool calls is reached.
+            // After ChatMaxToolCalls the function-calling layer asks once more without tools, so a model normally still answers in text;
+            // this is a truly empty answer.
             throw new InvalidOperationException("The model returned no text.");
         }
 

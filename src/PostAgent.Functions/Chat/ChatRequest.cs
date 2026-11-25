@@ -15,7 +15,7 @@ public sealed record ChatRequest(long UpdateId, string Text, string ReportId)
         try
         {
             var request = JsonSerializer.Deserialize<ChatRequest>(message, Options);
-            return request is { Text: not null, ReportId: not null } ? request : null;
+            return request is { UpdateId: not 0, Text: not null, ReportId: not null } ? request : null;
         }
         catch (JsonException)
         {
