@@ -78,8 +78,20 @@ public class ChatAgentTests
         var reply = await Create(client, drafts: drafts, time: time).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
 
         Assert.Equal("один два три", reply.Text);
-        Assert.Equal(["", "один ", "один два ", "один два три"], drafts.Sent.Select(d => d.Text));
+        Assert.Equal([ChatDraftStream.Placeholder, "один два три"], drafts.Sent.Select(d => d.Text));
         Assert.All(drafts.Sent, d => Assert.Equal((ChatId, drafts.Sent[0].DraftId), (d.ChatId, d.DraftId)));
+    }
+
+    [Fact]
+    public async Task An_answer_of_two_words_keeps_the_placeholder_and_still_comes_back_whole()
+    {
+        var drafts = new RecordingDrafts();
+        var client = new ScriptedChatClient(Reply("Так, звісно"));
+
+        var reply = await Create(client, drafts: drafts).AskAsync(ChatId, Fresh(), "q", CancellationToken.None);
+
+        Assert.Equal("Так, звісно", reply.Text);
+        Assert.Equal([ChatDraftStream.Placeholder], drafts.Sent.Select(d => d.Text));
     }
 
     [Fact]
