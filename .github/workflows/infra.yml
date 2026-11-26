@@ -117,6 +117,20 @@ jobs:
         if: inputs.apply
         run: terraform apply tfplan
 
+      # azurerm re-injects key-based host storage settings on Flex Consumption (#29149). The azapi action in function.tf
+      # overwrites them; fail loudly if one survived. Prints setting names only, never values.
+      - name: Check the host storage settings
+        if: always() && inputs.apply
+        run: |
+          RG=$(terraform output -raw resource_group_name)
+          APP=$(terraform output -raw function_app_name)
+          LEFT=$(az functionapp config appsettings list -g "$RG" -n "$APP" \
+            --query "[?name=='AzureWebJobsStorage' || name=='DEPLOYMENT_STORAGE_CONNECTION_STRING'].name" -o tsv)
+          if [ -n "$LEFT" ]; then
+            echo "::error::Key-based storage settings are present on $APP: $LEFT"
+            exit 1
+          fi
+
       - name: Outputs (values for GitHub Variables)
         if: inputs.apply
         run: |

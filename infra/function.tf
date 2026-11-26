@@ -64,3 +64,30 @@ resource "azurerm_function_app_flex_consumption" "main" {
 
   app_settings = local.app_settings
 }
+
+locals {
+  # The complete App Settings collection: the PUT below replaces everything on the app, so every key must be here.
+  # APPLICATIONINSIGHTS_CONNECTION_STRING is what azurerm derives from site_config; leaving it out would show as a
+  # difference on the next plan.
+  effective_app_settings = merge(local.app_settings, {
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+  })
+}
+
+# azurerm (4.81.0 through 5.15.0) writes AzureWebJobsStorage with an empty AccountKey, and on updates also
+# DEPLOYMENT_STORAGE_CONNECTION_STRING, on every create or update of a Flex Consumption app, and hides both from
+# plan (hashicorp/terraform-provider-azurerm#29149). The host prefers that string over AzureWebJobsStorage__accountName
+# and gets 403 on timers, keys and queue triggers. Right after any change to the app, write back exactly our settings.
+# Remove this action once the provider stops injecting the settings.
+resource "azapi_resource_action" "app_settings" {
+  type        = "Microsoft.Web/sites/config@2024-04-01"
+  resource_id = "${azurerm_function_app_flex_consumption.main.id}/config/appsettings"
+  method      = "PUT"
+  # Key Vault references and non-secret values only, but sensitive so the plan summary of the public repository hides them.
+  body = sensitive({ properties = local.effective_app_settings })
+
+  lifecycle {
+    # The whole resource, not only app_settings: any update of the app injects the settings again.
+    replace_triggered_by = [azurerm_function_app_flex_consumption.main]
+  }
+}
