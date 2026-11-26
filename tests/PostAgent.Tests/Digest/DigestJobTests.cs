@@ -49,7 +49,7 @@ public class DigestJobTests
         await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
 
         var keyboard = _notifier.Keyboards[^1];
-        Assert.Equal(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[^1]);
+        Assert.StartsWith(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[^1]);
         Assert.Single(keyboard.Rows);
         Assert.True(PostAgent.Shared.Feedback.FeedbackCallback.TryDecode(keyboard.Rows[0][0].Data, out var reportId, out _, out _));
         Assert.Equal(_chatState.Current!.Report.ReportId, reportId);
@@ -63,7 +63,7 @@ public class DigestJobTests
 
         await job.RunAsync(CancellationToken.None);
 
-        Assert.DoesNotContain(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent);
+        Assert.DoesNotContain(_notifier.Sent, m => m.StartsWith(PostAgent.Shared.Feedback.FeedbackPrompt.Message, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class DigestJobTests
 
         Assert.Single(repo.SentMarks);
         Assert.Single(_notifier.Sent); // the digest itself
-        Assert.DoesNotContain(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent);
+        Assert.DoesNotContain(_notifier.Sent, m => m.StartsWith(PostAgent.Shared.Feedback.FeedbackPrompt.Message, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class DigestJobTests
 
         Assert.Equal(3, _notifier.Sent.Count);
         Assert.Contains("Огляд", _notifier.Sent[0]);
-        Assert.Equal(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[1]);
+        Assert.StartsWith(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[1]);
         Assert.Equal(DigestMessage.Unscored(1), _notifier.Sent[2]);
         Assert.Single(repo.SentMarks);
     }

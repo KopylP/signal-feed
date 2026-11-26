@@ -98,7 +98,8 @@ public sealed class FeedbackInbox(
         }
     }
 
-    // The pressed button gets a ✅, so the reader sees what was recorded. A failure here changes nothing about the vote.
+    // The pressed button gets a ✅, so the reader sees what was recorded. Only the buttons change: the text (the list of entries)
+    // stays as it was sent. A failure here changes nothing about the vote.
     private async Task MarkAsync(Message message, string pressed, CancellationToken ct)
     {
         try
@@ -110,7 +111,7 @@ public sealed class FeedbackInbox(
                 .ToList();
             if (rows is { Count: > 0 })
             {
-                await panel.EditAsync(message.Chat.Id, message.Id, FeedbackPrompt.Message, new InlineKeyboard(rows), ct);
+                await panel.EditKeyboardAsync(message.Chat.Id, message.Id, new InlineKeyboard(rows), ct);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

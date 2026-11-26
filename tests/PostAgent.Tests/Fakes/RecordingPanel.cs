@@ -10,6 +10,8 @@ internal sealed class RecordingPanel : ITelegramPanel
 
     public List<(long ChatId, int MessageId, string Html, InlineKeyboard Keyboard)> Edited { get; } = [];
 
+    public List<(long ChatId, int MessageId, InlineKeyboard Keyboard)> EditedKeyboards { get; } = [];
+
     public List<(string Id, string? Text)> Answered { get; } = [];
 
     // Makes EditAsync throw, like Telegram does for a message that is gone or older than 48 hours.
@@ -33,6 +35,17 @@ internal sealed class RecordingPanel : ITelegramPanel
         }
 
         Edited.Add((chatId, messageId, html, keyboard));
+        return Task.CompletedTask;
+    }
+
+    public Task EditKeyboardAsync(long chatId, int messageId, InlineKeyboard keyboard, CancellationToken ct)
+    {
+        if (FailEdits)
+        {
+            throw new InvalidOperationException("message to edit not found");
+        }
+
+        EditedKeyboards.Add((chatId, messageId, keyboard));
         return Task.CompletedTask;
     }
 

@@ -9,6 +9,9 @@ public interface ITelegramPanel
     // "Message is not modified" is not an error: a second press of the same button shows the same screen.
     Task EditAsync(long chatId, int messageId, string html, InlineKeyboard keyboard, CancellationToken ct);
 
+    // Changes only the buttons and keeps the text as it was sent. "Message is not modified" is not an error.
+    Task EditKeyboardAsync(long chatId, int messageId, InlineKeyboard keyboard, CancellationToken ct);
+
     // Stops the spinner on the pressed button; a query that is too old is not an error.
     Task AnswerCallbackAsync(string callbackQueryId, string? text, CancellationToken ct);
 }

@@ -111,7 +111,7 @@ public class OnDemandDigestTests
 
         var (chat, _, html, keyboard) = Assert.Single(_panel.Sent);
         Assert.Equal(Asking, chat);
-        Assert.Equal(FeedbackPrompt.Message, html);
+        Assert.StartsWith(FeedbackPrompt.Message, html);
         var report = Assert.Single(_rated.Of(Asking));
         Assert.StartsWith("d", report.ReportId);
         Assert.Equal(FeedbackCallback.Encode(report.ReportId, 0, FeedbackVote.Up), keyboard.Rows[0][0].Data);

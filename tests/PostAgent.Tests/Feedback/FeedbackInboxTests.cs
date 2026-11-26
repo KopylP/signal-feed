@@ -119,8 +119,8 @@ public class FeedbackInboxTests
 
         await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 1, FeedbackVote.Up), markup: Markup()), CancellationToken.None);
 
-        var edited = Assert.Single(_panel.Edited);
-        Assert.Equal(FeedbackPrompt.Message, edited.Html);
+        var edited = Assert.Single(_panel.EditedKeyboards);
+        Assert.Empty(_panel.Edited);
         Assert.Equal(["👍 Оновлення Google", "👎"], edited.Keyboard.Rows[0].Select(b => b.Text));
         Assert.Equal(["✅ 👍 other", "👎"], edited.Keyboard.Rows[1].Select(b => b.Text));
     }
@@ -149,7 +149,7 @@ public class FeedbackInboxTests
 
         await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 1, FeedbackVote.Down), markup: rated), CancellationToken.None);
 
-        var rows = Assert.Single(_panel.Edited).Keyboard.Rows;
+        var rows = Assert.Single(_panel.EditedKeyboards).Keyboard.Rows;
         Assert.Equal(["✅ 👍 Оновлення Google", "👎"], rows[0].Select(b => b.Text));
         Assert.Equal(["👍 other", "✅ 👎"], rows[1].Select(b => b.Text));
     }
@@ -165,7 +165,7 @@ public class FeedbackInboxTests
 
         await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 0, FeedbackVote.Down), markup: rated), CancellationToken.None);
 
-        Assert.Equal(["👍 Оновлення Google", "✅ 👎"], Assert.Single(_panel.Edited).Keyboard.Rows[0].Select(b => b.Text));
+        Assert.Equal(["👍 Оновлення Google", "✅ 👎"], Assert.Single(_panel.EditedKeyboards).Keyboard.Rows[0].Select(b => b.Text));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class FeedbackInboxTests
 
         Assert.True(handled);
         Assert.Single(_store.Items);
-        Assert.Single(_panel.Edited);
+        Assert.Single(_panel.EditedKeyboards);
     }
 
     [Fact]
@@ -256,6 +256,6 @@ public class FeedbackInboxTests
 
         Assert.True(handled);
         Assert.Equal(FeedbackTexts.Failed, Assert.Single(_panel.Answered).Text);
-        Assert.Empty(_panel.Edited);
+        Assert.Empty(_panel.EditedKeyboards);
     }
 }

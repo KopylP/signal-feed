@@ -8,6 +8,13 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [quokka] - 2026-11-26
+
+### Improved
+- **The rating message is readable**: the entries are listed by number with their full titles in the text, and the buttons are short, «👍 1» and «👎 1»
+  - Before, each 👍 button carried the title, cut to a few words because 👎 took half the row
+  - Pressing a button now changes only the buttons, so the list stays; buttons under messages sent before this release keep working
+
 ## [v2026.11.26.118-reef] - 2026-11-26
 
 ### Fixed

@@ -4,7 +4,7 @@ namespace PostAgent.Shared.Feedback;
 
 public static class FeedbackPrompt
 {
-    // The message under the digest, sent by Digest and kept when a button is marked by Feedback. Ukrainian: it goes to the end user.
+    // The head of the message under the digest (DigestFeedbackMessage adds the numbered entries). Ukrainian: it goes to the end user.
     public const string Message = "👍 👎 <b>Оцініть записи</b>\nТак наступні дайджести стануть точнішими.";
 
     // The block for the scoring request: topics the reader liked (+) and disliked (-), newest last. Every "<" is escaped so that

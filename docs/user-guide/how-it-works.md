@@ -84,7 +84,7 @@ Ask the agent «що ти вмієш?» or «які є команди?»: it lis
 
 ## Rating the digest
 
-Right after the digest (daily or `/digest`) the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
+Right after the digest (daily or `/digest`) the bot sends one more message, «Оцініть записи», that lists the entries by number with their full titles, and a row of buttons for every entry: «👍 1» and «👎 1». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
 The latest 40 votes (one per post, shared by all chats) go into every scoring request as a hint about your taste: a post clearly about a topic you liked may get one point more, about one you disliked one point less, and never against the scoring rules.
 The votes have no effect on posts that are already scored. A button under an older daily digest answers «Цей дайджест уже не актуальний»; under `/digest` the buttons of your last 5 requests work. Switch the buttons and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
 
