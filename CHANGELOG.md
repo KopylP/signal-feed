@@ -8,6 +8,12 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [ash] - 2026-11-26
+
+### Fixed
+- Fixed the `infra` workflow failing with «Key based authentication is not permitted» after the storage keys were switched off: the tables are now managed through the Resource Manager (`azapi`) instead of `azurerm_storage_table` ([ADR-0019](docs/adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md))
+  - Apply: run `infra` with plan, read it (three tables are imported, nothing is created or destroyed), then with apply
+
 ## [v2026.11.26.105-hawthorn] - 2026-11-26
 
 ### Added
