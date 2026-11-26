@@ -6,8 +6,8 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposeRemoveSourceTool : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
-        ([Description("The source name.")] string name, CancellationToken ct) => plan.AddForExistingSourceAsync(SettingChangeKind.RemoveSource, name, ct),
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
+        ([Description("The source name.")] string name, CancellationToken ct) => turn.Plan.AddForExistingSourceAsync(SettingChangeKind.RemoveSource, name, ct),
         new AIFunctionFactoryOptions
         {
             Name = "propose_remove_source",

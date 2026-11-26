@@ -6,8 +6,8 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposeSetSettingTool : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
-        ([Description("The setting key, like DigestSize.")] string key, [Description("The new value.")] string value, CancellationToken ct) => RunAsync(plan, key, value, ct),
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
+        ([Description("The setting key, like DigestSize.")] string key, [Description("The new value.")] string value, CancellationToken ct) => RunAsync(turn.Plan, key, value, ct),
         new AIFunctionFactoryOptions
         {
             Name = "propose_set_setting",

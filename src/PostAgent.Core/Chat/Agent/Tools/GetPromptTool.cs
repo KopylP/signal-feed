@@ -7,7 +7,7 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class GetPromptTool(PromptLibrary prompts, IOverridesStore overrides) : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         ([Description("scoring, digest or chat.")] string name, CancellationToken ct) => RunAsync(name, ct),
         new AIFunctionFactoryOptions
         {

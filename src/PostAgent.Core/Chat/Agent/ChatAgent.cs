@@ -26,8 +26,8 @@ public sealed class ChatAgent(
     {
         var settings = await options.GetAsync(ct);
         var zone = LocalTime.Zone(settings.TimeZone);
-        var draft = new List<SettingChange>();
-        var agent = CreateAgent(settings, toolFactory.Create(draft, chatId), await InstructionsAsync(chatId, ct));
+        var turn = toolFactory.NewTurn(chatId);
+        var agent = CreateAgent(settings, toolFactory.Create(turn), await InstructionsAsync(chatId, ct));
 
         var (session, hasHistory) = await OpenSessionAsync(agent, state.Session, ct);
         var messages = new List<ChatMessage>();
@@ -54,7 +54,8 @@ public sealed class ChatAgent(
         }
 
         var serialized = await agent.SerializeSessionAsync(session, cancellationToken: ct);
-        return new ChatReply(text.Trim(), serialized.Clone(), draft.Count > 0 ? draft : null);
+        var proposed = turn.Plan.Changes.ToList();
+        return new ChatReply(text.Trim(), serialized.Clone(), proposed.Count > 0 ? proposed : null, turn.ClearsContext);
     }
 
     // The same run, read update by update: the text so far goes to the reader as a draft. The answer itself is still one message, sent by the caller.

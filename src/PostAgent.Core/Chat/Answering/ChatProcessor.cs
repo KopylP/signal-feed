@@ -45,7 +45,8 @@ public sealed class ChatProcessor(
                 return;
             }
 
-            if (await store.TrySaveAsync(request.ChatId, current, current.State.WithProcessed(request.UpdateId, reply.Session), ct))
+            var updated = current.State.WithProcessed(request.UpdateId, reply.Session);
+            if (await store.TrySaveAsync(request.ChatId, current, reply.ClearsContext ? updated.WithoutSession() : updated, ct))
             {
                 await delivery.SendAnswerAsync(request.ChatId, reply.Text, ct);
                 if (reply.Proposed is { Count: > 0 } changes)

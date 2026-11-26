@@ -6,7 +6,7 @@ namespace PostAgent.Tests.Chat.Agent.Tools;
 
 public class ChatToolRegistrationTests
 {
-    private static IReadOnlyList<AIFunction> Functions() => new MenuHarness().ToolsFactory.Create([], TestData.ChatId);
+    private static IReadOnlyList<AIFunction> Functions() => new MenuHarness().Tools([], TestData.ChatId);
 
     [Fact]
     public void Every_tool_class_in_the_assembly_is_a_tool_of_the_agent()

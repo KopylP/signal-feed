@@ -6,11 +6,11 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposeProfileEditTool : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         (
             [Description("The fragment to replace, copied exactly.")] string old_text,
             [Description("The new text.")] string new_text,
-            CancellationToken ct) => plan.AddAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", new_text, old_text), ct),
+            CancellationToken ct) => turn.Plan.AddAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", new_text, old_text), ct),
         new AIFunctionFactoryOptions
         {
             Name = "propose_profile_edit",

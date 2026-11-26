@@ -6,8 +6,8 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposeAddSourceTool : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
-        ([Description("The username, like @name or t.me/name.")] string name, CancellationToken ct) => RunAsync(plan, name, ct),
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
+        ([Description("The username, like @name or t.me/name.")] string name, CancellationToken ct) => RunAsync(turn.Plan, name, ct),
         new AIFunctionFactoryOptions { Name = "propose_add_source", Description = "Plan to add a Telegram channel or group as a source." });
 
     private static Task<string> RunAsync(ProposalPlan plan, string name, CancellationToken ct) =>

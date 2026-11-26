@@ -43,13 +43,23 @@ internal sealed class MenuHarness
     // The daily summaries get_trends reads.
     public InMemoryDailyStatsStore Stats { get; } = new();
 
+    // The votes rate_post writes.
+    public InMemoryFeedbackStore Feedback { get; } = new();
+
     public ChatToolFactory ToolsFactory => new(
         new ServiceCollection()
             .AddSingleton(Editor).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
             .AddSingleton<IOverridesStore>(Store).AddSingleton<IProfileStore>(Profile)
             .AddSingleton<IPostRepository>(Posts).AddSingleton<PostAgent.Shared.Stats.IDailyStatsStore>(Stats).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
+            .AddSingleton<PostAgent.Shared.Feedback.IFeedbackStore>(Feedback).AddLogging()
             .AddChatTools().BuildServiceProvider().GetServices<IChatTool>(),
         Editor);
+
+    // A turn whose plan is the given list, so a test can read what was proposed and what the direct actions asked for.
+    public ChatTurn Turn(List<SettingChange> draft, long chatId) => new(new ProposalPlan(Editor, draft, chatId));
+
+    public IReadOnlyList<Microsoft.Extensions.AI.AIFunction> Tools(List<SettingChange> draft, long chatId) => ToolsFactory.Create(Turn(draft, chatId));
+
     public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)

@@ -14,6 +14,8 @@ public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draf
     // The chat that asked: the reader profile and the confirmation belong to it.
     public long ChatId => chatId;
 
+    public IReadOnlyList<SettingChange> Changes => draft;
+
     // The whole plan is checked again with the new step, so the model hears about a problem now and can correct it.
     public async Task<string> AddAsync(SettingChange change, CancellationToken ct)
     {

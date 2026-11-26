@@ -6,8 +6,8 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposeResetGroupTool : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
-        ([Description("The group name.")] string group, CancellationToken ct) => RunAsync(plan, group, ct),
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
+        ([Description("The group name.")] string group, CancellationToken ct) => RunAsync(turn.Plan, group, ct),
         new AIFunctionFactoryOptions
         {
             Name = "propose_reset_group",

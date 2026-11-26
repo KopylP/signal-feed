@@ -8,6 +8,21 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [ridge] - 2026-11-26
+
+### Contract changes
+- **Rate a post by telling the agent; the rating buttons are gone** (compatible)
+  - Before: after every digest (daily and `/digest`) the bot sent «Оцініть записи» with 👍/👎 buttons
+  - After: reply to a news item (or quote it) with «👍», «+», «лайк», «цікаво» or «👎», «-», «мінус», «не цікаво», or just write «лайк новині про …»; the agent finds the post, saves the vote at once and says so
+  - Affects: `FeedbackEnabled` now switches rating through the agent and the scoring hint; buttons under old messages no longer do anything
+  - Migration: none; votes already given stay in `settings/feedback.json`. The blobs `settings/feedback/digests/*.json` from the previous release are no longer used and can be deleted
+
+### Logic
+- **The agent's actions are now invasive or non-invasive** (ADR-0021)
+  - Non-invasive, done at once without the «Застосувати» button: rating a post, following and unfollowing a topic («стеж за …», «перестань стежити за …»), clearing the conversation («забудь розмову»)
+  - Invasive, still a plan you confirm with the button: settings, sources, alert sources, prompts and your profile
+  - Before: following a topic and clearing the conversation also waited for the button
+
 ## [v2026.11.26.119-quokka] - 2026-11-26
 
 ### Improved

@@ -36,18 +36,6 @@ public sealed class TelegramPanel(HttpClient http, IOptions<AgentOptions> option
         }
     }
 
-    public async Task EditKeyboardAsync(long chatId, int messageId, InlineKeyboard keyboard, CancellationToken ct)
-    {
-        try
-        {
-            await _bot.EditMessageReplyMarkup(new ChatId(chatId), messageId, TelegramKeyboard.ToMarkup(keyboard), cancellationToken: ct);
-        }
-        catch (ApiRequestException ex) when (ex.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase))
-        {
-            log.LogDebug("Telegram keyboard edit skipped: the message is not modified");
-        }
-    }
-
     public async Task AnswerCallbackAsync(string callbackQueryId, string? text, CancellationToken ct)
     {
         try

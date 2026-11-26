@@ -36,3 +36,4 @@ A proposal lives 30 minutes; at most five are kept. The prompt tells the model t
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
 
 2026-11-25: partly changed by [ADR-0014](0014-serve-several-chats-with-shared-settings.md): several chats can be bound, with one conversation per chat and shared settings.
+2026-11-26: partly changed by [ADR-0021](0021-let-the-chat-agent-do-non-invasive-actions-at-once.md): non-invasive actions (rating a post, following a topic, clearing the context) are done at once; settings, sources, prompts and the profile still need the tap.

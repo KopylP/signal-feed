@@ -4,9 +4,6 @@ namespace PostAgent.Shared.Feedback;
 
 public static class FeedbackPrompt
 {
-    // The head of the message under the digest (DigestFeedbackMessage adds the numbered entries). Ukrainian: it goes to the end user.
-    public const string Message = "👍 👎 <b>Оцініть записи</b>\nТак наступні дайджести стануть точнішими.";
-
     // The block for the scoring request: topics the reader liked (+) and disliked (-), newest last. Every "<" is escaped so that
     // a topic cannot close the tag. Empty when there is no feedback yet.
     public static string Block(IReadOnlyList<FeedbackItem> items)

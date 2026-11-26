@@ -15,7 +15,7 @@ public class TrendsAndCommandsToolsTests
     private static (ToolShim Tools, MenuHarness Harness) Create()
     {
         var harness = new MenuHarness();
-        return (new ToolShim(harness.ToolsFactory.Create([], ChatId)), harness);
+        return (new ToolShim(harness.Tools([], ChatId)), harness);
     }
 
     [Fact]
@@ -81,13 +81,14 @@ public class TrendsAndCommandsToolsTests
     }
 
     [Fact]
-    public async Task The_commands_tool_lists_every_command_of_the_catalog_and_the_buttons()
+    public async Task The_commands_tool_lists_every_command_of_the_catalog_and_what_can_be_asked_directly()
     {
         var (tools, _) = Create();
 
         var result = await tools.GetCommands(CancellationToken.None);
 
         Assert.All(BotCommands.All, c => Assert.Contains(c.Usage, result));
-        Assert.Contains("👍/👎", result);
+        Assert.Contains("оцінити новину", result);
+        Assert.DoesNotContain("кнопки 👍/👎", result);
     }
 }

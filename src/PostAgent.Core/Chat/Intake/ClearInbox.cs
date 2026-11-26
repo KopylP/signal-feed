@@ -5,7 +5,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Chat.Intake;
 
-// /clear: the reader forgets the conversation, typed by them, so it needs no confirmation (the agent's own proposal to clear does, see ProposeClearContextTool).
+// /clear: the reader forgets the conversation, typed by them, so it needs no confirmation (nor does the agent's clear_context, ADR-0021).
 public sealed class ClearInbox(
     ChatResolver resolver,
     IChatStateStore state,

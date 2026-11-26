@@ -55,6 +55,13 @@ public sealed class SettingsEditor(
     public Task<EditResult> ToggleAlertSourceAsync(string name, CancellationToken ct) =>
         ChangeAsync(new SettingChange(SettingChangeKind.ToggleAlertSource, name), validate: false, replaceUnreadable: false, ct);
 
+    // Following a topic is not invasive (ADR-0021): the chat agent does it at once, with the same checks as a confirmed plan.
+    public Task<EditResult> AddWatchAsync(string phrase, CancellationToken ct) =>
+        ChangeAsync(new SettingChange(SettingChangeKind.AddWatch, phrase), validate: true, replaceUnreadable: false, ct);
+
+    public Task<EditResult> RemoveWatchAsync(string phrase, CancellationToken ct) =>
+        ChangeAsync(new SettingChange(SettingChangeKind.RemoveWatch, phrase), validate: true, replaceUnreadable: false, ct);
+
     // The sources and the alert sources that are in force now (the bot's list, or the App Settings one).
     public async Task<(IReadOnlyList<SourceEntry> Sources, IReadOnlyList<string> Alerts)> CurrentSourcesAsync(CancellationToken ct)
     {

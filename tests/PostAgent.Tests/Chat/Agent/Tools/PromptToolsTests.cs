@@ -9,7 +9,7 @@ public class PromptToolsTests
     private readonly MenuHarness _h = new();
     private readonly List<SettingChange> _draft = [];
 
-    private ToolShim Tools() => new(_h.ToolsFactory.Create(_draft, TestData.ChatId));
+    private ToolShim Tools() => new(_h.Tools(_draft, TestData.ChatId));
 
     [Fact]
     public async Task The_agent_can_read_a_prompt_with_its_editable_sections_named()
@@ -104,7 +104,7 @@ public class PromptToolsTests
         _h.Profile.Seed(TestData.ChatId, "Owner profile.");
         _h.Profile.Seed(77, "Colleague profile.");
 
-        var colleague = new ToolShim(_h.ToolsFactory.Create(_draft, 77));
+        var colleague = new ToolShim(_h.Tools(_draft, 77));
 
         Assert.Equal("<about_me>Colleague profile.</about_me>", await colleague.GetProfile(CancellationToken.None));
         Assert.Equal("<about_me>Owner profile.</about_me>", await Tools().GetProfile(CancellationToken.None));
@@ -115,7 +115,7 @@ public class PromptToolsTests
     {
         _h.Profile.Seed(TestData.ChatId, "Owner profile.");
 
-        var colleague = new ToolShim(_h.ToolsFactory.Create(_draft, 77));
+        var colleague = new ToolShim(_h.Tools(_draft, 77));
         var answer = await colleague.ProposeProfileEdit("Owner profile.", "x", CancellationToken.None);
 
         Assert.StartsWith("Rejected", answer);

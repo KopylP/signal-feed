@@ -7,8 +7,8 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposePromptResetTool(PromptLibrary prompts) : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
-        ([Description("The section id.")] string section, CancellationToken ct) => RunAsync(plan, section, ct),
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
+        ([Description("The section id.")] string section, CancellationToken ct) => RunAsync(turn.Plan, section, ct),
         new AIFunctionFactoryOptions { Name = "propose_prompt_reset", Description = "Plan to put one editable prompt section back to its default text." });
 
     private Task<string> RunAsync(ProposalPlan plan, string section, CancellationToken ct) =>

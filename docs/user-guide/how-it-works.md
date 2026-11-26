@@ -35,7 +35,7 @@ A daily summary of the finished days is written first, and then a cleanup remove
 
 ### Followed topics
 
-Tell the agent «стеж за google core update» (or «перестань стежити за ...», «за чим я стежу?»). It prepares a plan and you confirm it with the button, like any settings change. From then on a **new scored post from any source** (channels too) that has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone) is sent as its own message «👀 Стеження за темою» with the topic it matched, whatever its score and without the cooldown of its source.
+Tell the agent «стеж за google core update» (or «перестань стежити за ...», «за чим я стежу?»). It does it at once, no button needed (following a topic is not invasive). From then on a **new scored post from any source** (channels too) that has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone) is sent as its own message «👀 Стеження за темою» with the topic it matched, whatever its score and without the cooldown of its source.
 
 - The alert job runs every hour, so the message comes within about an hour after the post is scored; at most 5 posts per run, best first. Posts of the last 26 hours are looked at (not the shorter alert window of the groups), so a low-scored match is still announced after quiet hours; adding a topic also announces its matches from the last day.
 - A post is announced once: it is marked as sent, so the digest does not repeat it. A duplicate of another post is skipped.
@@ -70,7 +70,7 @@ Send `/digest` to the bot in the private chat to get a digest of any period outs
 - `/digest`: the last 24 hours; `/digest 6`: the last 6 hours; `/digest today`, `/digest вчора` (the day in your `TimeZone`);
 - `/digest 2026-11-25T18:00 2026-11-25T23:00`: an exact period (a date without a time is the whole day; use `T`, no spaces inside a value).
 
-An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation, so the chat keeps talking about the daily digest. It has its own 👍/👎 buttons, like the daily digest ([rating](#rating-the-digest)). The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
+An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation, so the chat keeps talking about the daily digest. Its posts can be rated like the daily ones ([rating](#rating-posts)). The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
 
 ## Statistics and trends
 
@@ -80,13 +80,13 @@ The summaries have no text, so the agent cannot quote an old post from them; for
 
 ## What the bot can do
 
-Ask the agent «що ти вмієш?» or «які є команди?»: it lists them from the bot's own list. They are `/settings`, `/digest [period]`, `/stats [days]`, `/clear`, `/login`, `/start <key>`, and the 👍/👎 buttons under the digest.
+Ask the agent «що ти вмієш?» or «які є команди?»: it lists them from the bot's own list. They are `/settings`, `/digest [period]`, `/stats [days]`, `/clear`, `/login`, `/start <key>`; everything else you simply ask the agent.
 
-## Rating the digest
+## Rating posts
 
-Right after the digest (daily or `/digest`) the bot sends one more message, «Оцініть записи», that lists the entries by number with their full titles, and a row of buttons for every entry: «👍 1» and «👎 1». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
+Tell the agent what you think of a news item: reply to it (or quote it) with «👍», «+», «лайк», «цікаво», «більше такого», or «👎», «-», «мінус», «не цікаво». You can also just write «лайк новині про Serpstat». The agent finds the post (in the digest, or among the stored posts for a `/digest` or an older one), saves the vote at once and says so; if it is not clear which post you mean, it asks. Rate again to change your mind.
 The latest 40 votes (one per post, shared by all chats) go into every scoring request as a hint about your taste: a post clearly about a topic you liked may get one point more, about one you disliked one point less, and never against the scoring rules.
-The votes have no effect on posts that are already scored. A button under an older daily digest answers «Цей дайджест уже не актуальний»; under `/digest` the buttons of your last 5 requests work. Switch the buttons and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
+The votes have no effect on posts that are already scored. Posts are kept for `RetentionDays`, so an older one can no longer be rated. Switch rating and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
 
 ## Asking about the digest
 
@@ -95,7 +95,7 @@ An AI assistant answers in Ukrainian, plain text, using the digest you received.
 search the posts stored for the last `RetentionDays` days, by words, by day or by time of publication (for example «що ще писали про це вчора?» or «що вийшло сьогодні між 9 і 12?»; times are in your time zone, the `TimeZone` setting). A question the posts do not cover is answered from the model's own knowledge,
 and the answer says so. It does not browse the web.
 
-- **Settings.** You can also ask the agent to change settings and sources; it only prepares a plan, and you confirm it with a button ([configuration](configuration.md#by-asking-the-agent)).
+- **What the agent does at once, and what it asks you to confirm.** Non-invasive actions are done at once when you ask: rating a post, following or unfollowing a topic, clearing the conversation. Changes to settings, sources, prompts and your profile are invasive: the agent only prepares a plan, and you confirm it with a button ([configuration](configuration.md#by-asking-the-agent), [ADR-0021](../adr/0021-let-the-chat-agent-do-non-invasive-actions-at-once.md)).
 - **One conversation per digest.** A new digest starts a new conversation and the old one is forgotten, so answers never mix two digests. Alerts do not reset it.
 - **Live answer.** While the assistant writes, the chat first shows «💭 Думаю», then the answer as a preview that grows from its third word (`ChatStreamEnabled`); the finished message then replaces it. The confirmation buttons are colored: green «Застосувати», red «Скасувати».
 - **Several chats.** Every paired chat gets the digest and the alerts and can ask questions or open `/settings`. Each chat has its own conversation, so questions and answers are not shared, but settings and sources are: a change made in one chat applies to all, and a plan the agent prepares can be confirmed only in the chat that got it.
@@ -103,7 +103,7 @@ and the answer says so. It does not browse the web.
 - **Bounds.** A conversation keeps the last `ChatMaxMessages` messages; a question is cut at 2000 characters; a question that waited in the queue for more than an hour is dropped.
 - **Cost.** A question the digest answers is one model call, about 2 to 4 cents with the default `OpenAIChatModel` and `medium` reasoning. When the assistant uses tools it makes one more call per round, up to `ChatMaxToolCalls + 1`, and every call resends the digest and the conversation, so a tool-heavy question can cost several times more (see [configuration](configuration.md#settings)).
 - **Before the first digest** the chat works too: the agent has no digest to rely on, so it answers from the stored posts and from its own knowledge and says which. When a digest arrives, it becomes the context of the conversation and replaces what was there.
-- **Clearing the context.** Send `/clear` to forget the earlier questions and answers (the digest stays), or ask the agent («забудь розмову»): it then prepares the action and you confirm it with a button, like a settings change.
+- **Clearing the context.** Send `/clear` to forget the earlier questions and answers (the digest stays), or ask the agent («забудь розмову»): it does it at once, after its answer.
 
 ## Renewing the Telegram session
 

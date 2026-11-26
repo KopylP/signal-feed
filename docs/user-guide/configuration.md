@@ -32,7 +32,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `ChatMaxOutputTokens` / `ChatMaxToolCalls` | 4000 / 5 | longest model output including the hidden reasoning, and how many times per question the model may stop to use tools (one round can call several tools); a question costs up to `ChatMaxToolCalls + 1` model calls |
 | `ChatSearchMaxHits` | 8 | posts returned by one search of stored posts |
 | `StatsRetentionDays` | 90 | how many days the daily summaries (counts per source and topic, the best posts, no post text) are kept for `/stats` and for the agent's trends: 7-365 |
-| `FeedbackEnabled` | `true` | the 👍/👎 buttons under the daily digest and `/digest`, and the recent votes as a hint in every scoring request; `false`: no buttons and no hint (votes already given stay in `settings/feedback.json`) |
+| `FeedbackEnabled` | `true` | rating posts by telling the agent («+», «лайк», «мінус» as a reply to a news item), and the recent votes as a hint in every scoring request; `false`: the agent does not save votes and scoring gets no hint (votes already given stay in `settings/feedback.json`) |
 | `ChatStreamEnabled` | `true` | shows the chat answer as it is written (a Telegram draft with «💭 Думаю», then the real message); `false` sends it at once |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |
@@ -100,10 +100,12 @@ Not available in the bot: schedules, the fixed parts of the prompts, secrets, `R
 
 ### By asking the agent
 
-The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra», «стеж за темою google core update».
+The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra».
 The agent asks when the request is not clear («який саме?», with the list of your sources or the matching settings) and may collect several changes into one plan.
-It never changes anything itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
+It never changes settings, sources, prompts or your profile itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
 The text of that message is made by the bot, not by the model, so check it rather than the agent's wording. The plan waits 30 minutes; the changes are applied together or not at all, with the same rules and limits as in `/settings`.
+
+Following a topic («стеж за темою google core update») is not a setting change in this sense: the agent does it at once, like rating a post or clearing the conversation ([ADR-0021](../adr/0021-let-the-chat-agent-do-non-invasive-actions-at-once.md)).
 
 The buttons need the webhook to receive `callback_query` updates ([installation](installation.md#step-6-connect-your-chat)).
 

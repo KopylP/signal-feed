@@ -12,7 +12,7 @@ public sealed class GetPostTool(IPostRepository posts, IEffectiveOptions options
 {
     private const string NotFound = "Post not found. It may have been deleted; rely on the digest text.";
 
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         ([Description("The post id from the digest or from a search result.")] string id, CancellationToken ct) => RunAsync(id, ct),
         new AIFunctionFactoryOptions
         {

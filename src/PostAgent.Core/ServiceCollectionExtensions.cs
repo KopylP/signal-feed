@@ -5,7 +5,6 @@ using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.DailySummary;
 using PostAgent.Digest;
-using PostAgent.Feedback;
 using PostAgent.Login;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
@@ -45,7 +44,6 @@ public static class ServiceCollectionExtensions
             .AddWebhook()
             .AddPairing()
             .AddLogin()
-            .AddFeedback()
             .AddStatsCommand()
             .AddSettingsMenu()
             .AddChat()

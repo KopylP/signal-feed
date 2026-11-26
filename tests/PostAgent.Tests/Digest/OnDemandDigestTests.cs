@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Time.Testing;
 using PostAgent.Digest;
-using PostAgent.Shared.Feedback;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
@@ -14,14 +12,11 @@ public class OnDemandDigestTests
     private const long Asking = 42;
 
     private readonly RecordingNotifier _notifier = new();
-    private readonly RecordingPanel _panel = new();
-    private readonly InMemoryRatedDigestStore _rated = new();
 
     private static readonly DigestRequest Day = new(Asking, Now.AddHours(-24), Now);
 
-    private OnDemandDigest Create(IPostRepository repo, IDigestSummarizer summarizer, bool feedback = true) =>
-        new(repo, summarizer, _notifier, _panel, _rated, new FakeEffectiveOptions(new AgentOptions { TimeZone = "UTC", FeedbackEnabled = feedback }),
-            new FakeTimeProvider(Now), NullLogger<OnDemandDigest>.Instance);
+    private OnDemandDigest Create(IPostRepository repo, IDigestSummarizer summarizer) =>
+        new(repo, summarizer, _notifier, new FakeEffectiveOptions(new AgentOptions { TimeZone = "UTC" }), NullLogger<OnDemandDigest>.Instance);
 
     private static IDigestSummarizer Overview(string overview) =>
         new FakeDigestSummarizer(items => new DigestReport(
@@ -100,45 +95,6 @@ public class OnDemandDigestTests
         await Create(repo, Overview("О")).RunAsync(Day, CancellationToken.None);
 
         Assert.Equal(DigestTexts.Failed, Assert.Single(_notifier.Replies));
-    }
-
-    [Fact]
-    public async Task Sends_rating_buttons_to_the_chat_that_asked_and_keeps_the_report_they_point_to()
-    {
-        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
-
-        await Create(repo, Overview("Огляд")).RunAsync(Day, CancellationToken.None);
-
-        var (chat, _, html, keyboard) = Assert.Single(_panel.Sent);
-        Assert.Equal(Asking, chat);
-        Assert.StartsWith(FeedbackPrompt.Message, html);
-        var report = Assert.Single(_rated.Of(Asking));
-        Assert.StartsWith("d", report.ReportId);
-        Assert.Equal(FeedbackCallback.Encode(report.ReportId, 0, FeedbackVote.Up), keyboard.Rows[0][0].Data);
-        Assert.Empty(_notifier.Sent);
-    }
-
-    [Fact]
-    public async Task Sends_no_rating_buttons_when_feedback_is_off()
-    {
-        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
-
-        await Create(repo, Overview("Огляд"), feedback: false).RunAsync(Day, CancellationToken.None);
-
-        Assert.Empty(_panel.Sent);
-        Assert.Empty(_rated.Of(Asking));
-    }
-
-    [Fact]
-    public async Task A_report_that_cannot_be_kept_sends_no_buttons_and_does_not_fail_the_digest()
-    {
-        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
-        _rated.ThrowOnSave = true;
-
-        await Create(repo, Overview("Огляд")).RunAsync(Day, CancellationToken.None);
-
-        Assert.Empty(_panel.Sent);
-        Assert.DoesNotContain(DigestTexts.Failed, _notifier.Replies);
     }
 
     private sealed class FailingRepository : IPostRepository
