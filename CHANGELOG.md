@@ -14,7 +14,8 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 - **Rename the GitHub variable `TF_CLEANUP_SCHEDULE` to `TF_DAILY_SUMMARY_SCHEDULE`** (only if you set it)
   - Where: GitHub repository variables, and `daily_summary_schedule` in `terraform.tfvars` if you run Terraform locally
   - Value: the same CRON as before; unset means `0 0 3 * * *`
-  - Apply: run `infra` with apply; the app setting `CleanupSchedule` becomes `DailySummarySchedule`
+  - Apply: run `infra` with apply; the app setting `CleanupSchedule` becomes `DailySummarySchedule`. Run it after this release is deployed; a rollback to an earlier release needs `CleanupSchedule` back (add it to `TF_APP_SETTINGS`),
+    otherwise the old cleanup timer cannot start
 
 ### Contract changes
 - **The cleanup is started by the daily summary, not by a timer** (compatible)

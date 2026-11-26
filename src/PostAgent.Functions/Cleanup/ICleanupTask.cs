@@ -2,12 +2,12 @@ using PostAgent.Shared.Cleanup;
 
 namespace PostAgent.Cleanup;
 
-// Одне очищення даних, що більше не потрібні. CleanupFunction виконує всі зареєстровані в DI задачі після того, як
-// DailySummaryJob записав підсумки днів, тож нове очищення (інша таблиця, черга, blob) це новий клас і один рядок у CleanupServices.cs.
+// One cleanup of data that is no longer needed. CleanupFunction runs every task registered in DI after DailySummaryJob has written
+// the daily summaries, so a new cleanup (another table, queue or blob) is a new class and one line in CleanupServices.cs.
 public interface ICleanupTask
 {
     string Name { get; }
 
-    // Видаляє застаріле й повертає кількість видалених записів. Дні після request.SummarizedThrough чіпати не можна.
+    // Deletes what is stale and returns how many records were deleted. Never touch a day after request.SummarizedThrough.
     Task<int> RunAsync(CleanupRequest request, DateTimeOffset now, CancellationToken ct);
 }
