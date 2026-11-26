@@ -17,6 +17,9 @@ public static class StorageNames
     public const string SettingsContainer = "settings";
     public const string SettingsBlob = "overrides.json";
 
+    // The reader's 👍 and 👎 on digest entries, shared by every chat; the scoring reads it.
+    public const string FeedbackBlob = "feedback.json";
+
     // What one chat's reader wrote about themselves: a chat never reads another chat's profile.
     public static string ProfileBlobName(long chatId) => $"profile/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.txt";
     public const string SessionBlob = "wtelegram.session";

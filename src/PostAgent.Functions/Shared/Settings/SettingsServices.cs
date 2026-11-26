@@ -1,4 +1,6 @@
 using PostAgent.Shared.Ai;
+using PostAgent.Shared.Feedback;
+using PostAgent.Shared.Feedback.Infrastructure;
 using PostAgent.Shared.Settings.Infrastructure;
 
 namespace PostAgent.Shared.Settings;
@@ -10,6 +12,7 @@ public static class SettingsServices
             .AddSingleton<IOverridesStore, BlobOverridesStore>()
             .AddSingleton<IEffectiveOptions, EffectiveOptions>()
             .AddSingleton<IProfileStore, BlobProfileStore>()
+            .AddSingleton<IFeedbackStore, BlobFeedbackStore>()
             .AddSingleton<PromptLibrary>()
             .AddSingleton<IPromptProvider, PromptProvider>()
             .AddSingleton<SettingsEditor>();

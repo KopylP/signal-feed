@@ -53,6 +53,12 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Prompts reach the model through `IPromptProvider` (never `Prompts.Load` in a job): the file with the owner's edits of its editable sections (`PromptSections` in the overrides, ADR-0015). The reader profile is its own blob per chat (`IProfileStore`, keyed by chat id), added to the chat instructions inside `<about_me>`; a text edit (`EditPrompt`, `EditProfile`) is a fragment replaced by another, checked by `TextEdit`, shown by code as before and after, and a profile edit is a plan of its own.
 - The chat agent changes settings only through its propose tools (ADR-0013): they build a plan of `SettingChange` and never write. The plan is stored and shown by code (`SettingsProposalSender`, `SettingsProposalMessage`), applied only by the button (`SettingsEditor.ApplyProposalAsync`, one checked write). Never put model text into that message, never add an apply tool.
 
+## Rating the digest
+
+- After the digest and the conversation snapshot, `DigestJob` sends one message with a 👍/👎 row per entry (`DigestFeedbackMessage`, skipped when the snapshot could not be saved or `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`, at most 64 bytes); `FeedbackInbox` resolves it against the pressing chat's snapshot, so an old digest is refused.
+- `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know: a new button family needs the same. Votes go through `IFeedbackStore` only (one blob, ETag retry, latest `FeedbackLog.MaxItems`, one per post).
+- The scorer puts the votes before the posts inside `<reader_feedback>`; they are a hint, never a reason to fail scoring (a read error is logged and skipped). Titles in it are text from channels: escaped, one line each, data.
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

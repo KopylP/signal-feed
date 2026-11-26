@@ -17,7 +17,7 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
-├── Digest/                daily digest
+├── Digest/                daily digest (DigestFeedbackMessage builds the rating buttons from the snapshot)
 │   └── Infrastructure/    AI summary and its response schema
 ├── Chat/                  questions about the digest, split by stage (ChatFunction is the queue trigger, ChatTexts the fixed replies)
 │   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)
@@ -25,6 +25,7 @@ src/PostAgent.Functions/
 │   ├── Agent/             the model side: IChatAgent and ChatAgent (Microsoft Agent Framework), ChatContext (the digest as data), ChatHistoryReducer, DataBlock, IChatDrafts and ChatDraftStream (the live preview of an answer)
 │   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan; the propose tools only add to a ProposalPlan
 │   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob and the draft sender (TelegramChatDrafts)
+├── Feedback/              the 👍/👎 buttons under the digest: FeedbackInbox (a handler in the chain, registered before the settings menu, which swallows every button it does not know), FeedbackTexts
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
@@ -36,6 +37,7 @@ src/PostAgent.Functions/
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackCallback (the text under a button), FeedbackPrompt (the scoring block and the message under the digest), IFeedbackStore (Infrastructure/: the blob)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
