@@ -17,7 +17,7 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
-├── Digest/                daily digest (DigestFeedbackMessage builds the rating buttons from the snapshot)
+├── Digest/                daily digest (DigestFeedbackMessage builds the rating buttons from the snapshot) and `/digest`: DigestInbox (a handler that only parses the period, DigestPeriod, and queues a DigestRequest), DigestRequestFunction and OnDemandDigest on the queue side
 │   └── Infrastructure/    AI summary and its response schema
 ├── Chat/                  questions about the digest, split by stage (ChatFunction is the queue trigger, ChatTexts the fixed replies)
 │   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)

@@ -59,6 +59,10 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know. Votes go through `IFeedbackStore` only (ETag retry, latest `FeedbackLog.MaxItems`, one per post).
 - The scorer puts the votes before the posts in `<reader_feedback>` (channel-derived text: one line, escaped, data); a read error is logged and skipped, never a reason to fail scoring.
 
+## Digest on demand
+
+- `/digest` is a handler like the others: `DigestInbox` only parses (`DigestPeriod`, `PostPeriod`) and queues; `OnDemandDigest` runs on `digest-requests`, answers only the asking chat, never marks posts as sent, never touches the conversation, and never rethrows (a retry would send half a digest twice).
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

@@ -26,6 +26,17 @@ public static class DigestSelector
             .Select(p => new DigestItem(p, p.Score >= options.InterestingThreshold))
             .ToList();
 
+    // For /digest: every scored post published in the period, also those a daily digest already sent, best first. Nothing is marked afterwards.
+    public static IReadOnlyList<DigestItem> BuildForPeriod(IEnumerable<PostEntity> posts, AgentOptions options, PostPeriod period) =>
+        posts
+            .Where(p => p.Status is PostStatus.Scored or PostStatus.Sent && p.Score is not null && p.DuplicateOf is null)
+            .Where(p => p.PublishedAt >= period.Since && p.PublishedAt < period.Until)
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.PublishedAt)
+            .Take(options.DigestSize)
+            .Select(p => new DigestItem(p, p.Score >= options.InterestingThreshold))
+            .ToList();
+
     // The candidates that are not in the digest, counted by reason: the "can be skipped" line.
     public static DigestSkipped CountSkipped(IEnumerable<PostEntity> posts, IReadOnlyList<DigestItem> selected, DateTimeOffset now)
     {
