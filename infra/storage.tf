@@ -42,13 +42,6 @@ resource "azapi_resource" "table" {
   body      = {}
 }
 
-# The tables already exist (made by azurerm before): adopt them, never recreate. Remove these blocks after the first apply.
-import {
-  for_each = local.tables
-  to       = azapi_resource.table[each.key]
-  id       = "${azurerm_storage_account.main.id}/tableServices/default/tables/${each.value}"
-}
-
 removed {
   from = azurerm_storage_table.channel_state
   lifecycle {
@@ -102,12 +95,6 @@ resource "azurerm_storage_queue" "run_now" {
 resource "azurerm_storage_queue" "digest_requests" {
   name               = "digest-requests"
   storage_account_id = azurerm_storage_account.main.id
-}
-
-# The queue was made by the app before Terraform got to it: adopt it, never recreate. Remove this block after the first apply.
-import {
-  to = azurerm_storage_queue.digest_requests
-  id = "${azurerm_storage_account.main.id}/queueServices/default/queues/digest-requests"
 }
 
 # "The daily summaries are written": the only start of the cleanup (CleanupFunction).
