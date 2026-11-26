@@ -72,7 +72,7 @@ public sealed class StatsInbox(
             }
         }
 
-        return StatsReport.Build(stored.Values.OrderBy(d => d.Day, StringComparer.Ordinal).ToList(), await usage.LoadAsync(from, today, ct));
+        return StatsReport.Build(stored.Values.OrderBy(d => d.Day, StringComparer.Ordinal).ToList(), await usage.LoadAsync(today.AddDays(1 - Math.Min(days, UsageLog.KeepDays)), today, ct));
     }
 
     private static bool TryDays(string arguments, int max, out int days)

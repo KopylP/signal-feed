@@ -15,7 +15,7 @@ The budget is $5 a month and there must be no new resource with a standing cost 
 When a day is over, the cleanup writes one small summary of it before the posts are deleted: counts (collected, scored, interesting, duplicates, average score), the posts and the
 average score per source, the topics with counts, and the five best posts (id, source, topic, score, link), never any post text. It is one blob per day, `settings/stats/daily/<yyyy-MM-dd>.json`,
 kept for `StatsRetentionDays` (90 by default). The model token counts of every call are one more blob, `settings/stats/usage.json` (30 days). `DailyStatsTask` runs first in the cleanup,
-rewrites the complete days still in `Posts` on every run (so a late scored post is not lost) and deletes summaries past their period. The chat agent reads the summaries through
+rewrites the complete days still in `Posts` on every run, also the one day `PostsCleanup` deletes in that same run (so a late scored post is not lost and a day has `RetentionDays` + 1 chances), never replaces a fuller summary with a smaller one, and deletes summaries past their period. The chat agent reads the summaries through
 `get_trends` and the owner through `/stats`.
 
 ## Options considered

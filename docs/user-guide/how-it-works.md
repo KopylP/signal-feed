@@ -118,7 +118,7 @@ if you did not expect the message, send `/login` and sign in with your own accou
 Posts are kept for `RetentionDays` (2 by default: the day before yesterday, yesterday and today) and then deleted by day. The read position of each source is never deleted.
 The digest can look back 48 hours only within the data that remains, so with the default it covers yesterday and today.
 The conversation about the latest digest is deleted by the same cleanup once its digest is older than `RetentionDays`.
-Before a day is deleted, a small summary of it (counts, sources, topics, the best posts; no text) is written and kept for `StatsRetentionDays` (90 by default) for `/stats` and for trends ([ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md)).
+Before a day is deleted (and once more on the run that deletes it), a small summary of it (counts, sources, topics, the best posts; no text) is written and kept for `StatsRetentionDays` (90 by default) for `/stats` and for trends ([ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md)).
 
 ## Next
 

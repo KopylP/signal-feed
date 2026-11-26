@@ -12,9 +12,3 @@ public sealed record DailyStats(
     IReadOnlyList<SourceStats> Sources,
     IReadOnlyList<TopicStats> Topics,
     IReadOnlyList<TopPost> Top);
-
-public sealed record SourceStats(string Source, int Posts, double AverageScore, int Interesting);
-
-public sealed record TopicStats(string Topic, int Posts, double AverageScore);
-
-public sealed record TopPost(string PostId, string Source, string? Topic, int Score, string Url);

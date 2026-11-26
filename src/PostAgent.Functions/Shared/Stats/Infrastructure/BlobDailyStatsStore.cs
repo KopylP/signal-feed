@@ -23,7 +23,8 @@ public sealed class BlobDailyStatsStore(BlobServiceClient blobs) : IDailyStatsSt
             try
             {
                 var content = (await Container.GetBlobClient(StorageNames.DailyStatsBlobName(Name(day))).DownloadContentAsync(ct)).Value.Content.ToString();
-                if (StatsJson.TryParse<DailyStats>(content) is { Day: not null } stats)
+                // A file for another day, or one without its lists (hand-edited, or a future schema), is skipped, not trusted.
+                if (StatsJson.TryParse<DailyStats>(content) is { Sources: not null, Topics: not null, Top: not null } stats && stats.Day == Name(day))
                 {
                     days.Add(stats);
                 }

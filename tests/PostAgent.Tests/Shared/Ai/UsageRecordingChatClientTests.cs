@@ -37,6 +37,32 @@ public class UsageRecordingChatClientTests
     }
 
     [Fact]
+    public async Task A_stream_the_consumer_abandons_still_records_what_was_streamed()
+    {
+        var client = Create(new UsageClient(100, 20, usageFirst: true));
+
+        await foreach (var _ in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "q")]))
+        {
+            break;
+        }
+
+        Assert.Equal(100L, Assert.Single(_store.Rows).InputTokens);
+    }
+
+    [Fact]
+    public async Task A_cancelled_caller_does_not_turn_a_paid_call_into_a_failure()
+    {
+        using var cts = new CancellationTokenSource();
+        var client = Create(new UsageClient(5, 5));
+
+        var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "q")], cancellationToken: cts.Token);
+        await cts.CancelAsync();
+
+        Assert.Equal("ok", response.Text);
+        Assert.Single(_store.Rows);
+    }
+
+    [Fact]
     public async Task A_response_without_usage_records_nothing()
     {
         await Create(new UsageClient(null, null)).GetResponseAsync([new ChatMessage(ChatRole.User, "q")]);
@@ -54,7 +80,7 @@ public class UsageRecordingChatClientTests
         Assert.Equal("ok", response.Text);
     }
 
-    private sealed class UsageClient(long? input, long? output) : IChatClient
+    private sealed class UsageClient(long? input, long? output, bool usageFirst = false) : IChatClient
     {
         private UsageDetails? Usage => input is null ? null : new UsageDetails { InputTokenCount = input, OutputTokenCount = output };
 
@@ -64,8 +90,13 @@ public class UsageRecordingChatClientTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
             IEnumerable<ChatMessage> messages, ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (usageFirst && Usage is { } early)
+            {
+                yield return new ChatResponseUpdate { Contents = [new UsageContent(early)] };
+            }
+
             yield return new ChatResponseUpdate(ChatRole.Assistant, "ok");
-            if (Usage is { } usage)
+            if (!usageFirst && Usage is { } usage)
             {
                 yield return new ChatResponseUpdate { Contents = [new UsageContent(usage)] };
             }

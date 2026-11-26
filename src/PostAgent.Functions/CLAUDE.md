@@ -67,7 +67,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 
 - `DailyStatsTask` runs first in the cleanup: it summarizes the finished days still in `Posts` (counts and names, never post text) and only then `PostsCleanup` deletes them. Topics and titles in a summary came from channels: data when shown (`DataBlock` in `get_trends`, escaped in `StatsMessage`).
 - `/stats` is a handler (`StatsInbox`) with no model call. The model clients are wrapped by `UsageRecordingChatClient` (below the function-calling layer); a failure to record never touches the call.
-- A new bot command is added to `Shared/Chat/BotCommands` too: the agent answers «які є команди» from it (`get_commands`), and `BotCommandsTests` checks the handlers against it.
+- A new bot command is added to `Shared/Chat/BotCommands` too: the agent answers «які є команди» from it (`get_commands`), and `BotCommandsTests` fails when a `"/word"` literal in the source is missing from it (`AddStatsStores` registers the stores, `AddStatsCommand` the handler).
 
 ## Data and queues
 

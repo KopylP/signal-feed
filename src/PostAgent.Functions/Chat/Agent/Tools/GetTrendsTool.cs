@@ -40,7 +40,7 @@ public sealed class GetTrendsTool(IDailyStatsStore store, IEffectiveOptions opti
         var terms = (topic ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var rows = (days >= WeeklyFromDays ? ByWeek(stored) : stored.Select(d => (d.Day, d.Collected, d.Scored, d.Interesting, d.AverageScore, d.Topics, d.Top))).ToList();
 
-        var body = new StringBuilder("Days are UTC dates of publication; the figures cover only what was collected.\n");
+        var body = new StringBuilder("Days are UTC dates of publication; the figures cover only what was collected. A week with fewer than 7 days is partial: compare rows by the posts per stored day, not by the totals.\n");
         foreach (var (label, collected, scored, interesting, average, topics, top) in rows)
         {
             var matching = topics.Where(t => terms.All(w => t.Topic.Contains(w, StringComparison.OrdinalIgnoreCase))).ToList();
@@ -68,7 +68,7 @@ public sealed class GetTrendsTool(IDailyStatsStore store, IEffectiveOptions opti
         days.GroupBy(d => WeekStart(DateOnly.ParseExact(d.Day, "yyyy-MM-dd", CultureInfo.InvariantCulture)))
             .OrderBy(g => g.Key)
             .Select(g => (
-                "week of " + g.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                $"week of {g.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} ({g.Count()} of 7 days stored)",
                 g.Sum(d => d.Collected),
                 g.Sum(d => d.Scored),
                 g.Sum(d => d.Interesting),

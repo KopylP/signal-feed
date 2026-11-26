@@ -31,6 +31,28 @@ public class DailyStatsTaskTests
     }
 
     [Fact]
+    public async Task Also_summarizes_the_day_the_posts_cleanup_deletes_in_the_same_run()
+    {
+        // 2026-11-21 20:00 is the partition PostsCleanup deletes at this moment (RetentionDays 2 keeps the 22nd, 23rd and 24th).
+        var repo = new InMemoryPostRepository(Post("last", hoursAgo: 60));
+
+        await Create(repo).RunAsync(Now, CancellationToken.None);
+
+        Assert.Equal(["2026-11-21"], _store.Days.Keys);
+    }
+
+    [Fact]
+    public async Task A_smaller_summary_never_replaces_a_fuller_one()
+    {
+        _store.Seed(new DailyStats("2026-11-23", 10, 10, 2, 0, 5, [], [], []));
+        var repo = new InMemoryPostRepository(Post("only", hoursAgo: 12));
+
+        await Create(repo).RunAsync(Now, CancellationToken.None);
+
+        Assert.Equal(10, _store.Days["2026-11-23"].Collected);
+    }
+
+    [Fact]
     public async Task A_later_run_rewrites_the_day_with_the_posts_scored_since()
     {
         var repo = new InMemoryPostRepository(Unscored("late"));

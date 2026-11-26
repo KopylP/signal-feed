@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
             .AddStorage(config)
             .AddSessionCipher(config)
             .AddSettings()
-            .AddStats()
+            .AddStatsStores()
             .AddAi()
             .AddPosts()
             .AddNotifications()

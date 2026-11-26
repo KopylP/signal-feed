@@ -46,6 +46,12 @@ public class StatsMessageTests
     }
 
     [Theory]
+    [InlineData(7, "Токени</b> за 7 днів")]
+    [InlineData(90, "Токени</b> за 30 днів")] // the usage is kept for 30 days only
+    public void The_token_section_names_the_span_it_really_covers(int requested, string label) =>
+        Assert.Contains(label, StatsMessage.Format(Report(usage: [new UsageTotal("chat", 1, 1, 1)]), requested));
+
+    [Theory]
     [InlineData(1, "день")]
     [InlineData(3, "дні")]
     [InlineData(7, "днів")]

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using PostAgent.Shared.Notifications;
+using PostAgent.Shared.Stats;
 
 namespace PostAgent.Stats;
 
@@ -37,7 +38,7 @@ public static class StatsMessage
 
         if (r.Usage.Count > 0)
         {
-            text.Append("\n\n<b>Токени</b> (вхід / вихід, викликів):");
+            text.Append("\n\n<b>Токени</b> за ").Append(Math.Min(requestedDays, UsageLog.KeepDays)).Append(" ").Append(DayWord(Math.Min(requestedDays, UsageLog.KeepDays))).Append(" (вхід / вихід, викликів):");
             foreach (var u in r.Usage)
             {
                 text.Append('\n').Append(Purpose(u.Purpose)).Append(": ").Append(Tokens(u.InputTokens)).Append(" / ").Append(Tokens(u.OutputTokens)).Append(", ").Append(u.Calls);

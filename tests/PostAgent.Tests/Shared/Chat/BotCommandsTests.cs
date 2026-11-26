@@ -14,17 +14,22 @@ public class BotCommandsTests
         Assert.All(BotCommands.All, c => Assert.False(string.IsNullOrWhiteSpace(c.Purpose)));
     }
 
-    // The handlers of the bot are the source of the truth: a command a handler reads must be in the list the agent gives.
-    [Theory]
-    [InlineData("Digest/DigestInbox.cs", "/digest")]
-    [InlineData("Stats/StatsInbox.cs", "/stats")]
-    [InlineData("Chat/Intake/ClearInbox.cs", "/clear")]
-    public void A_command_a_handler_reads_is_in_the_list(string handler, string command)
+    // The code is the source of the truth: every command literal in the source (`"/word"` as a whole string or a constant, as the handlers
+    // compare them) must be in the list the agent gives, so a new handler with a new command cannot be forgotten.
+    [Fact]
+    public void Every_command_the_code_reads_is_in_the_list()
     {
-        var source = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "PostAgent.Functions", handler));
+        var root = Path.Combine(FindRepositoryRoot(), "src", "PostAgent.Functions");
+        var found = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(p => System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(p), "\"(/[a-z]+)\"").Select(m => m.Groups[1].Value))
+            .Where(c => c != "/")
+            .ToHashSet();
 
-        Assert.Contains($"\"{command}\"", source);
-        Assert.Contains(BotCommands.All, c => c.Usage.Split(' ')[0] == command);
+        var listed = BotCommands.All.Select(c => c.Usage.Split(' ')[0]).ToHashSet();
+
+        Assert.Empty(found.Where(c => !listed.Contains(c)).Order());
+        Assert.Empty(listed.Where(c => !found.Contains(c)).Order());
     }
 
     private static string FindRepositoryRoot()

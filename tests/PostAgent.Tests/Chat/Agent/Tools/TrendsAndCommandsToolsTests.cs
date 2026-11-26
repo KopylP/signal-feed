@@ -63,8 +63,9 @@ public class TrendsAndCommandsToolsTests
 
         var result = await tools.GetTrends(30, null, CancellationToken.None);
 
-        Assert.Contains("week of 2026-11-16: 30 posts", result);
-        Assert.Contains("week of 2026-11-23: 5 posts", result);
+        Assert.Contains("week of 2026-11-16 (2 of 7 days stored): 30 posts", result);
+        Assert.Contains("week of 2026-11-23 (1 of 7 days stored): 5 posts", result);
+        Assert.Contains("partial", result);
     }
 
     [Fact]

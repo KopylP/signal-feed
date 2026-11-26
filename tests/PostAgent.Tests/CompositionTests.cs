@@ -130,6 +130,8 @@ public class CompositionTests
         var chat = provider.GetRequiredKeyedService<IChatClient>(AiServices.ChatClientKey);
 
         Assert.NotSame(scoring, chat);
+        Assert.NotNull(scoring.GetService<UsageRecordingChatClient>());
+        Assert.NotNull(chat.GetService<UsageRecordingChatClient>());
         Assert.Equal("gpt-5.4-nano", scoring.GetService<ChatClientMetadata>()?.DefaultModelId);
         Assert.Equal("gpt-6.1-terra", chat.GetService<ChatClientMetadata>()?.DefaultModelId);
     }
