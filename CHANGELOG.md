@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [fennel] - 2026-11-26
+## [v2026.11.26.90-fennel] - 2026-11-26
 
 ### Setup required
 - **`infra` apply after this change**: removes `DEPLOYMENT_STORAGE_CONNECTION_STRING` and keeps `AzureWebJobsStorage` away
