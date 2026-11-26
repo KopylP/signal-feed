@@ -37,7 +37,7 @@ Go back one phase when a later phase shows a problem. Do not skip phases 6, 8, 9
 ## Rules that decide most changes
 
 - **Code:** the C# rules in the root `CLAUDE.md` (warnings are errors, English comments, `TimeProvider`, `CancellationToken`, message-template logging, no secrets in logs).
-- **Features:** a feature is a folder, `Shared/` never depends on a feature (`src/PostAgent.Functions/CLAUDE.md`).
+- **Features:** a feature is a folder, `Shared/` never depends on a feature (`src/PostAgent.Core/CLAUDE.md`).
 - **Settings:** the default lives only in `AgentOptions`; add validation, the row in `docs/user-guide/configuration.md`, and `local.settings.json.example`.
   A required setting or secret also changes the deploy order (phase 13).
 - **Infrastructure:** Terraform never creates secret values, access goes through managed identity, no resources with a standing cost without a request (`infra/CLAUDE.md`).

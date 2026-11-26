@@ -26,7 +26,7 @@ Settings are validated on startup (`ValidateOnStart`), and a bad one stops the a
 traces | where timestamp > ago(2h) and severityLevel >= 3 | order by timestamp desc | take 50
 ```
 
-What changed: `git log -p -5 -- src/PostAgent.Functions/Shared/Settings infra` and the last `infra` run summary. Likeliest first: a required setting that was never created (code deployed before infra), an out-of-range or malformed value (`AlertQuietHours` without a time zone, a bad CRON),
+What changed: `git log -p -5 -- src/PostAgent.Core/Shared/Settings infra` and the last `infra` run summary. Likeliest first: a required setting that was never created (code deployed before infra), an out-of-range or malformed value (`AlertQuietHours` without a time zone, a bad CRON),
 a Key Vault reference that does not resolve (secret missing, or the function identity lacks `Key Vault Secrets User`; restart after fixing),
 `AlertWindowHours + AlertCooldownHours` above `RetentionDays * 24`. A mistyped key is silently ignored: the app starts and the setting has no effect.
 

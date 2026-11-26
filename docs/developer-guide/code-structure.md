@@ -1,7 +1,13 @@
 # Code structure
 
 **Audience:** developers about to change or extend the code. Big picture first: [architecture](architecture.md).
-The coding rules (nullable, sealed classes, cancellation tokens, logging) are in the root `CLAUDE.md` and in `src/PostAgent.Functions/CLAUDE.md`.
+The coding rules (nullable, sealed classes, cancellation tokens, logging) are in the root `CLAUDE.md`, in `src/PostAgent.Core/CLAUDE.md` (features) and in `src/PostAgent.Functions/CLAUDE.md` (the host).
+
+## Two projects
+
+- **`PostAgent.Core`** is the agent: the features (handlers, jobs, logic, formatting, adapters) and `Shared/`. It has no Azure Functions package, so logic cannot depend on the host and is tested without it.
+- **`PostAgent.Functions`** is the host: `Program`, `host.json` and the `[Function]` classes, thin, each in the folder of its feature. The worker finds functions only in its own assembly, so they cannot move to Core.
+- An architecture test keeps this: no `[Function]` class in Core and no Functions host reference from Core. `TgLogin` links a few Core files and has no reference to either project.
 
 ## Principle: organize by feature
 
@@ -12,7 +18,7 @@ and `Shared/` never depends on a feature (an architecture test enforces this). T
 ## Repository layout
 
 ```
-src/PostAgent.Functions/
+src/PostAgent.Core/                (the function classes of a feature, e.g. Chat/ChatFunction.cs, are in src/PostAgent.Functions/<same folder>/)
 ├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
@@ -81,11 +87,11 @@ Package versions live only in `Directory.Packages.props`.
 
 ## Common changes
 
-**A new feature.** Create a folder with the function, logic and interfaces, put adapters in its subfolders, add an `AddXxx()` for its services
-and call it in `ServiceCollectionExtensions.AddPostAgent`.
+**A new feature.** Create a folder in `PostAgent.Core` with the logic and interfaces, put adapters in its subfolders, add an `AddXxx()` for its services
+and call it in `ServiceCollectionExtensions.AddPostAgent`. If it has a trigger, add the thin `[Function]` class in the same folder name of `PostAgent.Functions`.
 
 **A new scheduled job.** Put the logic in a class implementing `IJob` (`Name` is the lower-case name, `RunAsync` the work), register it with `AddJob<T>()` in the feature's `AddXxx()`,
-and add a timer function that only calls `job.RunAsync(ct)`. `RunNowFunction` finds it by `Name` with no other change; add the name to `tools/run-now.cs` (a test checks that every job name is there).
+and add a timer function (in `PostAgent.Functions`) that only calls `job.RunAsync(ct)`. `RunNowFunction` finds it by `Name` with no other change; add the name to `tools/run-now.cs` (a test checks that every job name is there).
 
 **A new cleanup.** Add one class implementing `ICleanupTask` in `Cleanup/` and register it in `Cleanup/CleanupServices.cs`. `CleanupFunction` runs it with the others, after `DailySummaryJob` has written the summaries (a task must not touch a day after `CleanupRequest.SummarizedThrough`).
 Cleaning another table, queue or blob needs nothing else.

@@ -51,6 +51,7 @@ Text written by channels (the snapshot and tool results) reaches the model only 
 - **The model sees the digest first.** The first message of a session is the snapshot of the digest; `ChatHistoryReducer` caps the history at `ChatMaxMessages` and never drops that first message or leaves a tool result without its call.
 - **Tools are small and bounded.** `get_trends` reads the daily summaries and `get_commands` the bot's own command list (`BotCommands`); `get_post` and `search_posts` read stored posts (`ChatSearchMaxHits`; `search_posts` takes words and/or a period in the reader's `TimeZone`, `PostPeriod` clamps it to `RetentionDays` and to now; `ChatRequest.SentAt` (the Telegram message date) becomes a metadata message before the question (`ChatMetadata`)), the settings tools only build a plan. A turn is bounded by `ChatMaxToolCalls` and `ChatMaxOutputTokens`.
 - **The model never changes anything alone.** A settings change is a proposal shown by code and applied only by the owner's button ([ADR-0013](../adr/0013-let-the-chat-agent-propose-settings-changes-the-owner-confirms.md)).
+- **Two projects.** `PostAgent.Core` holds the agent (features, contracts, adapters) and has no Azure Functions package; `PostAgent.Functions` holds the host and the thin `[Function]` entry points ([ADR-0020](../adr/0020-split-the-agent-into-core-and-functions-projects.md)).
 - **Channel text is data.** It reaches the model only inside `<report>`, `<post>` or `<trends>` blocks (and, from the reader's votes, `<reader_feedback>` in scoring).
 
 #### What the agent remembers

@@ -1,6 +1,6 @@
 # tests/PostAgent.Tests
 
-xUnit. Folders mirror the features in `src/PostAgent.Functions`. Run: `dotnet test -c Release`.
+xUnit. Folders mirror the features in `src/PostAgent.Core` (the function classes of `src/PostAgent.Functions` are tested in the same feature folder). Run: `dotnet test -c Release`.
 
 ## Rules
 
@@ -11,4 +11,4 @@ xUnit. Folders mirror the features in `src/PostAgent.Functions`. Run: `dotnet te
 - `CompositionTests` checks that the app builds from valid settings. Add a new required parameter to `ValidSettings`, otherwise that test fails.
 - Fix a bug together with a test that fails without the fix.
 - `LoginSrpTests` and `LoginPageTests` run the Mini App's JavaScript under Node.js (on every GitHub runner); they fail without `node` on the PATH.
-- `ArchitectureTests` enforces the dependency rules the compiler does not (today: `Shared/` never references a feature). Run it after moving code.
+- `ArchitectureTests` enforces the dependency rules the compiler does not (`Shared/` never references a feature; `PostAgent.Core` has no Functions host reference; every `[Function]` class is in the host). Run it after moving code.
