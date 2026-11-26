@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [thyme] - 2026-11-26
+## [v2026.11.26.96-thyme] - 2026-11-26
 
 ### Logic
 - Posts are now kept for 2 days instead of 1 (`RetentionDays` default), so the chat can search by date and time over the day before yesterday too
