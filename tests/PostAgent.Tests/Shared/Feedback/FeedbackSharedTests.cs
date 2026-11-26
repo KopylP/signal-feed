@@ -1,4 +1,3 @@
-using System.Text;
 using PostAgent.Shared.Feedback;
 
 namespace PostAgent.Tests.Shared.Feedback;
@@ -8,31 +7,6 @@ public class FeedbackSharedTests
     private static readonly DateTimeOffset At = TestData.Now;
 
     private static FeedbackItem Item(string id, FeedbackVote vote = FeedbackVote.Up, string topic = "Тема") => new(id, "src", topic, vote, At);
-
-    [Theory]
-    [InlineData(FeedbackVote.Up)]
-    [InlineData(FeedbackVote.Down)]
-    public void A_callback_survives_encoding_and_stays_within_the_telegram_limit(FeedbackVote vote)
-    {
-        var data = FeedbackCallback.Encode("20261126080000", 11, vote);
-
-        Assert.True(Encoding.UTF8.GetByteCount(data) <= 64);
-        Assert.True(FeedbackCallback.TryDecode(data, out var report, out var index, out var decoded));
-        Assert.Equal(("20261126080000", 11, vote), (report, index, decoded));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("m")]
-    [InlineData("fb:r1:1")]
-    [InlineData("fb::1:u")]
-    [InlineData("fb:r1:x:u")]
-    [InlineData("fb:r1:-1:u")]
-    [InlineData("fb:r1:1:z")]
-    [InlineData("fb:r1:1:u:extra")]
-    public void Data_that_is_not_ours_is_not_decoded(string? data) =>
-        Assert.False(FeedbackCallback.TryDecode(data, out _, out _, out _));
 
     [Fact]
     public void A_new_vote_on_the_same_post_replaces_the_old_one()

@@ -13,7 +13,6 @@ public static class SettingsServices
             .AddSingleton<IEffectiveOptions, EffectiveOptions>()
             .AddSingleton<IProfileStore, BlobProfileStore>()
             .AddSingleton<IFeedbackStore, BlobFeedbackStore>()
-            .AddSingleton<IRatedDigestStore, BlobRatedDigestStore>()
             .AddSingleton<PromptLibrary>()
             .AddSingleton<IPromptProvider, PromptProvider>()
             .AddSingleton<SettingsEditor>();

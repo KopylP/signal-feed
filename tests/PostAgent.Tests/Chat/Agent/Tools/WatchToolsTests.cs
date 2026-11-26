@@ -8,16 +8,18 @@ public class WatchToolsTests
     private readonly MenuHarness _h = new();
     private readonly List<SettingChange> _draft = [];
 
-    private ToolShim Tools() => new(_h.ToolsFactory.Create(_draft, TestData.ChatId));
+    private ToolShim Tools() => new(_h.Tools(_draft, TestData.ChatId));
 
     [Fact]
-    public async Task A_topic_goes_into_the_plan_cleaned_and_nothing_is_saved()
+    public async Task A_topic_is_followed_at_once_cleaned_and_nothing_waits_for_a_tap()
     {
-        var answer = await Tools().ProposeAddWatch("  Google   core update ", CancellationToken.None);
+        var answer = await Tools().AddWatch("  Google   core update ", CancellationToken.None);
 
-        Assert.Equal([new SettingChange(SettingChangeKind.AddWatch, "Google core update")], _draft);
-        Assert.Contains("Nothing is changed yet", answer);
-        Assert.Null(_h.Store.Current);
+        Assert.StartsWith("Done", answer);
+        Assert.Empty(_draft);
+        Assert.Equal(["Google core update"], _h.Store.Current?.Watches);
+        Assert.Null(_h.Store.Current?.Proposals);
+        Assert.Contains("Google core update", await Tools().GetSettings(CancellationToken.None));
     }
 
     [Theory]
@@ -25,33 +27,18 @@ public class WatchToolsTests
     [InlineData("   ;; ")]
     public async Task An_empty_topic_is_refused(string phrase)
     {
-        var answer = await Tools().ProposeAddWatch(phrase, CancellationToken.None);
+        var answer = await Tools().AddWatch(phrase, CancellationToken.None);
 
         Assert.Contains("not a usable topic", answer);
-        Assert.Empty(_draft);
-    }
-
-    [Fact]
-    public async Task Applying_the_plan_stores_the_topic_and_the_agent_sees_it_in_the_settings()
-    {
-        await Tools().ProposeAddWatch("google core update", CancellationToken.None);
-        await _h.Editor.ProposeAsync(new SettingsProposal("1", _draft, _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
-
-        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
-
-        Assert.Equal(ProposalStatus.Applied, outcome.Status);
-        Assert.Equal(["google core update"], _h.Store.Current?.Watches);
-        Assert.Contains("google core update", await Tools().GetSettings(CancellationToken.None));
+        Assert.Null(_h.Store.Current);
     }
 
     [Fact]
     public async Task The_same_topic_in_another_case_is_not_added_twice()
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update"] });
-        await Tools().ProposeAddWatch("Google Core Update", CancellationToken.None);
-        await _h.Editor.ProposeAsync(new SettingsProposal("1", _draft, _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
 
-        await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
+        await Tools().AddWatch("Google Core Update", CancellationToken.None);
 
         Assert.Single(_h.Store.Current!.Watches!);
     }
@@ -61,23 +48,35 @@ public class WatchToolsTests
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Watches = Enumerable.Range(1, WatchPhrases.MaxCount).Select(i => "topic" + i).ToList() });
 
-        var answer = await Tools().ProposeAddWatch("one more", CancellationToken.None);
+        var answer = await Tools().AddWatch("one more", CancellationToken.None);
 
-        Assert.StartsWith("Rejected", answer);
+        Assert.StartsWith("Not done", answer);
+        Assert.Equal(WatchPhrases.MaxCount, _h.Store.Current!.Watches!.Count);
+    }
+
+    [Fact]
+    public async Task A_followed_topic_is_removed_at_once_but_a_made_up_one_is_sent_back_to_the_list()
+    {
+        _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update", "ai overviews"] });
+
+        var missing = await Tools().RemoveWatch("seo", CancellationToken.None);
+        var removed = await Tools().RemoveWatch("AI Overviews", CancellationToken.None);
+
+        Assert.Contains("not followed", missing);
+        Assert.StartsWith("Done", removed);
+        Assert.Equal(["google core update"], _h.Store.Current!.Watches);
         Assert.Empty(_draft);
     }
 
     [Fact]
-    public async Task A_followed_topic_can_be_removed_but_a_made_up_one_is_sent_back_to_the_list()
+    public async Task A_watch_step_of_a_plan_stored_before_the_change_still_applies()
     {
-        _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update", "ai overviews"] });
+        await _h.Editor.ProposeAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.AddWatch, "google core update")], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
 
-        var missing = await Tools().ProposeRemoveWatch("seo", CancellationToken.None);
-        var removed = await Tools().ProposeRemoveWatch("AI Overviews", CancellationToken.None);
+        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
 
-        Assert.Contains("not followed", missing);
-        Assert.Contains("Nothing is changed yet", removed);
-        Assert.Equal([new SettingChange(SettingChangeKind.RemoveWatch, "ai overviews")], _draft);
+        Assert.Equal(ProposalStatus.Applied, outcome.Status);
+        Assert.Equal(["google core update"], _h.Store.Current?.Watches);
     }
 
     [Fact]

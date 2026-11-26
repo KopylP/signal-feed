@@ -8,7 +8,7 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class GetSettingsTool(SettingsEditor editor, IEffectiveOptions effective) : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         (CancellationToken ct) => RunAsync(ct),
         new AIFunctionFactoryOptions
         {

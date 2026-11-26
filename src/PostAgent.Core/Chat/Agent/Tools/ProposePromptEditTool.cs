@@ -7,12 +7,12 @@ namespace PostAgent.Chat.Agent.Tools;
 
 public sealed class ProposePromptEditTool(PromptLibrary prompts) : IChatTool
 {
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         (
             [Description("The section id from get_prompt, like scoring-interests.")] string section,
             [Description("The fragment to replace, copied exactly.")] string old_text,
             [Description("The new text.")] string new_text,
-            CancellationToken ct) => RunAsync(plan, section, old_text, new_text, ct),
+            CancellationToken ct) => RunAsync(turn.Plan, section, old_text, new_text, ct),
         new AIFunctionFactoryOptions
         {
             Name = "propose_prompt_edit",

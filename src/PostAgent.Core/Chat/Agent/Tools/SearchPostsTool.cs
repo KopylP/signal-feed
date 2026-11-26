@@ -11,7 +11,7 @@ public sealed class SearchPostsTool(IPostRepository posts, IEffectiveOptions opt
 {
     private const int ExcerptChars = 300;
 
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         (
             [Description("Words to look for, for example: google core update. Optional when a period is given.")] string? query = null,
             [Description("How many days back to search, at least 1. Ignored when 'from' is given. Default 1.")] int? days = null,

@@ -14,7 +14,7 @@ public sealed class GetTrendsTool(IDailyStatsStore store, IEffectiveOptions opti
     private const int MaxChars = 6000;
     private const int WeeklyFromDays = 22;
 
-    public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
+    public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
         (
             [Description("How many days back, at least 1 (the daily summaries are kept for a long time, 90 by default). Default 14.")] int? days = null,
             [Description("Optional words: only topics that contain every word, for example: core update.")] string? topic = null,

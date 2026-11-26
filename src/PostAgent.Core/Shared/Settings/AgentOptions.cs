@@ -75,7 +75,7 @@ public sealed class AgentOptions
     // Shows the answer as it is written (a Telegram message draft). Off: the answer arrives at once, as before.
     public bool ChatStreamEnabled { get; set; } = true;
 
-    // After the digest the reader can rate its entries with 👍 and 👎, and the scoring takes the recent votes into account. Off: no buttons and no votes in scoring.
+    // The reader can like or dislike a post by telling the chat agent, and the scoring takes the recent votes into account. Off: the agent does not record votes and scoring ignores them.
     public bool FeedbackEnabled { get; set; } = true;
 
     // Telegram

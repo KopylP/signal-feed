@@ -4,12 +4,10 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Chat.Agent;
 
-// All the tools of the chat agent for one question. The ones that propose a change share that question's plan, so each question gets its own.
+// All the tools of the chat agent for one question. They share that question's turn (and its plan), so each question gets its own.
 public sealed class ChatToolFactory(IEnumerable<IChatTool> tools, SettingsEditor editor)
 {
-    public IReadOnlyList<AIFunction> Create(List<SettingChange> draft, long chatId)
-    {
-        var plan = new ProposalPlan(editor, draft, chatId);
-        return tools.Select(t => t.Build(plan)).ToList();
-    }
+    public ChatTurn NewTurn(long chatId) => new(new ProposalPlan(editor, [], chatId));
+
+    public IReadOnlyList<AIFunction> Create(ChatTurn turn) => tools.Select(t => t.Build(turn)).ToList();
 }

@@ -25,18 +25,21 @@ public class ClearContextTests
     }
 
     [Fact]
-    public async Task Nothing_is_cleared_until_the_owner_taps_apply()
+    public async Task The_agent_clears_without_a_plan_and_only_after_its_answer()
     {
         await SeedAsync(Chat);
         var draft = new List<SettingChange>();
+        var turn = _h.Turn(draft, Chat);
 
-        var answer = await new PostAgent.Tests.Chat.Agent.Tools.ToolShim(_h.ToolsFactory.Create(draft, Chat)).ProposeClearContext(CancellationToken.None);
+        var answer = await new PostAgent.Tests.Chat.Agent.Tools.ToolShim(_h.ToolsFactory.Create(turn)).ClearContext(CancellationToken.None);
 
-        Assert.Contains("Nothing is changed yet", answer);
-        Assert.Equal([new SettingChange(SettingChangeKind.ClearContext, "context")], draft);
-        Assert.NotNull(_h.ChatState.Of(Chat)!.Session);
+        Assert.StartsWith("Done", answer);
+        Assert.True(turn.ClearsContext);
+        Assert.Empty(draft);
+        Assert.NotNull(_h.ChatState.Of(Chat)!.Session); // ChatProcessor drops it when it saves the answer
     }
 
+    // A plan stored before clearing became a direct action still applies.
     [Fact]
     public async Task Apply_forgets_the_conversation_of_that_chat_only()
     {

@@ -43,3 +43,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0018](0018-keep-daily-summaries-as-long-memory.md) | Keep a small summary per day as the long memory | Accepted |
 | [0019](0019-keep-storage-keys-off-and-manage-tables-through-arm.md) | Keep the storage account keys off and manage tables through the Resource Manager | Accepted |
 | [0020](0020-split-the-agent-into-core-and-functions-projects.md) | Split the agent into a Core library and a Functions host | Accepted |
+| [0021](0021-let-the-chat-agent-do-non-invasive-actions-at-once.md) | Let the chat agent do non-invasive actions at once | Accepted |

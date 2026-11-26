@@ -38,6 +38,20 @@ public class ChatProcessorTests
     }
 
     [Fact]
+    public async Task A_reply_that_clears_the_context_is_sent_and_the_conversation_is_saved_without_a_session()
+    {
+        await Started();
+        var agent = new FakeChatAgent((_, _) => Task.FromResult(new ChatReply("Забув", FakeChatAgent.Session(), ClearsContext: true)));
+
+        await Create(agent).HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.Equal(["Забув"], _notifier.Replies);
+        Assert.Null(_state.Current?.Session);
+        Assert.Equal([10L], _state.Current?.ProcessedUpdateIds);
+        Assert.Equal("Огляд", _state.Current?.Report.Overview);
+    }
+
+    [Fact]
     public async Task Passes_the_time_the_reader_wrote_to_the_agent()
     {
         await Started();

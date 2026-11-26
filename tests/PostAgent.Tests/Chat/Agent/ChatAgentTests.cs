@@ -246,9 +246,9 @@ public class ChatAgentTests
         Assert.Equal(123, client.LastOptions?.MaxOutputTokens);
         Assert.Equal(
             [
-                "get_commands", "get_post", "get_profile", "get_prompt", "get_settings", "get_trends", "propose_add_source", "propose_add_watch", "propose_clear_context", "propose_profile_edit", "propose_prompt_edit",
-                "propose_prompt_reset", "propose_remove_source", "propose_remove_watch", "propose_reset_group",
-                "propose_reset_setting", "propose_set_setting", "propose_toggle_alert_source", "search_posts",
+                "add_watch", "clear_context", "get_commands", "get_post", "get_profile", "get_prompt", "get_settings", "get_trends", "propose_add_source", "propose_profile_edit", "propose_prompt_edit",
+                "propose_prompt_reset", "propose_remove_source", "propose_reset_group",
+                "propose_reset_setting", "propose_set_setting", "propose_toggle_alert_source", "rate_post", "remove_watch", "search_posts",
             ],
             client.LastOptions?.Tools?.Select(t => t.Name).Order());
     }
@@ -268,6 +268,22 @@ public class ChatAgentTests
 
         Assert.Equal([new SettingChange(SettingChangeKind.RemoveSource, "chat")], reply.Proposed);
         Assert.Null(harness.Store.Current);
+    }
+
+    [Fact]
+    public async Task Clearing_the_context_comes_back_with_the_reply_as_a_direct_action_with_no_plan()
+    {
+        var harness = new PostAgent.Tests.SettingsMenu.MenuHarness { Posts = new InMemoryPostRepository(Stored) };
+        var agent = new ChatAgent(
+            new ScriptedChatClient(CallTool("clear_context"), Reply("Забув розмову")),
+            harness.ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance),
+            new FakeEffectiveOptions(Options()),
+            NullLogger<ChatAgent>.Instance);
+
+        var reply = await agent.AskAsync(ChatId, Fresh(), "забудь розмову", null, CancellationToken.None);
+
+        Assert.True(reply.ClearsContext);
+        Assert.Null(reply.Proposed);
     }
 
     [Fact]
