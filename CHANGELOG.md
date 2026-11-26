@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [sorrel] - 2026-11-26
+
+### Improved
+- The identity that runs Terraform (the `infra` pipeline) now gets the Storage Blob, Table and Queue Data Contributor roles on the storage account, the first step towards switching the storage account keys off
+  - Apply: run `infra` with plan, then apply; the roles are new, nothing else changes. The keys stay on until the next change
+- Every Azure resource that takes tags (resource group, plan, function app, storage, Key Vault and its key, Log Analytics, Application Insights) now carries `project=signal-feed` and `managed_by=terraform`, so cost and ownership can be filtered in the portal
+  - Apply: run `infra` with plan, then apply; only tags change, and the function app update rewrites its app settings as usual
+
 ## [v2026.11.26.90-fennel] - 2026-11-26
 
 ### Setup required

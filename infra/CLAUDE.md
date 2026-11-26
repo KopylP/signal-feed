@@ -8,6 +8,7 @@ Resource names and variables are described in `docs/user-guide/installation.md`.
 - Access between resources goes through managed identity and RBAC (`roles.tf`), without keys or connection strings.
 - The function app's App Settings are written by `azapi_resource_action.app_settings` after every change of the app (`azurerm` injects `AzureWebJobsStorage` with an empty key, #29149): every setting must be in `local.app_settings`, or the PUT removes it. Delete the action when the provider is fixed.
 - Names: `<abbreviation>-${var.name_prefix}` (`rg-`, `plan-`, `log-`, `appi-`, `budget-`). Globally unique ones (`st`, `kv-`, `func-`) get `local.suffix`.
+- Every resource that accepts `tags` gets `tags = local.tags` (`main.tf`); tags do not inherit from the resource group.
 - A new variable has a `description`, a type, and a `default` when the value is non-secret and the same for everyone. Personal data (phone, email, chat id) gets no `default` (the chat id: an empty one) and is `sensitive = true`; the workflow reads it from GitHub Secrets.
 - Do not add a separate variable for a new agent parameter: its default lives in `AgentOptions.cs` and it is set through `app_settings`.
   Separate variables only for required values, infrastructure values and schedules (timer attributes read them).

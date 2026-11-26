@@ -35,6 +35,20 @@ resource "azurerm_role_assignment" "deployer" {
   principal_id         = var.deployer_object_id
 }
 
+# Data-plane access for whoever runs Terraform, so that it can manage containers, tables and queues through Entra ID
+# once the storage account keys are switched off (storage_use_azuread, shared_access_key_enabled). The deployer already
+# holds the same roles, and a second identical assignment would fail, so it is skipped when you run Terraform yourself.
+resource "azurerm_role_assignment" "terraform_storage" {
+  for_each = data.azurerm_client_config.current.object_id == var.deployer_object_id ? {} : {
+    blob  = "Storage Blob Data Contributor"
+    table = "Storage Table Data Contributor"
+    queue = "Storage Queue Data Contributor"
+  }
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = each.value
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
 # Whoever runs Terraform (you locally, or the infra workflow) creates and rotates the session key in the RBAC-mode vault.
 resource "azurerm_role_assignment" "terraform_keys" {
   scope                = azurerm_key_vault.main.id
