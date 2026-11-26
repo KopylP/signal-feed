@@ -1,5 +1,6 @@
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramReplyButton = Telegram.Bot.Types.ReplyMarkups.KeyboardButton;
 
 namespace PostAgent.Shared.Notifications.Telegram;
 
@@ -10,6 +11,16 @@ public static class TelegramKeyboard
         keyboard.Rows.Count == 0
             ? null
             : new InlineKeyboardMarkup(keyboard.Rows.Select(row => row.Select(ToButton)));
+
+    // One-time and resized: the buttons hide after a tap and take no more room than they need.
+    public static ReplyMarkup ToMarkup(ReplyKeyboard keyboard) =>
+        keyboard.IsRemove
+            ? new ReplyKeyboardRemove()
+            : new ReplyKeyboardMarkup(keyboard.Rows.Select(row => row.Select(text => new TelegramReplyButton(text))))
+            {
+                ResizeKeyboard = true,
+                OneTimeKeyboard = true,
+            };
 
     private static InlineKeyboardButton ToButton(KeyboardButton button)
     {

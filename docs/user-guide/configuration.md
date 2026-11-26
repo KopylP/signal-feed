@@ -101,7 +101,7 @@ Not available in the bot: schedules, the fixed parts of the prompts, secrets, `R
 ### By asking the agent
 
 The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra».
-The agent asks when the request is not clear («який саме?», with the list of your sources or the matching settings) and may collect several changes into one plan.
+The agent asks when the request is not clear («який саме?», with your sources or the matching settings as tiles to tap in place of the keyboard) and may collect several changes into one plan.
 It never changes settings, sources, prompts or your profile itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
 The text of that message is made by the bot, not by the model, so check it rather than the agent's wording. The plan waits 30 minutes; the changes are applied together or not at all, with the same rules and limits as in `/settings`.
 

@@ -38,6 +38,8 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
 
     public Task<string> ProposeToggleAlertSource(string name, CancellationToken ct) => Call("propose_toggle_alert_source", ct, ("name", name));
 
+    public Task<string> OfferChoices(string[] options, CancellationToken ct) => Call("offer_choices", ct, ("options", options));
+
     public Task<string> ClearContext(CancellationToken ct) => Call("clear_context", ct);
 
     public Task<string> GetPrompt(string name, CancellationToken ct) => Call("get_prompt", ct, ("name", name));

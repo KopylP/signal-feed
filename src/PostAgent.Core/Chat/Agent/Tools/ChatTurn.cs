@@ -11,5 +11,10 @@ public sealed class ChatTurn(ProposalPlan plan)
 
     public bool ClearsContext { get; private set; }
 
+    // The options shown as buttons under the answer (offer_choices); a later call replaces an earlier one.
+    public IReadOnlyList<string>? Choices { get; private set; }
+
     public void ClearContextAfterAnswer() => ClearsContext = true;
+
+    public void OfferChoices(IReadOnlyList<string> options) => Choices = options;
 }

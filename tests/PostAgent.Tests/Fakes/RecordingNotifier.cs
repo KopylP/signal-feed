@@ -21,7 +21,14 @@ internal sealed class RecordingNotifier : ITelegramNotifier
     // The texts of SentTo, for tests that do not care which chat got them.
     public List<string> Replies => SentTo.Select(m => m.Html).ToList();
 
-    public Task SendToAsync(long chatId, string html, CancellationToken ct)
+    // The reply keyboard of the message at the same index in SentTo (null for a message sent without one).
+    public List<ReplyKeyboard?> ReplyKeyboards { get; } = [];
+
+    public Task SendToAsync(long chatId, string html, CancellationToken ct) => SendTo(chatId, html, null);
+
+    public Task SendToAsync(long chatId, string html, ReplyKeyboard keyboard, CancellationToken ct) => SendTo(chatId, html, keyboard);
+
+    private Task SendTo(long chatId, string html, ReplyKeyboard? keyboard)
     {
         if (Sent.Count + SentTo.Count + 1 == FailOnCall)
         {
@@ -29,6 +36,7 @@ internal sealed class RecordingNotifier : ITelegramNotifier
         }
 
         SentTo.Add((chatId, html));
+        ReplyKeyboards.Add(keyboard);
         return Task.CompletedTask;
     }
 

@@ -29,7 +29,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)
 │   ├── Answering/         the queue side: ChatProcessor (ask, save, send), ChatDelivery (sends and splits), ChatReplyFormatter, SettingsProposalSender (a plan with its buttons)
 │   ├── Agent/             the model side: IChatAgent and ChatAgent (Microsoft Agent Framework), ChatContext (the digest as data), ChatHistoryReducer, DataBlock, IChatDrafts and ChatDraftStream (the live preview of an answer)
-│   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan, built for one ChatTurn; the propose tools (invasive) only add to its ProposalPlan, the non-invasive ones (rate_post, add_watch, remove_watch, clear_context) act at once (ADR-0021)
+│   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan, built for one ChatTurn; the propose tools (invasive) only add to its ProposalPlan, the non-invasive ones (rate_post, add_watch, remove_watch, clear_context) act at once (ADR-0021), offer_choices sets the reply keyboard of the answer
 │   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob and the draft sender (TelegramChatDrafts)
 ├── Stats/                 /stats: StatsInbox (a handler: no model call), StatsReport (the sums), StatsMessage (the text)
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
@@ -43,7 +43,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 ├── Cleanup/               cleanup of old data, started by that request (CleanupFunction is the queue trigger, CleanupRunner runs every ICleanupTask)
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
-│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits, ReplyKeyboard: tiles in place of the keyboard), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Cleanup/           CleanupRequest ("the summaries are written through day D") and its queue: the contract between DailySummary and Cleanup
 │   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
 │   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackPrompt (the scoring block), IFeedbackStore (Infrastructure/: the blob); written by the chat agent's rate_post
