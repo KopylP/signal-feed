@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [thyme] - 2026-11-26
+
+### Logic
+- Posts are now kept for 2 days instead of 1 (`RetentionDays` default), so the chat can search by date and time over the day before yesterday too
+  - Before: the cleanup kept yesterday's and today's posts
+  - After: it keeps the day before yesterday's as well; a little more data in the `Posts` table, no new cost to speak of
+  - Affects: only installations that do not set `RetentionDays` themselves; one that sets it keeps its value
+
 ## [juniper] - 2026-11-26
 
 ### Setup required

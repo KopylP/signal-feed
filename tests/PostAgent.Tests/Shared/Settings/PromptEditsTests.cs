@@ -7,7 +7,8 @@ namespace PostAgent.Tests.Shared.Settings;
 public class PromptEditsTests
 {
     private const long Chat = TestData.ChatId;
-    private readonly MenuHarness _h = new();
+    // A one-day retention makes a 20 h window plus a 20 h cooldown an invalid combination.
+    private readonly MenuHarness _h = new(o => o.RetentionDays = 1);
 
     private static string Default(string id) => DefaultPrompts.Library.FindSection(id)!.Default;
 

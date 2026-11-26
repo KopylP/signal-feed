@@ -34,7 +34,12 @@ public class SettingsEditorTests
     [Fact]
     public async Task Refuses_a_value_that_breaks_a_cross_field_rule_and_leaves_the_blob_unchanged()
     {
-        var (editor, _) = Create(OverridesApplierTests.ValidApp(o => o.AlertWindowHours = 20));
+        // The rule only bites with a short retention: with 2 days the largest window and cooldown (24 + 24) still fit.
+        var (editor, _) = Create(OverridesApplierTests.ValidApp(o =>
+        {
+            o.RetentionDays = 1;
+            o.AlertWindowHours = 20;
+        }));
 
         var result = await editor.SetValueAsync("AlertCooldownHours", "10", CancellationToken.None);
 

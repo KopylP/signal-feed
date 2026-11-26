@@ -38,7 +38,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
 | `SessionKeyId` | set by Terraform | versionless id of the Key Vault key that encrypts the session and the sign-in in progress ([ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md)); required in Azure, empty only locally against Azurite |
 | `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
-| `RetentionDays` | 1 | how many days back to keep posts: 1 means yesterday's and today's partitions |
+| `RetentionDays` | 2 | how many days back to keep posts: 2 means the day before yesterday's, yesterday's and today's partitions; it is also how far back the chat can search by date |
 | `FirstRunLookbackHours` | 24 | how many hours of history to read on the first run for a new source |
 
 ### Where the defaults live
