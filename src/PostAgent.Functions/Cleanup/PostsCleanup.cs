@@ -4,8 +4,8 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Cleanup;
 
-// Видаляє з Posts дні старші за RetentionDays. Posts розбита на партиції-дні, тож з RetentionDays = 1
-// лишаються вчорашня й сьогоднішня партиції. ChannelState (курсори читання) не чіпаємо: без неї
+// Видаляє з Posts дні старші за RetentionDays. Posts розбита на партиції-дні, тож з RetentionDays = 2
+// лишаються позавчорашня, вчорашня й сьогоднішня партиції. ChannelState (курсори читання) не чіпаємо: без неї
 // Collector почав би читати джерела з нуля.
 public sealed class PostsCleanup(IPostRepository posts, IOptions<AgentOptions> options) : ICleanupTask
 {

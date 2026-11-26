@@ -125,7 +125,12 @@ public class MenuControllerTests
     [Fact]
     public async Task Rejected_value_shows_the_field_names()
     {
-        var h = new MenuHarness(o => o.AlertWindowHours = 20);
+        // The rule only bites with a short retention: with 2 days the largest window and cooldown (24 + 24) still fit.
+        var h = new MenuHarness(o =>
+        {
+            o.RetentionDays = 1;
+            o.AlertWindowHours = 20;
+        });
 
         await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.SetInt("AlertCooldownHours", 10), CancellationToken.None);
 

@@ -90,7 +90,7 @@ if you did not expect the message, send `/login` and sign in with your own accou
 
 ## Data retention
 
-Posts are kept for `RetentionDays` (1 by default: yesterday and today) and then deleted by day. The read position of each source is never deleted.
+Posts are kept for `RetentionDays` (2 by default: the day before yesterday, yesterday and today) and then deleted by day. The read position of each source is never deleted.
 The digest can look back 48 hours only within the data that remains, so with the default it covers yesterday and today.
 The conversation about the latest digest is deleted by the same cleanup once its digest is older than `RetentionDays`.
 
