@@ -63,6 +63,16 @@ Send `/digest` to the bot in the private chat to get a digest of any period outs
 
 An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation or the rating buttons, so the chat keeps talking about the daily digest. The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
 
+## Statistics and trends
+
+Send `/stats` (or `/stats 30`) for numbers: how many posts were collected, scored and found interesting, which sources give the most interesting posts (and which the least), the most frequent topics, and the tokens the models used (scoring and digest, chat). It needs no model call and answers at once.
+The numbers come from a small summary of every finished day (counts per source and topic, the best posts, no post text), written by the cleanup at about 03:00 UTC before the posts are deleted and kept for `StatsRetentionDays` (90 by default). Ask the agent for the same over time: «що змінилось за місяць у темі google core update?», «як змінилась кількість постів про AI-пошук за тижні?».
+The summaries have no text, so the agent cannot quote an old post from them; for a recent one it uses the stored posts. A day has a summary only after it ends; `/stats` summarizes the days still stored on the spot. Days are UTC dates.
+
+## What the bot can do
+
+Ask the agent «що ти вмієш?» or «які є команди?»: it lists them from the bot's own list. They are `/settings`, `/digest [period]`, `/stats [days]`, `/clear`, `/login`, `/start <key>`, and the 👍/👎 buttons under the digest.
+
 ## Rating the digest
 
 Right after the digest the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
@@ -108,6 +118,7 @@ if you did not expect the message, send `/login` and sign in with your own accou
 Posts are kept for `RetentionDays` (2 by default: the day before yesterday, yesterday and today) and then deleted by day. The read position of each source is never deleted.
 The digest can look back 48 hours only within the data that remains, so with the default it covers yesterday and today.
 The conversation about the latest digest is deleted by the same cleanup once its digest is older than `RetentionDays`.
+Before a day is deleted (and once more on the run that deletes it), a small summary of it (counts, sources, topics, the best posts; no text) is written and kept for `StatsRetentionDays` (90 by default) for `/stats` and for trends ([ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md)).
 
 ## Next
 

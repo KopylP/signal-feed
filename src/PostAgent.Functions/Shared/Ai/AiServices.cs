@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.Stats;
 
 namespace PostAgent.Shared.Ai;
 
@@ -17,17 +18,20 @@ public static class AiServices
         services.AddChatClient(sp =>
         {
             var settings = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
-            return new ModelSelectingChatClient(
+            return Recording(sp, "scoring", new ModelSelectingChatClient(
                 new OpenAI.Chat.ChatClient(settings.OpenAIModel, settings.OpenAIApiKey).AsIChatClient(),
                 sp.GetRequiredService<IEffectiveOptions>(),
-                o => o.OpenAIModel);
+                o => o.OpenAIModel));
         });
-        services.AddKeyedChatClient(ChatClientKey, sp => new ModelSelectingChatClient(
+        services.AddKeyedChatClient(ChatClientKey, sp => Recording(sp, "chat", new ModelSelectingChatClient(
             CreateChatClient(sp.GetRequiredService<IOptions<AgentOptions>>().Value),
             sp.GetRequiredService<IEffectiveOptions>(),
-            o => o.OpenAIChatModel));
+            o => o.OpenAIChatModel)));
         return services;
     }
+
+    private static IChatClient Recording(IServiceProvider sp, string purpose, IChatClient inner) => new UsageRecordingChatClient(
+        inner, sp.GetRequiredService<IUsageStore>(), sp.GetRequiredService<TimeProvider>(), purpose, sp.GetRequiredService<ILogger<UsageRecordingChatClient>>());
 
     // The Responses API, not Chat Completions: OpenAI rejects function tools together with reasoning on /v1/chat/completions (HTTP 400).
     // The options parameter lets a test put its own transport under the real client.

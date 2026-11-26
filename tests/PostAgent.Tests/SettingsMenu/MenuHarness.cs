@@ -40,11 +40,14 @@ internal sealed class MenuHarness
     // The posts the post tools read; set it when the test needs stored posts.
     public InMemoryPostRepository Posts { get; set; } = new();
 
+    // The daily summaries get_trends reads.
+    public InMemoryDailyStatsStore Stats { get; } = new();
+
     public ChatToolFactory ToolsFactory => new(
         new ServiceCollection()
             .AddSingleton(Editor).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
             .AddSingleton<IOverridesStore>(Store).AddSingleton<IProfileStore>(Profile)
-            .AddSingleton<IPostRepository>(Posts).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
+            .AddSingleton<IPostRepository>(Posts).AddSingleton<PostAgent.Shared.Stats.IDailyStatsStore>(Stats).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
             .AddChatTools().BuildServiceProvider().GetServices<IChatTool>(),
         Editor);
     public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);

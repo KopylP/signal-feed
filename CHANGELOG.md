@@ -8,6 +8,18 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [hawthorn] - 2026-11-26
+
+### Added
+- **`/stats`: statistics at once**: posts collected, scored and interesting, the best and weakest sources by the share of interesting posts (from 5 posts), the most frequent topics, and the tokens the models used (`/stats 30` for 30 days)
+- **Long memory for trends**: before a day's posts are deleted, the cleanup writes a small summary of it (counts per source and topic, the five best posts, no post text), kept for `StatsRetentionDays` (90 by default, [ADR-0018](docs/adr/0018-keep-daily-summaries-as-long-memory.md))
+  - The agent can use it: «що змінилось за місяць у темі google core update?» (new tool `get_trends`, weeks for long periods)
+  - Days are UTC dates; a day has its summary only after it ends (about 03:00 UTC), and `/stats` summarizes the days still stored on the spot
+- **The agent tells what the bot can do**: ask «що ти вмієш?» or «які є команди?» (new tool `get_commands`, from the bot's own list: `/settings`, `/digest`, `/stats`, `/clear`, `/login`, `/start`, the 👍/👎 buttons)
+
+### Logic
+- Every model call now counts its tokens per UTC day (`scoring` for scoring and digest, `chat`) into `settings/stats/usage.json`; a failure to count never touches the call
+
 ## [v2026.11.26.103-rowan] - 2026-11-26
 
 ### Added

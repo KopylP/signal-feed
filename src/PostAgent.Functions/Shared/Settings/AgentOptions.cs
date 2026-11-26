@@ -30,6 +30,9 @@ public sealed class AgentOptions
     [Range(1, 168)] public int FirstRunLookbackHours { get; set; } = 24;
     [Range(1, 365)] public int RetentionDays { get; set; } = 2;
 
+    // How many days the daily summaries (counts per source and topic, no post text) are kept for trends and /stats.
+    [Range(7, 365)] public int StatsRetentionDays { get; set; } = 90;
+
     // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки
     [Range(1, 50)] public int MaxItemsPerGroup { get; set; } = 5;
     [Range(1, 20000)] public int MaxBundleChars { get; set; } = 3000;

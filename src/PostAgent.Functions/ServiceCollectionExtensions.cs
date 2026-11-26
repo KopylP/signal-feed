@@ -14,7 +14,9 @@ using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
+using PostAgent.Shared.Stats;
 using PostAgent.Shared.TelegramSession;
+using PostAgent.Stats;
 using PostAgent.Webhook;
 
 namespace PostAgent;
@@ -35,6 +37,7 @@ public static class ServiceCollectionExtensions
             .AddStorage(config)
             .AddSessionCipher(config)
             .AddSettings()
+            .AddStatsStores()
             .AddAi()
             .AddPosts()
             .AddNotifications()
@@ -42,6 +45,7 @@ public static class ServiceCollectionExtensions
             .AddPairing()
             .AddLogin()
             .AddFeedback()
+            .AddStatsCommand()
             .AddSettingsMenu()
             .AddChat()
             .AddCollecting()
