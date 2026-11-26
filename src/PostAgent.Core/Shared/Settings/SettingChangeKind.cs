@@ -8,6 +8,8 @@ public enum SettingChangeKind
     AddSource,
     RemoveSource,
     ToggleAlertSource,
+    AddWatch,
+    RemoveWatch,
     EditPrompt,
     ResetPrompt,
     EditProfile,

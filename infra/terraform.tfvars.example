@@ -31,6 +31,7 @@ app_settings = {
   # AlertQuietHours   = "23:00-07:00"
   # AlertTimeZone     = "Europe/Kyiv"
   # TimeZone          = "Europe/Kyiv"
+  # Watches           = "google core update;ai overviews"
   # RetentionDays     = "2"
   # FeedbackEnabled   = "true"
   # StatsRetentionDays = "90"

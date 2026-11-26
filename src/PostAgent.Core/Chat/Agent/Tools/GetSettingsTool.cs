@@ -36,6 +36,10 @@ public sealed class GetSettingsTool(SettingsEditor editor, IEffectiveOptions eff
             text.Append('@').Append(source.Name).Append(alerts.Contains(source.Name) ? " (alerts on)" : " (alerts off)").AppendLine();
         }
 
+        text.AppendLine("[Followed topics]");
+        var watches = await editor.CurrentWatchesAsync(ct);
+        text.AppendLine(watches.Count == 0 ? "(none)" : string.Join("\n", watches));
+
         return text.ToString();
     }
 

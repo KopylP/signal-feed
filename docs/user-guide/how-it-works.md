@@ -33,6 +33,15 @@ A daily summary of the finished days is written first, and then a cleanup remove
 - During `AlertQuietHours` (for example `23:00-07:00`) nothing is sent, and those posts go into the digest instead.
 - A post that already triggered an alert is not repeated in the digest.
 
+### Followed topics
+
+Tell the agent «стеж за google core update» (or «перестань стежити за ...», «за чим я стежу?»). It prepares a plan and you confirm it with the button, like any settings change. From then on a **new scored post from any source** (channels too) that has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone) is sent as its own message «👀 Стеження за темою» with the topic it matched, whatever its score and without the cooldown of its source.
+
+- The alert job runs every hour, so the message comes within about an hour after the post is scored; at most 5 posts per run, best first. Posts of the last 26 hours are looked at (not the shorter alert window of the groups), so a low-scored match is still announced after quiet hours; adding a topic also announces its matches from the last day.
+- A post is announced once: it is marked as sent, so the digest does not repeat it. A duplicate of another post is skipped.
+- Quiet hours hold these messages back as well, and those posts go into the digest instead.
+- At most 20 topics of up to 100 characters. «Скинути все» in `/settings` returns the topics to the `Watches` App Setting; resetting only the Alerts group leaves them (remove a topic by asking the agent).
+
 ## The digest
 
 After the best posts are chosen (`DigestSize`, 7 by default), one more AI call writes the digest, using [`prompts/digest.md`](../../prompts/digest.md).

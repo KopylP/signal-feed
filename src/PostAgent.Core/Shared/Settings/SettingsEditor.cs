@@ -29,7 +29,7 @@ public sealed class SettingsEditor(
     // Everything the bot set goes back to the App Settings. The way out when the stored settings cannot be read.
     public Task<EditResult> ResetAllAsync(CancellationToken ct) =>
         UpdateCoreAsync(
-            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Pending = null, PromptSections = null, Proposals = null },
+            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Watches = null, Pending = null, PromptSections = null, Proposals = null },
             validate: false,
             replaceUnreadable: true,
             ct);
@@ -61,6 +61,10 @@ public sealed class SettingsEditor(
         var current = (await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty;
         return (SourcesOf(current), AlertsOf(current));
     }
+
+    // The topics that are followed now (the bot's list, or the App Setting one).
+    public async Task<IReadOnlyList<string>> CurrentWatchesAsync(CancellationToken ct) =>
+        WatchesOf((await store.LoadAsync(ct))?.Value ?? SettingsOverrides.Empty);
 
     // A dry run for a plan the agent wants to propose: nothing is saved.
     public async Task<EditResult> CheckAsync(IReadOnlyList<SettingChange> changes, long chatId, CancellationToken ct)
@@ -239,6 +243,8 @@ public sealed class SettingsEditor(
     private List<SourceEntry> SourcesOf(SettingsOverrides o) =>
         o.Sources?.ToList() ?? app.Value.SourceList.Select(name => new SourceEntry(name, true)).ToList();
 
+    private List<string> WatchesOf(SettingsOverrides o) => o.Watches?.ToList() ?? app.Value.WatchList.ToList();
+
     private List<string> AlertsOf(SettingsOverrides o) => o.AlertSources?.ToList() ?? app.Value.AlertSourceSet.ToList();
 
     private async Task<EditResult> ChangeAsync(SettingChange change, bool validate, bool replaceUnreadable, CancellationToken ct)
@@ -284,7 +290,8 @@ public sealed class SettingsEditor(
         }
 
         // Only a step that changes the options is checked against them: a text edit must not fail on an unrelated rule, and a reset is the way out.
-        var touchesOptions = changes.Any(c => c.Kind is SettingChangeKind.Set or SettingChangeKind.AddSource or SettingChangeKind.RemoveSource or SettingChangeKind.ToggleAlertSource);
+        var touchesOptions = changes.Any(c => c.Kind is SettingChangeKind.Set or SettingChangeKind.AddSource or SettingChangeKind.RemoveSource or SettingChangeKind.ToggleAlertSource
+            or SettingChangeKind.AddWatch or SettingChangeKind.RemoveWatch);
         if (touchesOptions && OverridesApplier.Check(OverridesApplier.Apply(app.Value, updated)) is { Count: > 0 } errors)
         {
             error = string.Join('\n', errors);
@@ -329,6 +336,15 @@ public sealed class SettingsEditor(
 
                 var alerts = AlertsOf(o);
                 return o with { AlertSources = alerts.Contains(change.Target) ? alerts.Where(a => a != change.Target).ToList() : [.. alerts, change.Target] };
+
+            case SettingChangeKind.AddWatch:
+                return AddWatch(o, change.Target, out error);
+
+            case SettingChangeKind.RemoveWatch:
+                var watches = WatchesOf(o);
+                return watches.Any(w => w.Equals(change.Target, StringComparison.OrdinalIgnoreCase))
+                    ? o with { Watches = watches.Where(w => !w.Equals(change.Target, StringComparison.OrdinalIgnoreCase)).ToList() }
+                    : o;
 
             case SettingChangeKind.EditPrompt:
                 return EditPrompt(o, change, out error);
@@ -406,6 +422,30 @@ public sealed class SettingsEditor(
         }
 
         return o with { Values = new Dictionary<string, string>(o.Values) { [key] = value } };
+    }
+
+    private SettingsOverrides AddWatch(SettingsOverrides o, string text, out string? error)
+    {
+        error = null;
+        if (WatchPhrases.Normalize(text) is not { } phrase)
+        {
+            error = $"Тема має бути коротким текстом до {WatchPhrases.MaxChars} символів.";
+            return o;
+        }
+
+        var watches = WatchesOf(o);
+        if (watches.Any(w => w.Equals(phrase, StringComparison.OrdinalIgnoreCase)))
+        {
+            return o;
+        }
+
+        if (watches.Count >= WatchPhrases.MaxCount)
+        {
+            error = $"Можна стежити щонайбільше за {WatchPhrases.MaxCount} тем: видаліть одну.";
+            return o;
+        }
+
+        return o with { Watches = [.. watches, phrase] };
     }
 
     private SettingsOverrides RemoveSource(SettingsOverrides o, string name, out string? error)

@@ -30,6 +30,10 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
 
     public Task<string> ProposeRemoveSource(string name, CancellationToken ct) => Call("propose_remove_source", ct, ("name", name));
 
+    public Task<string> ProposeAddWatch(string phrase, CancellationToken ct) => Call("propose_add_watch", ct, ("phrase", phrase));
+
+    public Task<string> ProposeRemoveWatch(string phrase, CancellationToken ct) => Call("propose_remove_watch", ct, ("phrase", phrase));
+
     public Task<string> ProposeToggleAlertSource(string name, CancellationToken ct) => Call("propose_toggle_alert_source", ct, ("name", name));
 
     public Task<string> ProposeClearContext(CancellationToken ct) => Call("propose_clear_context", ct);
