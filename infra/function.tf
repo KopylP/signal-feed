@@ -37,6 +37,7 @@ resource "azurerm_service_plan" "main" {
   location            = azurerm_resource_group.main.location
   os_type             = "Linux"
   sku_name            = "FC1"
+  tags                = local.tags
 }
 
 resource "azurerm_function_app_flex_consumption" "main" {
@@ -64,8 +65,7 @@ resource "azurerm_function_app_flex_consumption" "main" {
 
   app_settings = local.app_settings
 
-  # Also the harmless update that proves azapi_resource_action.app_settings runs after every change of the app.
-  tags = { managed_by = "terraform" }
+  tags = local.tags
 }
 
 locals {

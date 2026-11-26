@@ -6,9 +6,16 @@ locals {
   storage_name   = substr("st${var.name_prefix}${local.suffix}", 0, 24)
   key_vault_name = substr("kv-${var.name_prefix}-${local.suffix}", 0, 24)
   function_name  = "func-${var.name_prefix}-${local.suffix}"
+
+  # On every resource that takes tags (the RG tags do not inherit): cost and ownership filters in Azure.
+  tags = {
+    project    = "signal-feed"
+    managed_by = "terraform"
+  }
 }
 
 resource "azurerm_resource_group" "main" {
   name     = "rg-${var.name_prefix}"
   location = var.location
+  tags     = local.tags
 }

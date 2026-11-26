@@ -7,6 +7,7 @@ resource "azurerm_key_vault" "main" {
   sku_name                   = "standard"
   rbac_authorization_enabled = true
   soft_delete_retention_days = 7
+  tags                       = local.tags
 }
 
 locals {
@@ -24,6 +25,7 @@ resource "azurerm_key_vault_key" "session" {
   key_type     = "RSA"
   key_size     = 3072
   key_opts     = ["wrapKey", "unwrapKey"]
+  tags         = local.tags
 
   # Key Vault makes a new version on its own every 90 days; no function or pipeline is needed. Old versions stay enabled,
   # so blobs wrapped with them can still be read, and every rewrite moves a blob to the newest version.
