@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [hawthorn] - 2026-11-26
+## [v2026.11.26.105-hawthorn] - 2026-11-26
 
 ### Added
 - **`/stats`: statistics at once**: posts collected, scored and interesting, the best and weakest sources by the share of interesting posts (from 5 posts), the most frequent topics, and the tokens the models used (`/stats 30` for 30 days)
