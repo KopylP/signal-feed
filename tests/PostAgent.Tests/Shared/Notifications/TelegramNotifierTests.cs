@@ -17,11 +17,14 @@ public class TelegramNotifierTests
     {
         public List<long> Chats { get; } = [];
 
+        public List<string> Bodies { get; } = [];
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var body = await request.Content!.ReadAsStringAsync(cancellationToken);
             var chatId = long.Parse(System.Text.RegularExpressions.Regex.Match(body, "\"chat_id\":\\s*\"?(-?\\d+)").Groups[1].Value);
             Chats.Add(chatId);
+            Bodies.Add(body);
             return blocked.Contains(chatId)
                 ? Json(HttpStatusCode.Forbidden, "{\"ok\":false,\"error_code\":403,\"description\":\"Forbidden: bot was blocked by the user\"}")
                 : Json(HttpStatusCode.OK, $"{{\"ok\":true,\"result\":{{\"message_id\":1,\"date\":0,\"chat\":{{\"id\":{chatId},\"type\":\"private\"}}}}}}");
@@ -65,6 +68,19 @@ public class TelegramNotifierTests
         var api = new FakeBotApi(blocked: 42);
 
         await Assert.ThrowsAnyAsync<Exception>(() => Notifier(api, 42).SendAsync("дайджест", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Choices_are_sent_as_a_reply_keyboard_to_the_chat_that_asked()
+    {
+        var api = new FakeBotApi();
+
+        await Notifier(api, 42, 43).SendToAsync(43, "Яке джерело?", ReplyKeyboard.Of(["@one", "@two"]), CancellationToken.None);
+
+        Assert.Equal([43L], api.Chats);
+        Assert.Contains("\"keyboard\"", api.Bodies[0]);
+        Assert.Contains("@two", api.Bodies[0]);
+        Assert.Contains("\"one_time_keyboard\":true", api.Bodies[0]);
     }
 
     [Fact]

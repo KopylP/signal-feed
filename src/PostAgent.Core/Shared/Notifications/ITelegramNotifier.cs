@@ -10,4 +10,7 @@ public interface ITelegramNotifier
 
     // To one chat: the answer to its question, or the reply to its pairing.
     Task SendToAsync(long chatId, string html, CancellationToken ct);
+
+    // To one chat, with buttons in place of the reader's keyboard (the agent's choices), or with ReplyKeyboard.Remove to take them away.
+    Task SendToAsync(long chatId, string html, ReplyKeyboard keyboard, CancellationToken ct);
 }

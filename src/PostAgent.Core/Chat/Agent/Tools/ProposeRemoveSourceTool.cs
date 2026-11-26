@@ -11,6 +11,6 @@ public sealed class ProposeRemoveSourceTool : IChatTool
         new AIFunctionFactoryOptions
         {
             Name = "propose_remove_source",
-            Description = "Plan to remove a source. The name must be one of the current sources from get_settings; if the reader was not specific, ask which one.",
+            Description = "Plan to remove a source. The name must be one of the current sources from get_settings; if the reader was not specific, ask which one and offer the current sources with offer_choices.",
         });
 }

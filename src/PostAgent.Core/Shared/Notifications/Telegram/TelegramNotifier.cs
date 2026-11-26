@@ -3,6 +3,7 @@ using PostAgent.Shared.Settings;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace PostAgent.Shared.Notifications.Telegram;
 
@@ -42,7 +43,13 @@ public sealed class TelegramNotifier(
 
     public Task SendToAsync(long chatId, string html, CancellationToken ct) => SendOneAsync(chatId, html, InlineKeyboard.Empty, ct);
 
-    private async Task SendOneAsync(long chatId, string html, InlineKeyboard keyboard, CancellationToken ct)
+    public Task SendToAsync(long chatId, string html, ReplyKeyboard keyboard, CancellationToken ct) =>
+        SendOneAsync(chatId, html, TelegramKeyboard.ToMarkup(keyboard), ct);
+
+    private Task SendOneAsync(long chatId, string html, InlineKeyboard keyboard, CancellationToken ct) =>
+        SendOneAsync(chatId, html, TelegramKeyboard.ToMarkup(keyboard), ct);
+
+    private async Task SendOneAsync(long chatId, string html, ReplyMarkup? markup, CancellationToken ct)
     {
         var started = time.GetTimestamp();
         try
@@ -52,7 +59,7 @@ public sealed class TelegramNotifier(
                 html,
                 ParseMode.Html,
                 linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
-                replyMarkup: TelegramKeyboard.ToMarkup(keyboard),
+                replyMarkup: markup,
                 cancellationToken: ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

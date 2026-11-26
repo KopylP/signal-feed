@@ -55,7 +55,7 @@ public sealed class ChatAgent(
 
         var serialized = await agent.SerializeSessionAsync(session, cancellationToken: ct);
         var proposed = turn.Plan.Changes.ToList();
-        return new ChatReply(text.Trim(), serialized.Clone(), proposed.Count > 0 ? proposed : null, turn.ClearsContext);
+        return new ChatReply(text.Trim(), serialized.Clone(), proposed.Count > 0 ? proposed : null, turn.ClearsContext, turn.Choices);
     }
 
     // The same run, read update by update: the text so far goes to the reader as a draft. The answer itself is still one message, sent by the caller.

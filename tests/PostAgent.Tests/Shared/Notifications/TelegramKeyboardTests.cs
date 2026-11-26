@@ -59,6 +59,31 @@ public class TelegramKeyboardTests
     }
 
     [Fact]
+    public void Short_choices_go_two_to_a_row_and_the_keyboard_hides_after_a_tap()
+    {
+        var markup = Assert.IsType<ReplyKeyboardMarkup>(TelegramKeyboard.ToMarkup(ReplyKeyboard.Of(["@one", "@two", "@three"])));
+
+        Assert.Equal([["@one", "@two"], ["@three"]], markup.Keyboard.Select(r => r.Select(b => b.Text).ToList()).ToList());
+        Assert.True(markup.OneTimeKeyboard);
+        Assert.True(markup.ResizeKeyboard);
+    }
+
+    [Fact]
+    public void A_long_choice_puts_every_choice_on_its_own_row()
+    {
+        var keyboard = ReplyKeyboard.Of(["@one", new string('a', ReplyKeyboard.ShortOptionChars + 1)]);
+
+        Assert.Equal(2, keyboard.Rows.Count);
+        Assert.All(keyboard.Rows, r => Assert.Single(r));
+    }
+
+    [Fact]
+    public void Removing_the_choices_sends_a_keyboard_removal()
+    {
+        Assert.IsType<ReplyKeyboardRemove>(TelegramKeyboard.ToMarkup(ReplyKeyboard.Remove));
+    }
+
+    [Fact]
     public void An_empty_keyboard_has_no_markup()
     {
         Assert.Null(TelegramKeyboard.ToMarkup(InlineKeyboard.Empty));

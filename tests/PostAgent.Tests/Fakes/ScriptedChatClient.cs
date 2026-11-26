@@ -18,7 +18,7 @@ internal sealed class ScriptedChatClient(params Func<IReadOnlyList<ChatMessage>,
     public static Func<IReadOnlyList<ChatMessage>, ChatResponse> CallTool(string name) =>
         _ => new ChatResponse(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent(Guid.NewGuid().ToString("N"), name, new Dictionary<string, object?>())]));
 
-    public static Func<IReadOnlyList<ChatMessage>, ChatResponse> CallTool(string name, string argumentName, string argumentValue) =>
+    public static Func<IReadOnlyList<ChatMessage>, ChatResponse> CallTool(string name, string argumentName, object argumentValue) =>
         _ => new ChatResponse(new ChatMessage(ChatRole.Assistant,
             [new FunctionCallContent(Guid.NewGuid().ToString("N"), name, new Dictionary<string, object?> { [argumentName] = argumentValue })]));
 

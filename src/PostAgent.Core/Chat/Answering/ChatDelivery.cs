@@ -10,23 +10,28 @@ public sealed class ChatDelivery(ITelegramNotifier notifier, TimeProvider time, 
     public static bool IsFailure(Exception ex, CancellationToken ct) => ex is not OperationCanceledException || !ct.IsCancellationRequested;
 
     // The text is split into messages that Telegram accepts; the rest is dropped after the first one that fails.
-    public async Task SendAnswerAsync(long chatId, string text, CancellationToken ct)
+    // The last part carries the agent's choices as buttons, or takes away the buttons of an earlier answer that the reader did not tap.
+    public async Task SendAnswerAsync(long chatId, string text, IReadOnlyList<string>? choices, CancellationToken ct)
     {
-        foreach (var part in ChatReplyFormatter.Split(text))
+        var parts = ChatReplyFormatter.Split(text);
+        for (var i = 0; i < parts.Count; i++)
         {
-            if (!await TrySendAsync(chatId, part, ct))
+            var keyboard = i < parts.Count - 1 ? null : choices is { Count: > 0 } ? ReplyKeyboard.Of(choices) : ReplyKeyboard.Remove;
+            if (!await TrySendAsync(chatId, parts[i], keyboard, ct))
             {
                 return;
             }
         }
     }
 
-    public async Task<bool> TrySendAsync(long chatId, string html, CancellationToken ct)
+    public Task<bool> TrySendAsync(long chatId, string html, CancellationToken ct) => TrySendAsync(chatId, html, null, ct);
+
+    private async Task<bool> TrySendAsync(long chatId, string html, ReplyKeyboard? keyboard, CancellationToken ct)
     {
         var started = time.GetTimestamp();
         try
         {
-            await notifier.SendToAsync(chatId, html, ct);
+            await (keyboard is null ? notifier.SendToAsync(chatId, html, ct) : notifier.SendToAsync(chatId, html, keyboard, ct));
             return true;
         }
         catch (Exception ex) when (IsFailure(ex, ct))

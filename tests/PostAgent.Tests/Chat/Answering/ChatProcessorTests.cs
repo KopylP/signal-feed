@@ -5,6 +5,7 @@ using PostAgent.Chat.Agent;
 using PostAgent.Chat.Answering;
 using PostAgent.Chat.Intake;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Notifications;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
 
@@ -35,6 +36,42 @@ public class ChatProcessorTests
         Assert.Equal(["відповідь на питання"], _notifier.Replies);
         Assert.Equal([10L], _state.Current?.ProcessedUpdateIds);
         Assert.NotNull(_state.Current?.Session);
+    }
+
+    [Fact]
+    public async Task The_choices_of_the_agent_come_as_buttons_under_the_answer()
+    {
+        await Started();
+        var agent = new FakeChatAgent((_, _) => Task.FromResult(new ChatReply("Яке джерело видалити?", FakeChatAgent.Session(), Choices: ["@one", "@two"])));
+
+        await Create(agent).HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.Equal(["Яке джерело видалити?"], _notifier.Replies);
+        Assert.Equal([["@one", "@two"]], _notifier.ReplyKeyboards.Single()!.Rows);
+    }
+
+    [Fact]
+    public async Task An_answer_without_choices_takes_away_the_buttons_of_an_earlier_one()
+    {
+        await Started();
+
+        await Create(new FakeChatAgent(_ => "відповідь")).HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.Equal(ReplyKeyboard.Remove, _notifier.ReplyKeyboards.Single());
+    }
+
+    [Fact]
+    public async Task Only_the_last_part_of_a_long_answer_carries_the_choices()
+    {
+        await Started();
+        var text = string.Join("\n\n", Enumerable.Repeat(new string('a', 1000), 6));
+        var agent = new FakeChatAgent((_, _) => Task.FromResult(new ChatReply(text, FakeChatAgent.Session(), Choices: ["@one"])));
+
+        await Create(agent).HandleAsync(Request(10), CancellationToken.None);
+
+        Assert.True(_notifier.ReplyKeyboards.Count > 1);
+        Assert.All(_notifier.ReplyKeyboards.SkipLast(1), k => Assert.Null(k));
+        Assert.Equal(["@one"], _notifier.ReplyKeyboards[^1]!.Rows.Single());
     }
 
     [Fact]
@@ -291,6 +328,8 @@ public class ChatProcessorTests
         public Task SendAsync(string html, PostAgent.Shared.Notifications.InlineKeyboard keyboard, CancellationToken ct) => SendAsync(html, ct);
 
         public Task SendToAsync(long chatId, string html, CancellationToken ct) => SendAsync(html, ct);
+
+        public Task SendToAsync(long chatId, string html, PostAgent.Shared.Notifications.ReplyKeyboard keyboard, CancellationToken ct) => SendAsync(html, ct);
     }
 
     [Fact]
