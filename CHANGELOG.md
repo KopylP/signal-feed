@@ -23,7 +23,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - Change it from the bot: `/settings`, 💬 Chat, «Мій часовий пояс» (an IANA id, for example `Europe/Warsaw`), or ask the agent
   - Storage, the daily partitions, the schedules (CRON) and the logs stay in UTC; `AlertTimeZone` still only sets the zone of the quiet hours
 
-## [thyme] - 2026-11-26
+## [v2026.11.26.96-thyme] - 2026-11-26
 
 ### Logic
 - Posts are now kept for 2 days instead of 1 (`RetentionDays` default), so the chat can search by date and time over the day before yesterday too
