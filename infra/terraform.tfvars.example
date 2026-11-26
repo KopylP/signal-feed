@@ -32,5 +32,6 @@ app_settings = {
   # AlertTimeZone     = "Europe/Kyiv"
   # TimeZone          = "Europe/Kyiv"
   # RetentionDays     = "2"
+  # FeedbackEnabled   = "true"
   # OpenAIModel       = "gpt-5.4-nano"
 }

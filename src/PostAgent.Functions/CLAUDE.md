@@ -53,6 +53,12 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Prompts reach the model through `IPromptProvider` (never `Prompts.Load` in a job): the file with the owner's edits of its editable sections (`PromptSections` in the overrides, ADR-0015). The reader profile is its own blob per chat (`IProfileStore`, keyed by chat id), added to the chat instructions inside `<about_me>`; a text edit (`EditPrompt`, `EditProfile`) is a fragment replaced by another, checked by `TextEdit`, shown by code as before and after, and a profile edit is a plan of its own.
 - The chat agent changes settings only through its propose tools (ADR-0013): they build a plan of `SettingChange` and never write. The plan is stored and shown by code (`SettingsProposalSender`, `SettingsProposalMessage`), applied only by the button (`SettingsEditor.ApplyProposalAsync`, one checked write). Never put model text into that message, never add an apply tool.
 
+## Rating the digest
+
+- `DigestJob` sends a 👍/👎 row per entry after the snapshot is saved (`DigestFeedbackMessage`, skipped when `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`), resolved by `FeedbackInbox` against the pressing chat's snapshot.
+- `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know. Votes go through `IFeedbackStore` only (ETag retry, latest `FeedbackLog.MaxItems`, one per post).
+- The scorer puts the votes before the posts in `<reader_feedback>` (channel-derived text: one line, escaped, data); a read error is logged and skipped, never a reason to fail scoring.
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

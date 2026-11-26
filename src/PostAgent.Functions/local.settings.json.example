@@ -34,6 +34,7 @@
     "OpenAIApiKey": "<openai-api-key>",
     "OpenAIChatModel": "gpt-6.1-terra",
     "ChatStreamEnabled": "true",
+    "FeedbackEnabled": "true",
 
     "TelegramBotToken": "<bot-token>",
     "TelegramPairingKey": "<random-key-16-to-64-chars-A-Za-z0-9_->",

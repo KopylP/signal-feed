@@ -46,7 +46,13 @@ public sealed class DigestJob(
         log.LogInformation("Digest sent: {Count} posts", items.Count);
 
         // First, because it cannot fail the job: the Telegram send below can.
-        await StartConversationAsync(report, now, ct);
+        var started = await StartConversationAsync(report, now, ct);
+
+        // Needs the conversation above: a vote is checked against its snapshot. Also cannot fail the job.
+        if (started && settings.FeedbackEnabled)
+        {
+            await SendFeedbackPromptAsync(report.ToSnapshot(now), ct);
+        }
 
         // After the digest and the marks, so that a failed warning cannot make the next run repeat the digest.
         if (unscored > 0)
@@ -57,7 +63,7 @@ public sealed class DigestJob(
     }
 
     // The digest is already delivered, so a failure here must not fail the job (the next digest would repeat it).
-    private async Task StartConversationAsync(DigestReport report, DateTimeOffset now, CancellationToken ct)
+    private async Task<bool> StartConversationAsync(DigestReport report, DateTimeOffset now, CancellationToken ct)
     {
         try
         {
@@ -66,10 +72,28 @@ public sealed class DigestJob(
             {
                 await chatState.StartNewAsync(chatId, snapshot, ct);
             }
+
+            return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             log.LogWarning(ex, "Digest sent, but the chat could not be told about it");
+            return false;
+        }
+    }
+
+    private async Task SendFeedbackPromptAsync(ReportSnapshot snapshot, CancellationToken ct)
+    {
+        try
+        {
+            if (DigestFeedbackMessage.Build(snapshot) is var (html, keyboard))
+            {
+                await notifier.SendAsync(html, keyboard, ct);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "Digest sent, but the rating buttons could not be sent");
         }
     }
 

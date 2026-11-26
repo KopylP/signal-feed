@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [marjoram] - 2026-11-26
+
+### Added
+- **Rate the digest with 👍/👎**: after every digest the bot sends «Оцініть записи» with a pair of buttons for each entry
+  - A tap is recorded at once (✅ on the pressed button; tap the other one to change your mind); the latest 40 votes, one per post and shared by all chats, are kept in `settings/feedback.json`
+  - The scorer gets them with every request as a hint about your taste: a post clearly about a liked topic may get one point more, about a disliked one one point less, never against the scoring rules; posts already scored are not rescored
+  - Switch both off with the new `FeedbackEnabled` setting (default `true`)
+
 ## [v2026.11.26.98-willow] - 2026-11-26
 
 ### Contract changes

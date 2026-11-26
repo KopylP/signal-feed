@@ -42,6 +42,44 @@ public class DigestJobTests
     }
 
     [Fact]
+    public async Task Sends_the_rating_buttons_after_the_digest_once_the_conversation_exists()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+
+        await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
+
+        var keyboard = _notifier.Keyboards[^1];
+        Assert.Equal(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[^1]);
+        Assert.Single(keyboard.Rows);
+        Assert.True(PostAgent.Shared.Feedback.FeedbackCallback.TryDecode(keyboard.Rows[0][0].Data, out var reportId, out _, out _));
+        Assert.Equal(_chatState.Current!.Report.ReportId, reportId);
+    }
+
+    [Fact]
+    public async Task Sends_no_rating_buttons_when_feedback_is_switched_off()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+        var job = new DigestJob(repo, WithOverview("О"), _notifier, _chatState, Chats, new FakeEffectiveOptions(new AgentOptions { FeedbackEnabled = false }), new FakeTimeProvider(Now), NullLogger<DigestJob>.Instance);
+
+        await job.RunAsync(CancellationToken.None);
+
+        Assert.DoesNotContain(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent);
+    }
+
+    [Fact]
+    public async Task A_failed_rating_message_does_not_fail_the_job_or_repeat_the_digest()
+    {
+        var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
+        _notifier = new RecordingNotifier { FailOnCall = 2 }; // the digest with its overview is one message, the second call is the buttons
+
+        await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
+
+        Assert.Single(repo.SentMarks);
+        Assert.Single(_notifier.Sent); // the digest itself
+        Assert.DoesNotContain(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent);
+    }
+
+    [Fact]
     public async Task Sends_the_no_posts_message_when_there_is_nothing_to_send()
     {
         var repo = new InMemoryPostRepository();
@@ -59,7 +97,7 @@ public class DigestJobTests
 
         await CreateJob(repo, WithOverview("Огляд дня")).RunAsync(CancellationToken.None);
 
-        var message = Assert.Single(_notifier.Sent);
+        var message = _notifier.Sent[0]; // the rating buttons follow as the last message
         Assert.Contains("Огляд дня", message);
         Assert.Contains("Пояснення", message);
         var (marked, alertedAt) = Assert.Single(repo.SentMarks);
@@ -76,7 +114,7 @@ public class DigestJobTests
 
         await CreateJob(repo, WithOverview("Огляд")).RunAsync(CancellationToken.None);
 
-        var message = Assert.Single(_notifier.Sent);
+        var message = _notifier.Sent[0]; // the rating buttons follow as the last message
         Assert.Contains("Можна пропустити", message);
         Assert.Contains("повторів — 1", message);
     }
@@ -88,7 +126,7 @@ public class DigestJobTests
 
         await CreateJob(repo, Failing()).RunAsync(CancellationToken.None);
 
-        var message = Assert.Single(_notifier.Sent);
+        var message = _notifier.Sent[0]; // the rating buttons follow as the last message
         Assert.Contains("Причина", message); // the short scoring reason instead of the model's text
         Assert.Single(repo.SentMarks);
     }
@@ -138,9 +176,10 @@ public class DigestJobTests
 
         await CreateJob(repo, WithOverview("Огляд")).RunAsync(CancellationToken.None);
 
-        Assert.Equal(2, _notifier.Sent.Count);
+        Assert.Equal(3, _notifier.Sent.Count);
         Assert.Contains("Огляд", _notifier.Sent[0]);
-        Assert.Equal(DigestMessage.Unscored(1), _notifier.Sent[1]);
+        Assert.Equal(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent[1]);
+        Assert.Equal(DigestMessage.Unscored(1), _notifier.Sent[2]);
         Assert.Single(repo.SentMarks);
     }
 

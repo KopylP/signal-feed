@@ -54,6 +54,12 @@ The digest is always sent, even when nothing stood out.
 Posts that are still unscored two hours after they were published (scoring failed, see [troubleshooting](troubleshooting.md)) cannot be in the digest.
 The digest then adds a separate message «⚠️ Не оцінено N постів», and sends it instead of «За добу нових постів не було» when nothing was scored, so a broken OpenAI key does not look like a quiet day.
 
+## Rating the digest
+
+Right after the digest the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
+The latest 40 votes (one per post, shared by all chats) go into every scoring request as a hint about your taste: a post clearly about a topic you liked may get one point more, about one you disliked one point less, and never against the scoring rules.
+The votes have no effect on posts that are already scored. A button under an older digest answers «Цей дайджест уже не актуальний». Switch the buttons and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
+
 ## Asking about the digest
 
 Write to the bot in the private chat to ask more (after a digest, or before the first one): «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?». The agent can also show and change parts of its own prompts and keep a short profile of you, each change only after you confirm the exact before and after ([configuration](configuration.md#prompts-from-the-chat)). You can also use Telegram's reply or quote on any message: the quoted part (or the message you replied to) goes to the model with your question, so «розкрий цю тему» knows which topic you mean.
