@@ -8,6 +8,11 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [birch] - 2026-11-26
+
+### Fixed
+- Fixed the warnings «Error querying for queue scale status» for `/digest` and the cleanup, and their queues not existing: `digest-requests` and `cleanup-requests` are now made by Terraform like the other trigger queues
+  - Apply: run `infra` with plan (two queues are added, nothing else), then with apply
 ## [v2026.11.26.120-ridge] - 2026-11-26
 
 ### Contract changes

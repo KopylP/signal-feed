@@ -73,8 +73,8 @@ Schedules are read through `%Name%` bindings, so they change without a rebuild.
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about, chat id); messages live one hour |
 | Queue | `tg-login` | One message per `/login` (attempt id, chat id); lives 10 minutes, never retried |
-| Queue | `digest-requests` | A `/digest` on its way to `DigestRequestFunction` (chat id, period in UTC); messages live 30 minutes; created by the runtime like a poison queue, so it is not in Terraform |
-| Queue | `cleanup-requests` | "The daily summaries are written through day D" (`CleanupRequest`), the only start of the cleanup; messages live a day; created by the runtime, so not in Terraform |
+| Queue | `digest-requests` | A `/digest` on its way to `DigestRequestFunction` (chat id, period in UTC); messages live 30 minutes; made by Terraform like every trigger queue |
+| Queue | `cleanup-requests` | "The daily summaries are written through day D" (`CleanupRequest`), the only start of the cleanup; messages live a day; made by Terraform like every trigger queue |
 | Queue | `run-now` | Job names to start on demand; whoever can write to it can run a job, so access is Azure RBAC plus the `ManualRunsEnabled` switch |
 | Blob | `settings` / `overrides.json` | What the owner set from the bot (values, sources with a verified flag, alert sources, followed topics, edited prompt sections, the ids of the last handled menu updates); written with an ETag, read by `IEffectiveOptions` ([ADR-0012](../adr/0012-override-settings-from-the-telegram-bot-through-a-blob.md)) |
 | Blob | `settings` / `stats/daily/<yyyy-MM-dd>.json` | The long memory ([ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md)): counts, sources, topics and the five best posts of one finished UTC day, no post text; rewritten by `DailySummaryJob` on every run while the day is in `Posts` (a smaller summary never replaces a fuller one), deleted after `StatsRetentionDays`; read by `get_trends` and `/stats` |

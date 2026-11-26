@@ -97,6 +97,19 @@ resource "azurerm_storage_queue" "run_now" {
   storage_account_id = azurerm_storage_account.main.id
 }
 
+# A /digest on its way to DigestRequestFunction. Terraform makes it, like every trigger queue: on Flex Consumption the scale controller reports
+# "Error querying for queue scale status" for a queue that does not exist, and the host does not create it.
+resource "azurerm_storage_queue" "digest_requests" {
+  name               = "digest-requests"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
+# "The daily summaries are written": the only start of the cleanup (CleanupFunction).
+resource "azurerm_storage_queue" "cleanup_requests" {
+  name               = "cleanup-requests"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
 # Sign-ins started from the bot with /login (ADR-0016).
 resource "azurerm_storage_queue" "tg_login" {
   name               = "tg-login"
