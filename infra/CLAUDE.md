@@ -6,6 +6,7 @@ Resource names and variables are described in `docs/user-guide/installation.md`.
 
 - Terraform never creates secret values (OpenAI, Telegram) and never stores them in state: App Settings only carry Key Vault references. The one key it creates, `tg-session`, is generated inside Key Vault (ADR-0017).
 - Access between resources goes through managed identity and RBAC (`roles.tf`), without keys or connection strings.
+- The function app's App Settings are written by `azapi_resource_action.app_settings` after every change of the app (`azurerm` injects `AzureWebJobsStorage` with an empty key, #29149): every setting must be in `local.app_settings`, or the PUT removes it. Delete the action when the provider is fixed.
 - Names: `<abbreviation>-${var.name_prefix}` (`rg-`, `plan-`, `log-`, `appi-`, `budget-`). Globally unique ones (`st`, `kv-`, `func-`) get `local.suffix`.
 - A new variable has a `description`, a type, and a `default` when the value is non-secret and the same for everyone. Personal data (phone, email, chat id) gets no `default` (the chat id: an empty one) and is `sensitive = true`; the workflow reads it from GitHub Secrets.
 - Do not add a separate variable for a new agent parameter: its default lives in `AgentOptions.cs` and it is set through `app_settings`.

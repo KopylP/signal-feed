@@ -47,6 +47,7 @@ The workflow [`.github/workflows/infra.yml`](../../.github/workflows/infra.yml) 
 Without the `apply` checkbox it only runs `terraform plan` (visible in the run summary); with the checkbox it also runs `terraform apply`.
 If the infrastructure does not exist, it is created; if the code in `infra/` changed, it is updated. The application code is deployed by the separate workflow
 `build-test-deploy` after a push to `main`.
+After an apply the workflow checks that `AzureWebJobsStorage` and `DEPLOYMENT_STORAGE_CONNECTION_STRING` are absent from the app (names only): the `azurerm` provider injects them on every update of a Flex Consumption app, and `azapi_resource_action.app_settings` in `infra/function.tf` overwrites them (hashicorp/terraform-provider-azurerm#29149).
 
 Because the federated credential accepts only `refs/heads/main`, the workflow can sign in to Azure only when run from `main`: merge an infrastructure change first (it deploys no code), then run `infra` from `main`.
 

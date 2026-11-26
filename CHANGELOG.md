@@ -8,6 +8,17 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [fennel] - 2026-11-26
+
+### Setup required
+- **`infra` apply after this change**: removes `DEPLOYMENT_STORAGE_CONNECTION_STRING` and keeps `AzureWebJobsStorage` away
+  - Where: the `infra` workflow (it downloads the new `azapi` provider by itself)
+  - Value: none
+  - Apply: run `infra` with plan, read it (the function app is updated in place, one `azapi_resource_action` is created), then with apply; the new check step fails the run if a key-based storage setting is still on the app
+
+### Fixed
+- Fixed timers and the secrets store failing after an `infra` apply: the Terraform provider added `AzureWebJobsStorage` with an empty key to the function app on every update, and the host used it instead of the identity-based setting. The app settings are now written exactly after every change of the app
+
 ## [v2026.11.25.88-alder] - 2026-11-25
 
 ### Contract changes
