@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [cypress] - 2026-11-26
+## [v2026.11.26.110-cypress] - 2026-11-26
 
 ### Setup required
 - **Rename the GitHub variable `TF_CLEANUP_SCHEDULE` to `TF_DAILY_SUMMARY_SCHEDULE`** (only if you set it)
@@ -26,7 +26,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Fixed
 - A day's posts can no longer be deleted before its daily summary is written: a failed summary holds the deletion back until the next run
 
-## [ash] - 2026-11-26
+## [v2026.11.26.110-ash] - 2026-11-26
 
 ### Fixed
 - Fixed the `infra` workflow failing with «Key based authentication is not permitted» after the storage keys were switched off: the tables are now managed through the Resource Manager (`azapi`) instead of `azurerm_storage_table` ([ADR-0019](docs/adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md))
