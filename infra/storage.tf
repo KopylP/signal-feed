@@ -24,19 +24,50 @@ resource "azurerm_storage_container" "session" {
   container_access_type = "private"
 }
 
-resource "azurerm_storage_table" "channel_state" {
-  name               = "ChannelState"
-  storage_account_id = azurerm_storage_account.main.id
+# Tables go through the Azure Resource Manager (azapi), not azurerm_storage_table: with the account keys off the azurerm provider
+# cannot even read a table, because it reads the table ACLs with a shared key (ADR-0019). Blobs and queues are fine through azurerm.
+locals {
+  tables = {
+    channel_state = "ChannelState"
+    chat_binding  = "ChatBinding"
+    posts         = "Posts"
+  }
 }
 
-resource "azurerm_storage_table" "chat_binding" {
-  name               = "ChatBinding"
-  storage_account_id = azurerm_storage_account.main.id
+resource "azapi_resource" "table" {
+  for_each  = local.tables
+  type      = "Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01"
+  name      = each.value
+  parent_id = "${azurerm_storage_account.main.id}/tableServices/default"
+  body      = {}
 }
 
-resource "azurerm_storage_table" "posts" {
-  name               = "Posts"
-  storage_account_id = azurerm_storage_account.main.id
+# The tables already exist (made by azurerm before): adopt them, never recreate. Remove these blocks after the first apply.
+import {
+  for_each = local.tables
+  to       = azapi_resource.table[each.key]
+  id       = "${azurerm_storage_account.main.id}/tableServices/default/tables/${each.value}"
+}
+
+removed {
+  from = azurerm_storage_table.channel_state
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = azurerm_storage_table.chat_binding
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = azurerm_storage_table.posts
+  lifecycle {
+    destroy = false
+  }
 }
 
 resource "azurerm_storage_queue" "to_score" {
