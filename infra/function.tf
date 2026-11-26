@@ -2,10 +2,12 @@ locals {
   # Timer attributes read the schedules, so their defaults live here, not in code.
   # Precedence: a key in var.app_settings, then the dedicated variable, then its default.
   schedules = {
-    CollectorSchedule = var.collector_schedule
-    DigestSchedule    = var.digest_schedule
-    AlertSchedule     = var.alert_schedule
-    CleanupSchedule   = var.cleanup_schedule
+    CollectorSchedule    = var.collector_schedule
+    DigestSchedule       = var.digest_schedule
+    AlertSchedule        = var.alert_schedule
+    DailySummarySchedule = var.daily_summary_schedule
+    # The previous name of the same schedule: the code that runs until the next deploy still reads it. Remove after that deploy.
+    CleanupSchedule = var.daily_summary_schedule
   }
 
   # Merge order: extra settings from var.app_settings first, then explicit values, schedules, secrets last (last wins).
