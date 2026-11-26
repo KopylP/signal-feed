@@ -33,5 +33,6 @@ app_settings = {
   # TimeZone          = "Europe/Kyiv"
   # RetentionDays     = "2"
   # FeedbackEnabled   = "true"
+  # StatsRetentionDays = "90"
   # OpenAIModel       = "gpt-5.4-nano"
 }

@@ -26,6 +26,7 @@ src/PostAgent.Functions/
 │   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan; the propose tools only add to a ProposalPlan
 │   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob and the draft sender (TelegramChatDrafts)
 ├── Feedback/              the 👍/👎 buttons under the digest: FeedbackInbox (a handler in the chain, registered before the settings menu, which swallows every button it does not know), FeedbackTexts
+├── Stats/                 /stats: StatsInbox (a handler: no model call), StatsReport (the sums), StatsMessage (the text)
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
 ├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
@@ -37,6 +38,7 @@ src/PostAgent.Functions/
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
 │   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackCallback (the text under a button), FeedbackPrompt (the scoring block and the message under the digest), IFeedbackStore (Infrastructure/: the blob)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts

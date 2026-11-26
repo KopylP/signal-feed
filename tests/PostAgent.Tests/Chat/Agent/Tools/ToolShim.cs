@@ -14,6 +14,10 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
     public Task<string> SearchPostsBetween(string? query, string? from, string? to, CancellationToken ct) =>
         Call("search_posts", ct, ("query", query), ("from", from), ("to", to));
 
+    public Task<string> GetTrends(int? days, string? topic, CancellationToken ct) => Call("get_trends", ct, ("days", days), ("topic", topic));
+
+    public Task<string> GetCommands(CancellationToken ct) => Call("get_commands", ct);
+
     public Task<string> GetSettings(CancellationToken ct) => Call("get_settings", ct);
 
     public Task<string> ProposeSet(string key, string value, CancellationToken ct) => Call("propose_set_setting", ct, ("key", key), ("value", value));
