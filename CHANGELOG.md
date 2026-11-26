@@ -16,7 +16,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - After: it keeps the day before yesterday's as well; a little more data in the `Posts` table, no new cost to speak of
   - Affects: only installations that do not set `RetentionDays` themselves; one that sets it keeps its value
 
-## [juniper] - 2026-11-26
+## [v2026.11.26.94-juniper] - 2026-11-26
 
 ### Setup required
 - **`infra` apply after this change**: switches the storage account keys off
@@ -32,7 +32,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Security
 - The storage account keys are off (`shared_access_key_enabled = false`): a leaked key can no longer open the data; access is only through Entra ID roles
 
-## [sorrel] - 2026-11-26
+## [v2026.11.26.94-sorrel] - 2026-11-26
 
 ### Improved
 - The identity that runs Terraform (the `infra` pipeline) now gets the Storage Blob, Table and Queue Data Contributor roles on the storage account, the first step towards switching the storage account keys off
