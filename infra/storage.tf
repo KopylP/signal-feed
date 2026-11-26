@@ -104,6 +104,12 @@ resource "azurerm_storage_queue" "digest_requests" {
   storage_account_id = azurerm_storage_account.main.id
 }
 
+# The queue was made by the app before Terraform got to it: adopt it, never recreate. Remove this block after the first apply.
+import {
+  to = azurerm_storage_queue.digest_requests
+  id = "${azurerm_storage_account.main.id}/queueServices/default/queues/digest-requests"
+}
+
 # "The daily summaries are written": the only start of the cleanup (CleanupFunction).
 resource "azurerm_storage_queue" "cleanup_requests" {
   name               = "cleanup-requests"
