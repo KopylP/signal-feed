@@ -1,15 +1,14 @@
-using PostAgent.Shared.Jobs;
+using PostAgent.Shared.Cleanup;
 
 namespace PostAgent.Cleanup;
 
-public sealed class CleanupJob(
+// Runs every cleanup task for one request. The tasks are idempotent, so a failure fails the run and the queue retries it.
+public sealed class CleanupRunner(
     IEnumerable<ICleanupTask> tasks,
     TimeProvider time,
-    ILogger<CleanupJob> log) : IJob
+    ILogger<CleanupRunner> log)
 {
-    public string Name => "cleanup";
-
-    public async Task RunAsync(CancellationToken ct)
+    public async Task RunAsync(CleanupRequest request, CancellationToken ct)
     {
         var now = time.GetUtcNow();
         var failures = new List<Exception>();
@@ -18,7 +17,7 @@ public sealed class CleanupJob(
         {
             try
             {
-                log.LogInformation("Cleanup {Task}: removed {Count} records", task.Name, await task.RunAsync(now, ct));
+                log.LogInformation("Cleanup {Task}: removed {Count} records", task.Name, await task.RunAsync(request, now, ct));
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

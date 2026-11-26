@@ -11,7 +11,7 @@ Setting names (in `code`) are explained in [Configuration](configuration.md). Th
 2. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.
 3. **Deliver.** Once a day the best posts become the digest. Alerts for groups go out sooner, within the hour.
 
-A daily cleanup removes old posts, so storage stays small.
+A daily summary of the finished days is written first, and then a cleanup removes old posts, so storage stays small and nothing is deleted before its summary is saved.
 
 ## Channels and groups
 
@@ -66,7 +66,7 @@ An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 
 ## Statistics and trends
 
 Send `/stats` (or `/stats 30`) for numbers: how many posts were collected, scored and found interesting, which sources give the most interesting posts (and which the least), the most frequent topics, and the tokens the models used (scoring and digest, chat). It needs no model call and answers at once.
-The numbers come from a small summary of every finished day (counts per source and topic, the best posts, no post text), written by the cleanup at about 03:00 UTC before the posts are deleted and kept for `StatsRetentionDays` (90 by default). Ask the agent for the same over time: «що змінилось за місяць у темі google core update?», «як змінилась кількість постів про AI-пошук за тижні?».
+The numbers come from a small summary of every finished day (counts per source and topic, the best posts, no post text), written by the daily summary job at about 03:00 UTC (`DailySummarySchedule`), which then asks the cleanup to delete the old posts, and kept for `StatsRetentionDays` (90 by default). Ask the agent for the same over time: «що змінилось за місяць у темі google core update?», «як змінилась кількість постів про AI-пошук за тижні?».
 The summaries have no text, so the agent cannot quote an old post from them; for a recent one it uses the stored posts. A day has a summary only after it ends; `/stats` summarizes the days still stored on the spot. Days are UTC dates.
 
 ## What the bot can do

@@ -34,10 +34,12 @@ src/PostAgent.Functions/
 │   └── Infrastructure/    the attempt blob, the session blob, the tg-login queue, the WTelegram sign-in
 ├── Webhook/               the bot's entry point (TelegramWebhookFunction, TelegramWebhook: secret check, parsing, the handler chain)
 ├── Pairing/               /start <key> binds the chat (PairingInbox: a handler in the chain, StartCommand)
-├── Cleanup/               cleanup of old data
+├── DailySummary/          the daily summary of the finished days (DailySummaryFunction is the timer, DailySummaryJob writes the summaries and queues a CleanupRequest)
+├── Cleanup/               cleanup of old data, started by that request (CleanupFunction is the queue trigger, CleanupRunner runs every ICleanupTask)
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
 │   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Cleanup/           CleanupRequest ("the summaries are written through day D") and its queue: the contract between DailySummary and Cleanup
 │   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
 │   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackCallback (the text under a button), FeedbackPrompt (the scoring block and the message under the digest), IFeedbackStore (Infrastructure/: the blob)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
@@ -85,7 +87,7 @@ and call it in `ServiceCollectionExtensions.AddPostAgent`.
 **A new scheduled job.** Put the logic in a class implementing `IJob` (`Name` is the lower-case name, `RunAsync` the work), register it with `AddJob<T>()` in the feature's `AddXxx()`,
 and add a timer function that only calls `job.RunAsync(ct)`. `RunNowFunction` finds it by `Name` with no other change; add the name to `tools/run-now.cs` (a test checks that every job name is there).
 
-**A new cleanup.** Add one class implementing `ICleanupTask` in `Cleanup/` and register it in `Cleanup/CleanupServices.cs`. `CleanupFunction` runs it with the others.
+**A new cleanup.** Add one class implementing `ICleanupTask` in `Cleanup/` and register it in `Cleanup/CleanupServices.cs`. `CleanupFunction` runs it with the others, after `DailySummaryJob` has written the summaries (a task must not touch a day after `CleanupRequest.SummarizedThrough`).
 Cleaning another table, queue or blob needs nothing else.
 
 **A new setting.** Add the property (with its default) to `Shared/Settings/AgentOptions.cs` and its validation, then update the table in

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Cleanup;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Cleanup;
@@ -10,6 +11,6 @@ public sealed class ChatStateCleanup(IChatStateStore store, IOptions<AgentOption
 {
     public string Name => "ChatState";
 
-    public Task<int> RunAsync(DateTimeOffset now, CancellationToken ct) =>
+    public Task<int> RunAsync(CleanupRequest request, DateTimeOffset now, CancellationToken ct) =>
         store.DeleteOlderThanAsync(now.AddDays(-options.Value.RetentionDays), ct);
 }

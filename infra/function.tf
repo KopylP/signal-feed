@@ -6,8 +6,6 @@ locals {
     DigestSchedule       = var.digest_schedule
     AlertSchedule        = var.alert_schedule
     DailySummarySchedule = var.daily_summary_schedule
-    # The previous name of the same schedule: the code that runs until the next deploy still reads it. Remove after that deploy.
-    CleanupSchedule = var.daily_summary_schedule
   }
 
   # Merge order: extra settings from var.app_settings first, then explicit values, schedules, secrets last (last wins).

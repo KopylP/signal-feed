@@ -35,7 +35,7 @@ curl -X POST http://localhost:7071/admin/functions/CollectorFunction -H "Content
 Or start a job through the queue, the same way as in Azure (`ManualRunsEnabled` is `true` in the example settings):
 
 ```bash
-dotnet run tools/run-now.cs -- collect        # collect | digest | alert | cleanup; storage defaults to Azurite
+dotnet run tools/run-now.cs -- collect        # collect | digest | alert | daily-summary; storage defaults to Azurite
 ```
 
 If Azurite answers `The API version ... is not supported`, start it with `--skipApiVersionCheck` or update it. Against Azure see [run a job now](../user-guide/configuration.md#run-a-job-now).

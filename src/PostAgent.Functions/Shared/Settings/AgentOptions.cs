@@ -4,7 +4,7 @@ using PostAgent.Shared.Infrastructure;
 namespace PostAgent.Shared.Settings;
 
 // Усі App Settings, що читає код. Прив'язуються з кореня конфігурації за іменами властивостей.
-// Розклади (CollectorSchedule, DigestSchedule, AlertSchedule, CleanupSchedule) сюди не входять:
+// Розклади (CollectorSchedule, DigestSchedule, AlertSchedule, DailySummarySchedule) сюди не входять:
 // їх читають атрибути [TimerTrigger("%...%")] безпосередньо з App Settings.
 public sealed class AgentOptions
 {

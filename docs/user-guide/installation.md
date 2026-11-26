@@ -115,7 +115,7 @@ Prefer a fixed chat? Set `telegram_chat_id` instead (see [Configuration](configu
 
 ## What to expect
 
-- The collector runs every hour, the digest arrives once a day (08:00 UTC by default), and cleanup runs at 03:00 UTC. Times are UTC: see [Configuration](configuration.md#schedule).
+- The collector runs every hour, the digest arrives once a day (08:00 UTC by default), and the daily summary with the cleanup behind it runs at 03:00 UTC. Times are UTC: see [Configuration](configuration.md#schedule).
 - Until you pair the chat (step 6), the digest and alerts cannot be sent: each run fails and its posts wait for the next one.
 - Until the first collection the digest has nothing to send. If an hourly «Збір не вдався» ("Collection failed") message arrives, go to [troubleshooting](troubleshooting.md).
 

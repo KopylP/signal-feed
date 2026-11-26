@@ -21,7 +21,7 @@ public class ChatStateCleanupTests
     {
         var (task, store) = await Create(Now.AddDays(-2));
 
-        var deleted = await task.RunAsync(Now, CancellationToken.None);
+        var deleted = await task.RunAsync(PostAgent.Shared.Cleanup.CleanupRequest.For(new DateOnly(2026, 11, 23)), Now, CancellationToken.None);
 
         Assert.Equal(1, deleted);
         Assert.Null(store.Current);
@@ -32,7 +32,7 @@ public class ChatStateCleanupTests
     {
         var (task, store) = await Create(Now.AddHours(-3));
 
-        var deleted = await task.RunAsync(Now, CancellationToken.None);
+        var deleted = await task.RunAsync(PostAgent.Shared.Cleanup.CleanupRequest.For(new DateOnly(2026, 11, 23)), Now, CancellationToken.None);
 
         Assert.Equal(0, deleted);
         Assert.NotNull(store.Current);
@@ -43,7 +43,7 @@ public class ChatStateCleanupTests
     {
         var (task, store) = await Create(Now.AddDays(-2), retentionDays: 3);
 
-        Assert.Equal(0, await task.RunAsync(Now, CancellationToken.None));
+        Assert.Equal(0, await task.RunAsync(PostAgent.Shared.Cleanup.CleanupRequest.For(new DateOnly(2026, 11, 23)), Now, CancellationToken.None));
         Assert.NotNull(store.Current);
     }
 
@@ -62,7 +62,7 @@ public class ChatStateCleanupTests
         await store.StartNewAsync(43, new ReportSnapshot("r", Now.AddDays(-2), null, [], []), CancellationToken.None);
         await store.StartNewAsync(44, new ReportSnapshot("r", Now, null, [], []), CancellationToken.None);
 
-        Assert.Equal(2, await task.RunAsync(Now, CancellationToken.None));
+        Assert.Equal(2, await task.RunAsync(PostAgent.Shared.Cleanup.CleanupRequest.For(new DateOnly(2026, 11, 23)), Now, CancellationToken.None));
         Assert.NotNull(store.Of(44));
     }
 }

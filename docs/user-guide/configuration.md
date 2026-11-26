@@ -40,7 +40,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `TelegramApiId` | | app id of the reader account (from my.telegram.org) |
 | `SessionBlobContainer` | `tg-session` | container with the Telegram session |
 | `SessionKeyId` | set by Terraform | versionless id of the Key Vault key that encrypts the session and the sign-in in progress ([ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md)); required in Azure, empty only locally against Azurite |
-| `CleanupSchedule` | `0 0 3 * * *` | cleanup CRON (UTC) |
+| `DailySummarySchedule` | `0 0 3 * * *` | CRON (UTC) of the daily summary of the finished days; the cleanup of old data starts right after it succeeds (was `CleanupSchedule`) |
 | `RetentionDays` | 2 | how many days back to keep posts: 2 means the day before yesterday's, yesterday's and today's partitions; it is also how far back the chat can search by date |
 | `FirstRunLookbackHours` | 24 | how many hours of history to read on the first run for a new source |
 
@@ -109,7 +109,7 @@ The buttons need the webhook to receive `callback_query` updates ([installation]
 ### Run a job now
 
 To test a job without waiting for its schedule, put its name into the `run-now` queue with [`tools/run-now.cs`](../../tools/run-now.cs).
-The jobs are `collect`, `digest`, `alert` and `cleanup`. `digest` and `alert` send a real Telegram message and mark posts as sent, so the next scheduled run sees fewer posts.
+The jobs are `collect`, `digest`, `alert` and `daily-summary` (the last one also starts the cleanup, as the timer does). `digest` and `alert` send a real Telegram message and mark posts as sent, so the next scheduled run sees fewer posts.
 
 ```bash
 az functionapp config appsettings set -g <rg> -n <function-app> --settings ManualRunsEnabled=true   # restarts the app
