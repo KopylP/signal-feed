@@ -70,11 +70,13 @@ public class DigestJobTests
     public async Task A_failed_rating_message_does_not_fail_the_job_or_repeat_the_digest()
     {
         var repo = new InMemoryPostRepository(Post("a", score: 9, hoursAgo: 2));
-        _notifier = new RecordingNotifier { FailOnCall = 3 }; // the digest has two messages: the intro and the entry, the third is the buttons
+        _notifier = new RecordingNotifier { FailOnCall = 2 }; // the digest with its overview is one message, the second call is the buttons
 
         await CreateJob(repo, WithOverview("О")).RunAsync(CancellationToken.None);
 
         Assert.Single(repo.SentMarks);
+        Assert.Single(_notifier.Sent); // the digest itself
+        Assert.DoesNotContain(PostAgent.Shared.Feedback.FeedbackPrompt.Message, _notifier.Sent);
     }
 
     [Fact]

@@ -24,6 +24,16 @@ public class DigestFeedbackMessageTests
     }
 
     [Fact]
+    public void An_entry_without_a_title_is_named_by_the_start_of_its_text()
+    {
+        var report = new ReportSnapshot("r1", TestData.Now, null, [Entry("d/a", null)], []);
+
+        var (_, keyboard) = DigestFeedbackMessage.Build(report)!.Value;
+
+        Assert.Equal("👍 Суть", keyboard.Rows[0][0].Text);
+    }
+
+    [Fact]
     public void A_post_shown_twice_has_one_row_pointing_at_its_first_place()
     {
         var report = new ReportSnapshot("r1", TestData.Now, null, [Entry("d/a"), Entry("d/b"), Entry("d/a")], []);

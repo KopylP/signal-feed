@@ -66,13 +66,13 @@ public class FeedbackInboxTests
     }
 
     [Fact]
-    public async Task An_entry_without_a_title_is_recorded_by_its_source()
+    public async Task An_entry_without_a_title_is_recorded_by_the_start_of_its_text()
     {
         var inbox = await Create();
 
         await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 1, FeedbackVote.Down)), CancellationToken.None);
 
-        Assert.Equal("other", Assert.Single(_store.Items).Topic);
+        Assert.Equal("Суть", Assert.Single(_store.Items).Topic);
         Assert.Equal(FeedbackTexts.ThanksDown, Assert.Single(_panel.Answered).Text);
     }
 
@@ -98,6 +98,62 @@ public class FeedbackInboxTests
         Assert.Equal(FeedbackPrompt.Message, edited.Html);
         Assert.Equal(["👍 Оновлення Google", "👎"], edited.Keyboard.Rows[0].Select(b => b.Text));
         Assert.Equal(["✅ 👍 other", "👎"], edited.Keyboard.Rows[1].Select(b => b.Text));
+    }
+
+    [Fact]
+    public async Task A_long_title_is_cut_before_it_is_stored()
+    {
+        var inbox = await Create();
+        await _state.StartNewAsync(BoundChat, new ReportSnapshot("r1", Now, null,
+            [new SnapshotEntry("Headlines", "2026-11-24/a_1", "chan", Now, new string('я', 300), "Суть", null, "Уривок", 9, "https://t.me/chan/1")], []), CancellationToken.None);
+
+        await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 0, FeedbackVote.Up)), CancellationToken.None);
+
+        Assert.Equal(FeedbackLog.MaxTopicChars + 1, Assert.Single(_store.Items).Topic.Length); // the cut text and the ellipsis
+    }
+
+    [Fact]
+    public async Task Marks_of_the_other_entries_stay_when_another_one_is_rated()
+    {
+        var inbox = await Create();
+        var rated = new InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton.WithCallbackData("✅ 👍 Оновлення Google", FeedbackCallback.Encode("r1", 0, FeedbackVote.Up)), InlineKeyboardButton.WithCallbackData("👎", FeedbackCallback.Encode("r1", 0, FeedbackVote.Down))],
+            [InlineKeyboardButton.WithCallbackData("👍 other", FeedbackCallback.Encode("r1", 1, FeedbackVote.Up)), InlineKeyboardButton.WithCallbackData("👎", FeedbackCallback.Encode("r1", 1, FeedbackVote.Down))],
+        ]);
+
+        await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 1, FeedbackVote.Down), markup: rated), CancellationToken.None);
+
+        var rows = Assert.Single(_panel.Edited).Keyboard.Rows;
+        Assert.Equal(["✅ 👍 Оновлення Google", "👎"], rows[0].Select(b => b.Text));
+        Assert.Equal(["👍 other", "✅ 👎"], rows[1].Select(b => b.Text));
+    }
+
+    [Fact]
+    public async Task Changing_the_vote_moves_the_mark_within_its_row()
+    {
+        var inbox = await Create();
+        var rated = new InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton.WithCallbackData("✅ 👍 Оновлення Google", FeedbackCallback.Encode("r1", 0, FeedbackVote.Up)), InlineKeyboardButton.WithCallbackData("👎", FeedbackCallback.Encode("r1", 0, FeedbackVote.Down))],
+        ]);
+
+        await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 0, FeedbackVote.Down), markup: rated), CancellationToken.None);
+
+        Assert.Equal(["👍 Оновлення Google", "✅ 👎"], Assert.Single(_panel.Edited).Keyboard.Rows[0].Select(b => b.Text));
+    }
+
+    [Fact]
+    public async Task A_spinner_that_cannot_be_stopped_does_not_undo_the_vote_or_the_mark()
+    {
+        var inbox = await Create();
+        _panel.FailAnswers = true;
+
+        var handled = await inbox.HandleAsync(Press(FeedbackCallback.Encode("r1", 0, FeedbackVote.Up), markup: Markup()), CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Single(_store.Items);
+        Assert.Single(_panel.Edited);
     }
 
     [Fact]

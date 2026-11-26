@@ -6,10 +6,9 @@ using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Shared.Feedback.Infrastructure;
 
-public sealed class BlobFeedbackStore(BlobServiceClient blobs) : IFeedbackStore
+public sealed class BlobFeedbackStore(BlobServiceClient blobs, ILogger<BlobFeedbackStore> log) : IFeedbackStore
 {
     private const int Attempts = 3;
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private BlobClient Blob => blobs
         .GetBlobContainerClient(StorageNames.SettingsContainer)
@@ -28,7 +27,7 @@ public sealed class BlobFeedbackStore(BlobServiceClient blobs) : IFeedbackStore
             try
             {
                 await Blob.UploadAsync(
-                    BinaryData.FromString(JsonSerializer.Serialize(FeedbackLog.Add(items, item), Json)),
+                    BinaryData.FromString(JsonSerializer.Serialize(FeedbackLog.Add(items, item), FeedbackJson.Options)),
                     new BlobUploadOptions { Conditions = conditions },
                     ct);
                 return;
@@ -45,16 +44,19 @@ public sealed class BlobFeedbackStore(BlobServiceClient blobs) : IFeedbackStore
         try
         {
             var result = (await Blob.DownloadContentAsync(ct)).Value;
-            var items = JsonSerializer.Deserialize<List<FeedbackItem>>(result.Content.ToString(), Json) ?? [];
+            var content = result.Content.ToString();
+            var items = FeedbackJson.Parse(content);
+
+            // The ETag stays even when nothing could be read, so the next vote replaces a damaged file (If-Match) instead of failing on it.
+            if (items.Count == 0 && content.Trim() is not ("[]" or ""))
+            {
+                log.LogWarning("settings/feedback.json could not be read, the next vote replaces it");
+            }
+
             return (items, result.Details.ETag);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
-            return ([], null);
-        }
-        catch (JsonException)
-        {
-            // A damaged file must not stop the votes: it is replaced by the next one.
             return ([], null);
         }
     }

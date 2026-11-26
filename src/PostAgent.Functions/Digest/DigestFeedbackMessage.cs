@@ -5,6 +5,7 @@ using PostAgent.Shared.Notifications;
 
 namespace PostAgent.Digest;
 
+// An entry without a title (Recommended) is named by the start of its text, so two of one channel are not the same button.
 // The message after the digest with a row of two buttons per entry. The buttons name the entry by its title and carry its place in the
 // chat snapshot, so the vote is resolved against the digest the reader actually saw (FeedbackInbox).
 public static class DigestFeedbackMessage
@@ -24,7 +25,7 @@ public static class DigestFeedbackMessage
                 continue;
             }
 
-            var title = (entry.Title ?? entry.Source).Truncate(MaxLabelChars, "…");
+            var title = (string.IsNullOrWhiteSpace(entry.Title) ? entry.Text : entry.Title).Truncate(MaxLabelChars, "…");
             rows.Add(
             [
                 new KeyboardButton($"👍 {title}", FeedbackCallback.Encode(report.ReportId, index, FeedbackVote.Up)),

@@ -55,9 +55,9 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 
 ## Rating the digest
 
-- After the digest and the conversation snapshot, `DigestJob` sends one message with a 👍/👎 row per entry (`DigestFeedbackMessage`, skipped when the snapshot could not be saved or `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`, at most 64 bytes); `FeedbackInbox` resolves it against the pressing chat's snapshot, so an old digest is refused.
-- `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know: a new button family needs the same. Votes go through `IFeedbackStore` only (one blob, ETag retry, latest `FeedbackLog.MaxItems`, one per post).
-- The scorer puts the votes before the posts inside `<reader_feedback>`; they are a hint, never a reason to fail scoring (a read error is logged and skipped). Titles in it are text from channels: escaped, one line each, data.
+- `DigestJob` sends a 👍/👎 row per entry after the snapshot is saved (`DigestFeedbackMessage`, skipped when `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`), resolved by `FeedbackInbox` against the pressing chat's snapshot.
+- `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know. Votes go through `IFeedbackStore` only (ETag retry, latest `FeedbackLog.MaxItems`, one per post).
+- The scorer puts the votes before the posts in `<reader_feedback>` (channel-derived text: one line, escaped, data); a read error is logged and skipped, never a reason to fail scoring.
 
 ## Data and queues
 

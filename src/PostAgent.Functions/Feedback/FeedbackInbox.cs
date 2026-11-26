@@ -1,4 +1,5 @@
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Feedback;
 using PostAgent.Shared.Notifications;
 using Telegram.Bot.Types;
@@ -48,7 +49,7 @@ public sealed class FeedbackInbox(
         var entry = report.Entries[index];
         try
         {
-            await store.RecordAsync(new FeedbackItem(entry.PostId, entry.Source, entry.Title ?? entry.Source, vote, time.GetUtcNow()), ct);
+            await store.RecordAsync(new FeedbackItem(entry.PostId, entry.Source, Topic(entry), vote, time.GetUtcNow()), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -57,9 +58,26 @@ public sealed class FeedbackInbox(
             return true;
         }
 
-        await panel.AnswerCallbackAsync(query.Id, vote == FeedbackVote.Up ? FeedbackTexts.ThanksUp : FeedbackTexts.ThanksDown, ct);
         await MarkAsync(message, data, ct);
+        await AnswerAsync(query.Id, vote == FeedbackVote.Up ? FeedbackTexts.ThanksUp : FeedbackTexts.ThanksDown, ct);
         return true;
+    }
+
+    // What the scorer reads as the topic: the digest title, or the text of an entry that has none (Recommended), cut so a vote stays small.
+    private static string Topic(SnapshotEntry entry) =>
+        (string.IsNullOrWhiteSpace(entry.Title) ? entry.Text : entry.Title).Truncate(FeedbackLog.MaxTopicChars, "…") is { Length: > 0 } topic ? topic : entry.Source;
+
+    // A spinner that cannot be stopped ("query is too old") must not undo the vote or the ✅.
+    private async Task AnswerAsync(string queryId, string? text, CancellationToken ct)
+    {
+        try
+        {
+            await panel.AnswerCallbackAsync(queryId, text, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogInformation(ex, "A rating button could not be answered");
+        }
     }
 
     // The pressed button gets a ✅, so the reader sees what was recorded. A failure here changes nothing about the vote.
@@ -84,10 +102,15 @@ public sealed class FeedbackInbox(
     }
 
     // Only the row that holds the pressed button changes: the pressed one gets ✅ and the other loses its own, if it had one.
+    // The other rows keep theirs, so every rated entry stays marked.
     private static KeyboardButton Mark(InlineKeyboardButton button, string pressed, IEnumerable<InlineKeyboardButton> row)
     {
+        if (!row.Any(b => b.CallbackData == pressed))
+        {
+            return new KeyboardButton(button.Text, button.CallbackData ?? string.Empty);
+        }
+
         var text = button.Text.StartsWith("✅ ", StringComparison.Ordinal) ? button.Text[2..] : button.Text;
-        var inRow = row.Any(b => b.CallbackData == pressed);
-        return new KeyboardButton(inRow && button.CallbackData == pressed ? "✅ " + text : text, button.CallbackData ?? string.Empty);
+        return new KeyboardButton(button.CallbackData == pressed ? "✅ " + text : text, button.CallbackData ?? string.Empty);
     }
 }

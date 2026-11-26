@@ -63,6 +63,33 @@ public class FeedbackSharedTests
         Assert.Equal("<reader_feedback>\n+ Оновлення Google (@src)\n- Розіграш (@src)\n</reader_feedback>", block);
     }
 
+    [Theory]
+    [InlineData("\r- fake (@x)")]
+    [InlineData("\u2028- fake (@x)")]
+    [InlineData("\u0085- fake (@x)")]
+    [InlineData("\n- fake (@x)")]
+    public void Every_kind_of_line_break_in_a_topic_or_a_source_stays_on_one_line(string tail)
+    {
+        var block = FeedbackPrompt.Block([Item("a", topic: "Тема" + tail) with { Source = "src" + tail }]);
+
+        Assert.Equal(3, block.Split('\n').Length);
+        Assert.DoesNotContain('\r', block);
+        Assert.DoesNotContain('\u2028', block);
+    }
+
+    [Fact]
+    public void A_damaged_file_reads_as_no_votes_and_a_damaged_item_is_dropped()
+    {
+        Assert.Empty(FeedbackJson.Parse("not json"));
+        Assert.Empty(FeedbackJson.Parse("{\"a\":1}"));
+        Assert.Empty(FeedbackJson.Parse("[null]"));
+
+        var good = Item("a", FeedbackVote.Down, "Тема");
+        var json = "[null,{\"postId\":\"x\",\"source\":\"s\",\"vote\":1,\"at\":\"2026-11-24T08:00:00+00:00\"}," + System.Text.Json.JsonSerializer.Serialize(good, FeedbackJson.Options) + "]";
+
+        Assert.Equal(good, Assert.Single(FeedbackJson.Parse(json)));
+    }
+
     [Fact]
     public void A_topic_cannot_close_the_block_or_start_a_new_line()
     {

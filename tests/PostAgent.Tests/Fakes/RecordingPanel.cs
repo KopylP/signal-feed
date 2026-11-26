@@ -15,6 +15,9 @@ internal sealed class RecordingPanel : ITelegramPanel
     // Makes EditAsync throw, like Telegram does for a message that is gone or older than 48 hours.
     public bool FailEdits { get; set; }
 
+    // Makes AnswerCallbackAsync throw, like Telegram does for a query that is too old.
+    public bool FailAnswers { get; set; }
+
     public Task<int> SendAsync(long chatId, string html, InlineKeyboard keyboard, CancellationToken ct)
     {
         var id = _nextId++;
@@ -35,6 +38,11 @@ internal sealed class RecordingPanel : ITelegramPanel
 
     public Task AnswerCallbackAsync(string callbackQueryId, string? text, CancellationToken ct)
     {
+        if (FailAnswers)
+        {
+            throw new InvalidOperationException("query is too old");
+        }
+
         Answered.Add((callbackQueryId, text));
         return Task.CompletedTask;
     }
