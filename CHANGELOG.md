@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [breeze] - 2026-11-26
+## [v2026.11.26.126-breeze] - 2026-11-26
 
 ### Added
 - **The agent offers buttons to pick from**: when you have to choose one of known items, the answer comes with tiles in place of the keyboard, and a tap sends that item to the agent as your message
@@ -16,7 +16,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - The tiles hide after a tap; the next answer without choices takes them away, and typing instead of tapping works as before
   - Up to 30 tiles of at most 60 characters; nothing is stored, the tapped text is an ordinary message in the chat
 
-## [larch] - 2026-11-26
+## [v2026.11.26.126-larch] - 2026-11-26
 
 ### Fixed
 - Fixed the `infra` apply for the `/digest` queue failing because the app had already created `digest-requests`: Terraform adopts the existing queue
