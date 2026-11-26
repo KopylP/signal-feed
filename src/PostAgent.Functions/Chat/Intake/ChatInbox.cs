@@ -40,7 +40,7 @@ public sealed class ChatInbox(
 
         try
         {
-            await queue.EnqueueAsync(new ChatRequest(update.Id, QuestionText.From(message, text.Trim().Truncate(MaxQuestionChars)), current.State.Report.ReportId, message.Chat.Id), ct);
+            await queue.EnqueueAsync(new ChatRequest(update.Id, QuestionText.From(message, text.Trim().Truncate(MaxQuestionChars)), current.State.Report.ReportId, message.Chat.Id, SentAt(message)), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -50,6 +50,10 @@ public sealed class ChatInbox(
 
         return true;
     }
+
+    // Telegram dates are UTC; a missing one (default) is not sent as metadata.
+    private static DateTimeOffset? SentAt(Message message) =>
+        message.Date == default ? null : new DateTimeOffset(DateTime.SpecifyKind(message.Date, DateTimeKind.Utc));
 
     // Before the first digest there is no conversation yet: it starts empty, and the digest replaces it when it comes.
     private async Task<ChatStateHandle?> StateAsync(long chatId, CancellationToken ct)

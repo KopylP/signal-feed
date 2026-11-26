@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using OpenAI.Responses;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Chat.Agent;
@@ -21,9 +22,10 @@ public sealed class ChatAgent(
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
 {
-    public async Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, CancellationToken ct)
+    public async Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, DateTimeOffset? sentAt, CancellationToken ct)
     {
         var settings = await options.GetAsync(ct);
+        var zone = LocalTime.Zone(settings.TimeZone);
         var draft = new List<SettingChange>();
         var agent = CreateAgent(settings, toolFactory.Create(draft, chatId), await InstructionsAsync(chatId, ct));
 
@@ -31,7 +33,12 @@ public sealed class ChatAgent(
         var messages = new List<ChatMessage>();
         if (!hasHistory)
         {
-            messages.Add(new ChatMessage(ChatRole.User, ChatContext.Build(state.Report)));
+            messages.Add(new ChatMessage(ChatRole.User, ChatContext.Build(state.Report, zone)));
+        }
+
+        if (sentAt is { } sent)
+        {
+            messages.Add(new ChatMessage(ChatRole.User, ChatMetadata.Of(sent, zone, settings.TimeZone)));
         }
 
         messages.Add(new ChatMessage(ChatRole.User, userText));

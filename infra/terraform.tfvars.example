@@ -30,6 +30,7 @@ app_settings = {
   # AlertThreshold    = "9"
   # AlertQuietHours   = "23:00-07:00"
   # AlertTimeZone     = "Europe/Kyiv"
+  # TimeZone          = "Europe/Kyiv"
   # RetentionDays     = "2"
   # OpenAIModel       = "gpt-5.4-nano"
 }

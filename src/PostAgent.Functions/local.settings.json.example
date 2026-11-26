@@ -26,6 +26,7 @@
     "AlertMaxPerRun": "3",
     "AlertQuietHours": "",
     "AlertTimeZone": "Europe/Kyiv",
+    "TimeZone": "Europe/Kyiv",
 
     "ManualRunsEnabled": "true",
 

@@ -22,8 +22,9 @@ public static class DigestMessage
     private const int MaxWhyChars = 350;
     private const int MaxVerificationChars = 250;
 
-    public static IReadOnlyList<string> Format(DigestReport report)
+    public static IReadOnlyList<string> Format(DigestReport report, TimeZoneInfo? zone = null)
     {
+        zone ??= TimeZoneInfo.Utc;
         var writer = new MessageWriter();
 
         var intro = "📰 <b>Дайджест</b>";
@@ -33,28 +34,28 @@ public static class DigestMessage
         }
 
         writer.Add(intro);
-        writer.Section("🔥 <b>Головне за день</b>", report.Headlines.Select(Entry));
-        writer.Section("💼 <b>Корисно для Collaborator</b>", report.ForMarketplace.Select(Entry));
-        writer.Section("👀 <b>Варто звернути увагу</b>", report.Notable.Select(Entry));
-        writer.Section("📖 <b>Рекомендую прочитати</b>", report.Recommended.Select(Entry));
+        writer.Section("🔥 <b>Головне за день</b>", report.Headlines.Select(e => Entry(e, zone)));
+        writer.Section("💼 <b>Корисно для Collaborator</b>", report.ForMarketplace.Select(e => Entry(e, zone)));
+        writer.Section("👀 <b>Варто звернути увагу</b>", report.Notable.Select(e => Entry(e, zone)));
+        writer.Section("📖 <b>Рекомендую прочитати</b>", report.Recommended.Select(e => Entry(e, zone)));
         writer.Section("⚠️ <b>Потребує перевірки</b>", report.NeedsVerification.Count == 0 ? [] : [Verification(report.NeedsVerification)]);
         writer.Section("📌 <b>Можна пропустити</b>", report.Skipped.Total == 0 ? [] : [SkippedLine(report.Skipped)]);
 
         return writer.Messages();
     }
 
-    private static string Entry(DigestEntry entry)
+    private static string Entry(DigestEntry entry, TimeZoneInfo zone)
     {
-        var full = Block(entry, MaxTextChars, MaxWhyChars);
-        return full.Length <= MaxMessageChars ? full : Block(entry, 0, 0); // text that grows when escaped: keep only the title and the link
+        var full = Block(entry, MaxTextChars, MaxWhyChars, zone);
+        return full.Length <= MaxMessageChars ? full : Block(entry, 0, 0, zone); // text that grows when escaped: keep only the title and the link
     }
 
-    private static string Block(DigestEntry entry, int maxText, int maxWhy)
+    private static string Block(DigestEntry entry, int maxText, int maxWhy, TimeZoneInfo zone)
     {
         var post = entry.Post;
         var block = new StringBuilder();
         block.Append("<b>").Append(TelegramHtml.Escape((entry.Title ?? post.Topic ?? string.Empty).Truncate(MaxTitleChars, "…"))).Append("</b>");
-        block.Append('\n').Append(SourceLine(post));
+        block.Append('\n').Append(SourceLine(post, zone));
         if (maxText > 0)
         {
             block.Append('\n').Append(TelegramHtml.Escape(entry.Text.Truncate(maxText, "…")));
@@ -69,9 +70,9 @@ public static class DigestMessage
         return block.ToString();
     }
 
-    private static string SourceLine(PostEntity post)
+    private static string SourceLine(PostEntity post, TimeZoneInfo zone)
     {
-        var line = $"@{TelegramHtml.Escape(post.Source)} · {post.PublishedAt.UtcDateTime.ToString("dd.MM", CultureInfo.InvariantCulture)}";
+        var line = $"@{TelegramHtml.Escape(post.Source)} · {LocalTime.Day(post.PublishedAt, zone, "dd.MM")}";
         return post.MessageCount > 1 ? $"{line} · {post.MessageCount} повідомлень" : line;
     }
 

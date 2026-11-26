@@ -127,10 +127,10 @@ public class ChatStreamingRequestTests
         var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), streams, new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var first = await agent.AskAsync(ChatId, state, "перше", CancellationToken.None);
+        var first = await agent.AskAsync(ChatId, state, "перше", null, CancellationToken.None);
         // The conversation goes through the blob between two questions, like in production.
         Assert.True(ChatStateJson.TryRead(ChatStateJson.Write(state.WithProcessed(1, first.Session)), out var reloaded));
-        var second = await agent.AskAsync(ChatId, reloaded, "друге", CancellationToken.None);
+        var second = await agent.AskAsync(ChatId, reloaded, "друге", null, CancellationToken.None);
         return (handler, drafts, first.Text, second.Text);
     }
 

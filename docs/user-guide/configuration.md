@@ -21,7 +21,8 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `AlertThreshold` / `BurstMinPosts` | 9 / 8 | alert thresholds |
 | `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | window of scored posts and pause between alerts for one group |
 | `AlertMaxPerRun` | 3 | entries in one alert (at most 8) |
-| `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours |
+| `AlertQuietHours` / `AlertTimeZone` | empty / `Europe/Kyiv` | quiet hours and the time zone they are read in |
+| `TimeZone` | `Europe/Kyiv` | your time zone (IANA id): the times the agent shows and understands (the digest dates, the chat, search by date and time). Storage, schedules (CRON) and logs stay in UTC |
 | `ManualRunsEnabled` | `false` | lets a message in the `run-now` queue start a job ([run a job now](#run-a-job-now)); keep it off except while testing |
 | `OpenAIModel` | `gpt-5.4-nano` | scoring and digest model |
 | `OpenAIChatModel` | `gpt-6.1-terra` | model that answers your questions about the digest (stronger than the scoring model; `gpt-6.1-sol` costs about twice as much) |

@@ -42,7 +42,12 @@ public sealed class AgentOptions
     [Range(1, 1000)] public int BurstMinPosts { get; set; } = 8;
     [Range(1, MaxItemsPerMessage)] public int AlertMaxPerRun { get; set; } = 3;
     public string AlertQuietHours { get; set; } = string.Empty;
+    // Only for the quiet hours; the time the agent shows and understands is TimeZone.
     public string AlertTimeZone { get; set; } = "Europe/Kyiv";
+
+    // The reader's time zone (an IANA id): the times in the digest, in the chat and in the date and time of a post search.
+    // Storage and the daily partitions stay in UTC.
+    public string TimeZone { get; set; } = "Europe/Kyiv";
 
     // Allows jobs to start from a message in the run-now queue (tools/run-now.cs). Keep it off in Azure except while testing.
     public bool ManualRunsEnabled { get; set; }

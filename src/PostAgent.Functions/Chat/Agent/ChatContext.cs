@@ -1,21 +1,23 @@
 using System.Globalization;
 using System.Text;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 
 namespace PostAgent.Chat.Agent;
 
 public static class ChatContext
 {
     // The whole snapshot is one data block, so nothing a channel wrote can speak with the authority of the instructions.
-    public static string Build(ReportSnapshot report)
+    public static string Build(ReportSnapshot report, TimeZoneInfo? zone = null)
     {
         if (!report.HasDigest)
         {
             return "No digest has been sent to the reader yet. " + DataBlock.Wrap("report", "No digest yet.");
         }
 
+        zone ??= TimeZoneInfo.Utc;
         var body = new StringBuilder();
-        body.Append("Digest ").Append(report.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).AppendLine(" UTC");
+        body.Append("Digest ").AppendLine(LocalTime.StampWithOffset(report.CreatedAt, zone));
         if (report.Overview is not null)
         {
             body.Append("Overview: ").AppendLine(report.Overview);
@@ -26,7 +28,7 @@ public static class ChatContext
             body.AppendLine();
             body.Append('[').Append(entry.Section).Append("] id: ").AppendLine(entry.PostId);
             body.Append("source: @").Append(entry.Source).Append(", published ")
-                .AppendLine(entry.PublishedAt.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                .AppendLine(LocalTime.Day(entry.PublishedAt, zone));
             AppendIf(body, "title", entry.Title);
             AppendIf(body, "digest text", entry.Text);
             AppendIf(body, "why it matters", entry.Why);

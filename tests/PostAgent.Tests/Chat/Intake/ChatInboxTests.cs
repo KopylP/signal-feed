@@ -33,8 +33,10 @@ public class ChatInboxTests
         return new ChatInbox(resolver, _state, queue ?? _queue, _notifier, new FakeTimeProvider(Now), NullLogger<ChatInbox>.Instance);
     }
 
+    private static readonly DateTimeOffset SentAt = new(2026, 11, 24, 7, 55, 0, TimeSpan.Zero);
+
     private static Update Incoming(string? text, long chatId = BoundChat, ChatType type = ChatType.Private, int updateId = 100) =>
-        new() { Id = updateId, Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text } };
+        new() { Id = updateId, Message = new Message { Chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type }, Text = text, Date = SentAt.UtcDateTime } };
 
     [Fact]
     public async Task A_quoted_part_goes_to_the_model_with_the_question()
@@ -67,7 +69,7 @@ public class ChatInboxTests
 
         await inbox.HandleAsync(Incoming("Розкажи про пункт 3", updateId: 777), CancellationToken.None);
 
-        Assert.Equal(new ChatRequest(777, "Розкажи про пункт 3", "r1", TestData.ChatId), Assert.Single(_queue.Enqueued));
+        Assert.Equal(new ChatRequest(777, "Розкажи про пункт 3", "r1", TestData.ChatId, SentAt), Assert.Single(_queue.Enqueued));
         Assert.Empty(_notifier.Replies);
     }
 
@@ -184,7 +186,7 @@ public class ChatInboxTests
 
         await inbox.HandleAsync(Incoming("питання", chatId: 43, updateId: 5), CancellationToken.None);
 
-        Assert.Equal(new ChatRequest(5, "питання", "r2", 43), Assert.Single(_queue.Enqueued));
+        Assert.Equal(new ChatRequest(5, "питання", "r2", 43, SentAt), Assert.Single(_queue.Enqueued));
     }
 
     [Fact]

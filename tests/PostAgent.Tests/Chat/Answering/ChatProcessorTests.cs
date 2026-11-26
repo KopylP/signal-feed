@@ -38,6 +38,18 @@ public class ChatProcessorTests
     }
 
     [Fact]
+    public async Task Passes_the_time_the_reader_wrote_to_the_agent()
+    {
+        await Started();
+        var agent = new FakeChatAgent(_ => "відповідь");
+        var sent = new DateTimeOffset(2026, 11, 24, 7, 55, 0, TimeSpan.Zero);
+
+        await Create(agent).HandleAsync(Request(10) with { SentAt = sent }, CancellationToken.None);
+
+        Assert.Equal(sent, agent.LastSentAt);
+    }
+
+    [Fact]
     public async Task A_redelivered_update_is_answered_once()
     {
         await Started();

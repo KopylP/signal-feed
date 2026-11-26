@@ -36,7 +36,7 @@ public sealed class ChatProcessor(
             ChatReply reply;
             try
             {
-                reply = await agent.AskAsync(request.ChatId, current.State, request.Text, ct);
+                reply = await agent.AskAsync(request.ChatId, current.State, request.Text, request.SentAt, ct);
             }
             catch (Exception ex) when (ChatDelivery.IsFailure(ex, ct))
             {
