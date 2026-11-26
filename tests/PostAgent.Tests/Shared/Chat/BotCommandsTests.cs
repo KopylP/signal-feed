@@ -19,7 +19,7 @@ public class BotCommandsTests
     [Fact]
     public void Every_command_the_code_reads_is_in_the_list()
     {
-        var root = Path.Combine(FindRepositoryRoot(), "src", "PostAgent.Functions");
+        var root = Path.Combine(FindRepositoryRoot(), "src");
         var found = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
             .SelectMany(p => System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(p), "\"(/[a-z]+)\"").Select(m => m.Groups[1].Value))

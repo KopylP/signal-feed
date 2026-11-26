@@ -103,7 +103,7 @@ variable "daily_summary_schedule" {
 
 variable "app_settings" {
   description = <<-EOT
-    Extra App Settings: any parameter from src/PostAgent.Functions/Shared/Settings/AgentOptions.cs
+    Extra App Settings: any parameter from src/PostAgent.Core/Shared/Settings/AgentOptions.cs
     (DigestSize, AlertThreshold, AlertQuietHours, OpenAIModel, RetentionDays, etc.).
     A parameter that is not set uses the default from code. Names must match AgentOptions:
     a typo in a name is not an error, the parameter is simply ignored.

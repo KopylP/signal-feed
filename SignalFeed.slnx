@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/PostAgent.Core/PostAgent.Core.csproj" />
     <Project Path="src/PostAgent.Functions/PostAgent.Functions.csproj" />
     <Project Path="src/TgLogin/TgLogin.csproj" />
   </Folder>

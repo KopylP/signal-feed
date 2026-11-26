@@ -36,7 +36,7 @@ Asked to "release" a change that skips it: explain that a release exists only fo
 Confirm with the user first, and check `DEPLOY_ENABLED` is `true` (otherwise nothing deploys).
 
 1. Stop the damage: `gh workflow run deploy.yml -f tag=<previous release tag>`. It rebuilds that tag, deploys it and creates no release.
-2. Check the old version can start: `git diff <tag> main -- src/PostAgent.Functions/Shared/Settings/AgentOptions.cs`. A required setting the old code needs but that was renamed or removed will stop it.
+2. Check the old version can start: `git diff <tag> main -- src/PostAgent.Core/Shared/Settings/AgentOptions.cs`. A required setting the old code needs but that was renamed or removed will stop it.
 3. Fix `main`: `git revert` the bad merge through a pull request (deploys the old code as a new release). Until then the next merge redeploys the broken code.
 
 A rollback restores code only. Infrastructure, App Settings, secrets and data stay as they are.

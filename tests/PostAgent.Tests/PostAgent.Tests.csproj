@@ -12,6 +12,7 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PostAgent.Core\PostAgent.Core.csproj" />
     <ProjectReference Include="..\..\src\PostAgent.Functions\PostAgent.Functions.csproj" />
   </ItemGroup>
 </Project>

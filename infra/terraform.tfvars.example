@@ -23,7 +23,7 @@ telegram_api_id = "1234567"
 # alert_schedule     = "0 30 * * * *"
 # daily_summary_schedule = "0 0 3 * * *"
 
-# Everything else: any parameter from src/PostAgent.Functions/Shared/Settings/AgentOptions.cs.
+# Everything else: any parameter from src/PostAgent.Core/Shared/Settings/AgentOptions.cs.
 # Anything not set uses the default from code. Names must match exactly.
 app_settings = {
   # DigestSize        = "5"

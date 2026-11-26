@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Azure Functions host: Program, the function classes ([Function] triggers, thin: they call PostAgent.Core) and host.json. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
-    <!-- OPENAI001: the OpenAI SDK marks its Responses client experimental. It is the only API that allows function tools together with
-         reasoning (Chat Completions answers HTTP 400), so AiServices.CreateChatClient uses it knowingly; ADR-0011 records the decision. -->
     <NoWarn>$(NoWarn);OPENAI001</NoWarn>
     <RootNamespace>PostAgent</RootNamespace>
   </PropertyGroup>
@@ -14,20 +13,9 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
-    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
-    <PackageReference Include="Azure.Data.Tables" />
-    <PackageReference Include="Azure.Storage.Queues" />
-    <PackageReference Include="Azure.Storage.Blobs" />
-    <PackageReference Include="Azure.Identity" />
-    <PackageReference Include="Azure.Security.KeyVault.Keys" />
-    <PackageReference Include="WTelegramClient" />
-    <PackageReference Include="OpenAI" />
-    <PackageReference Include="Microsoft.Agents.AI" />
-    <PackageReference Include="Microsoft.Extensions.AI" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
-    <PackageReference Include="Telegram.Bot" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PostAgent.Core\PostAgent.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Microsoft.Extensions.Configuration" />
