@@ -7,43 +7,54 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Chat.Agent.Tools;
 
-// The hits are capped (ChatSearchMaxHits) and every post is inside a <post> block.
+// The hits are capped (ChatSearchMaxHits) and every post is inside a <post> block. The period is the publication time, in UTC.
 public sealed class SearchPostsTool(IPostRepository posts, IOptions<AgentOptions> options, TimeProvider time) : IChatTool
 {
     private const int ExcerptChars = 300;
 
     public AIFunction Build(ProposalPlan plan) => AIFunctionFactory.Create(
         (
-            [Description("Words to look for, for example: google core update.")] string query,
-            [Description("How many days back to search, at least 1.")] int days,
-            CancellationToken ct) => RunAsync(query, days, ct),
+            [Description("Words to look for, for example: google core update. Optional when a period is given.")] string? query = null,
+            [Description("How many days back to search, at least 1. Ignored when 'from' is given. Default 1.")] int? days = null,
+            [Description("Start of the period, UTC: a date (2026-11-25) or a date with time (2026-11-25T09:30).")] string? from = null,
+            [Description("End of the period, UTC: a date (2026-11-25, the whole day) or a date with time (2026-11-25T18:00). Default now.")] string? to = null,
+            CancellationToken ct = default) => RunAsync(query, days ?? 0, from, to, ct),
         new AIFunctionFactoryOptions
         {
             Name = "search_posts",
-            Description = "Search the stored posts of the last days for the wider picture. Every word of the query must appear in the post. Returns a few short hits with ids.",
+            Description = "Search the stored posts for the wider picture, by words, by period (date and time of publication, UTC) or both. "
+                + "Every word of the query must appear in the post. Returns a few short hits with ids, newest first.",
         });
 
-    private async Task<string> RunAsync(string query, int days, CancellationToken ct)
+    private async Task<string> RunAsync(string? query, int days, string? from, string? to, CancellationToken ct)
     {
-        var terms = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (terms.Length == 0)
+        var terms = (query ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var hasPeriod = !string.IsNullOrWhiteSpace(from) || !string.IsNullOrWhiteSpace(to);
+        if (terms.Length == 0 && !hasPeriod)
         {
-            return "The query is empty.";
+            return "Give words to look for or a period (from, to).";
         }
 
         var settings = options.Value;
         var now = time.GetUtcNow();
-        var recent = await posts.GetSinceAsync(now.AddDays(-Math.Clamp(days, 1, settings.RetentionDays)), now, ct);
+        if (!PostSearchWindow.TryCreate(from, to, days, now, settings.RetentionDays, out var window, out var error))
+        {
+            return error;
+        }
 
-        var hits = recent
+        var found = await posts.GetSinceAsync(window.Since, window.Until, ct);
+
+        var hits = found
+            .Where(p => p.PublishedAt >= window.Since && p.PublishedAt < window.Until)
             .Where(p => terms.All(t => p.Text.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || (p.Topic?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)))
             .OrderByDescending(p => p.PublishedAt)
             .Take(settings.ChatSearchMaxHits)
             .ToList();
 
+        var header = $"Period: {window}.";
         return hits.Count == 0
-            ? "No posts found."
-            : string.Join("\n\n", hits.Select(p => DataBlock.Wrap("post", PostDescription.Of(p) + "\n" + p.Text.Truncate(ExcerptChars, "…"))));
+            ? header + " No posts found."
+            : header + "\n\n" + string.Join("\n\n", hits.Select(p => DataBlock.Wrap("post", PostDescription.Of(p) + "\n" + p.Text.Truncate(ExcerptChars, "…"))));
     }
 }

@@ -47,7 +47,7 @@ Text written by channels (the snapshot and tool results) reaches the model only 
 - **One conversation per chat and per digest.** Every bound chat has its own blob; a new digest replaces it with a fresh snapshot, so there is no history of old digests ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)). Settings and sources are shared by all chats, the conversation and the menu are not.
 - **The conversation is ours, not OpenAI's.** The chat client uses the Responses API with `store=false` and encrypted reasoning, and we serialize the agent session ourselves ([ADR-0011](../adr/0011-call-the-chat-model-through-the-responses-api.md)).
 - **The model sees the digest first.** The first message of a session is the snapshot of the digest; `ChatHistoryReducer` caps the history at `ChatMaxMessages` and never drops that first message or leaves a tool result without its call.
-- **Tools are small and bounded.** `get_post` and `search_posts` read stored posts (`ChatSearchMaxHits`), the settings tools only build a plan. A turn is bounded by `ChatMaxToolCalls` and `ChatMaxOutputTokens`.
+- **Tools are small and bounded.** `get_post` and `search_posts` read stored posts (`ChatSearchMaxHits`; `search_posts` takes words and/or a UTC period, `PostSearchWindow` clamps it to `RetentionDays` and to now), the settings tools only build a plan. A turn is bounded by `ChatMaxToolCalls` and `ChatMaxOutputTokens`.
 - **The model never changes anything alone.** A settings change is a proposal shown by code and applied only by the owner's button ([ADR-0013](../adr/0013-let-the-chat-agent-propose-settings-changes-the-owner-confirms.md)).
 - **Channel text is data.** It reaches the model only inside `<report>` or `<post>` blocks.
 

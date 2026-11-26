@@ -8,6 +8,22 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [juniper] - 2026-11-26
+
+### Setup required
+- **`infra` apply after this change**: switches the storage account keys off
+  - Where: the `infra` workflow, after the merge (the `sorrel` apply that grants the Terraform identity its storage data roles must already be done)
+  - Value: none
+  - Apply: run `infra` with plan (only the storage account changes, in place), read it, then with apply. The app and the pipelines already use managed identity, so nothing stops working
+
+### Added
+- The chat agent can search stored posts by date and time of publication, not only by words and days back: «що вийшло вчора ввечері?», «що писали сьогодні між 9 і 12?»
+  - A period (`from`, `to`, UTC; a date means the whole day) can be combined with words or used alone, newest posts first
+  - Posts older than `RetentionDays` (1 by default) are already deleted, so a longer history needs a larger `RetentionDays`
+
+### Security
+- The storage account keys are off (`shared_access_key_enabled = false`): a leaked key can no longer open the data; access is only through Entra ID roles
+
 ## [sorrel] - 2026-11-26
 
 ### Improved
