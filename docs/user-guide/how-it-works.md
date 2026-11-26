@@ -54,6 +54,15 @@ The digest is always sent, even when nothing stood out.
 Posts that are still unscored two hours after they were published (scoring failed, see [troubleshooting](troubleshooting.md)) cannot be in the digest.
 The digest then adds a separate message «⚠️ Не оцінено N постів», and sends it instead of «За добу нових постів не було» when nothing was scored, so a broken OpenAI key does not look like a quiet day.
 
+## A digest on demand
+
+Send `/digest` to the bot in the private chat to get a digest of any period outside the schedule. The posts are the best scored ones of the period, also those a daily digest already sent, and the digest is written like the daily one but goes only to the chat that asked:
+
+- `/digest`: the last 24 hours; `/digest 6`: the last 6 hours; `/digest today`, `/digest вчора` (the day in your `TimeZone`);
+- `/digest 2026-11-25T18:00 2026-11-25T23:00`: an exact period (a date without a time is the whole day; use `T`, no spaces inside a value).
+
+An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation or the rating buttons, so the chat keeps talking about the daily digest. The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
+
 ## Rating the digest
 
 Right after the digest the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.

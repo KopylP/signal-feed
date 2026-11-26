@@ -8,6 +8,14 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [rowan] - 2026-11-26
+
+### Added
+- **`/digest`: a digest of any period on demand**: `/digest` (last 24 hours), `/digest 6` (6 hours), `/digest today`, `/digest вчора`, `/digest 2026-11-25T18:00 2026-11-25T23:00`
+  - The best scored posts of the period, also those the daily digest already sent, written like the daily digest and sent only to the chat that asked; nothing is marked as sent
+  - Times are in your `TimeZone`; posts older than `RetentionDays` (2 by default) are gone, so such a period answers that nothing was found
+  - A request costs one model call; the answer takes up to a minute (the bot says «⏳ Готую дайджест…» at once)
+
 ## [v2026.11.26.101-marjoram] - 2026-11-26
 
 ### Added

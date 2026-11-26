@@ -11,6 +11,8 @@ public static class StorageNames
     public const string ScoringQueue = "to-score";
     public const string RunNowQueue = "run-now";
     public const string ChatQueue = "chat-messages";
+    // /digest: a request for a digest of a period, answered to the chat that asked. Created by the runtime like a poison queue.
+    public const string DigestRequestQueue = "digest-requests";
     public const string ChatStateContainer = "chat-state";
     // One conversation per chat (ADR-0014). The old single blob, "current.json", is only deleted by the cleanup once it is stale.
     public static string ChatStateBlobName(long chatId) => chatId.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".json";

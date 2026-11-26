@@ -37,7 +37,7 @@ public sealed class SearchPostsTool(IPostRepository posts, IEffectiveOptions opt
         var settings = await options.GetAsync(ct);
         var zone = LocalTime.Zone(settings.TimeZone);
         var now = time.GetUtcNow();
-        if (!PostSearchWindow.TryCreate(from, to, days, now, settings.RetentionDays, zone, out var window, out var error))
+        if (!PostPeriod.TryCreate(from, to, days, now, settings.RetentionDays, zone, out var window, out var error))
         {
             return error;
         }

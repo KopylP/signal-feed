@@ -1,15 +1,15 @@
 using System.Globalization;
 using PostAgent.Shared.Common;
 
-namespace PostAgent.Chat.Agent.Tools;
+namespace PostAgent.Shared.Posts;
 
-// The period a post search covers. A date or time without an offset is read in the reader's time zone.
+// The period of posts a search or an on-demand digest covers. A date or time without an offset is read in the reader's time zone.
 // Posts older than the retention are deleted, so the window never starts before it.
-public readonly record struct PostSearchWindow(DateTimeOffset Since, DateTimeOffset Until)
+public readonly record struct PostPeriod(DateTimeOffset Since, DateTimeOffset Until)
 {
     public static bool TryCreate(
         string? from, string? to, int days, DateTimeOffset now, int retentionDays, TimeZoneInfo zone,
-        out PostSearchWindow window, out string error)
+        out PostPeriod window, out string error)
     {
         window = default;
         error = string.Empty;
@@ -39,7 +39,7 @@ public readonly record struct PostSearchWindow(DateTimeOffset Since, DateTimeOff
             return false;
         }
 
-        window = new PostSearchWindow(since, until);
+        window = new PostPeriod(since, until);
         return true;
     }
 
@@ -47,7 +47,7 @@ public readonly record struct PostSearchWindow(DateTimeOffset Since, DateTimeOff
         $"{LocalTime.Stamp(Since, zone)} to {LocalTime.Stamp(Until, zone)} ({LocalTime.Offset(Until, zone)})";
 
     // A date without a time means the whole day: the end is the start of the next day.
-    private static bool TryParse(string? text, bool endOfDay, TimeZoneInfo zone, out DateTimeOffset? value)
+    public static bool TryParse(string? text, bool endOfDay, TimeZoneInfo zone, out DateTimeOffset? value)
     {
         value = null;
         if (string.IsNullOrWhiteSpace(text))
