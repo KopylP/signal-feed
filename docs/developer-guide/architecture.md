@@ -123,6 +123,9 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Deployer (`var.deployer_object_id`) | Storage account | Storage Queue Data Contributor (to start a job with `tools/run-now.cs`) |
 | Deployer (`var.deployer_object_id`) | Key Vault key `tg-session` | Key Vault Crypto Service Encryption User (`TgLogin` encrypts the session) |
 | Whoever runs Terraform | Key Vault | Key Vault Crypto Officer (creates and rotates the `tg-session` key) |
+| Whoever runs Terraform | Storage account | Storage Blob, Table and Queue Data Contributor (containers and queues through the data plane; skipped when it is the deployer, who holds them) |
+
+The storage account keys are off (`shared_access_key_enabled = false`): nothing, not even Terraform, reaches storage with a key. Tables are created through the Resource Manager (`azapi_resource`, `local.tables`), because the `azurerm` provider reads table ACLs with a key ([ADR-0019](../adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md)).
 
 `AzureWebJobsStorage__accountName` points the host at the storage account with identity authentication. When it is set it wins over any `AzureWebJobsStorage` connection string; the connection string is the local-development path. The secrets are App Settings of the form
 `@Microsoft.KeyVault(SecretUri=.../secrets/<name>/)`. Roles are defined in `infra/roles.tf`.
@@ -139,6 +142,8 @@ The Azure icons come from draw.io's built-in `azure2` library.
 | Chat about the digest with one conversation blob | A new digest replaces the state, so nothing accumulates; the queue keeps the webhook fast; the agent framework core gives session serialization without durable hosting | [ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md) |
 | Sign in to Telegram from the bot through a Mini App | The session can be renewed from the phone; the code never travels as a Telegram message, and the 2FA password never leaves the phone (SRP proof computed in the page) | [ADR-0016](../adr/0016-sign-in-to-telegram-from-the-bot-through-a-mini-app.md) |
 | Encrypt the Telegram session with a Key Vault key | Storage access alone (a key, a SAS, a backup) shows only ciphertext; Key Vault is called about once per process | [ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md) |
+| Keep the storage keys off, tables through the Resource Manager | A leaked key would open every blob, table and queue; `azurerm` cannot manage tables without one, `azapi` can | [ADR-0019](../adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md) |
+| Keep a small summary per day as the long memory | Trends and `/stats` for months without keeping post text | [ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md) |
 | Fix formatting and validate Terraform in the build job | One pipeline gates the deploy: a broken format or Terraform change cannot reach it | [ADR-0006](../adr/0006-fix-formatting-and-validate-terraform-in-the-build-job.md) |
 
 ## Known gaps

@@ -26,7 +26,13 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Fixed
 - A day's posts can no longer be deleted before its daily summary is written: a failed summary holds the deletion back until the next run
 
-## [hawthorn] - 2026-11-26
+## [ash] - 2026-11-26
+
+### Fixed
+- Fixed the `infra` workflow failing with «Key based authentication is not permitted» after the storage keys were switched off: the tables are now managed through the Resource Manager (`azapi`) instead of `azurerm_storage_table` ([ADR-0019](docs/adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md))
+  - Apply: run `infra` with plan, read it (three tables are imported, nothing is created or destroyed), then with apply
+
+## [v2026.11.26.105-hawthorn] - 2026-11-26
 
 ### Added
 - **`/stats`: statistics at once**: posts collected, scored and interesting, the best and weakest sources by the share of interesting posts (from 5 posts), the most frequent topics, and the tokens the models used (`/stats 30` for 30 days)
