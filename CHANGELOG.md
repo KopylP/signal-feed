@@ -20,7 +20,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Logic
 - Every model call now counts its tokens per UTC day (`scoring` for scoring and digest, `chat`) into `settings/stats/usage.json`; a failure to count never touches the call
 
-## [rowan] - 2026-11-26
+## [v2026.11.26.103-rowan] - 2026-11-26
 
 ### Added
 - **`/digest`: a digest of any period on demand**: `/digest` (last 24 hours), `/digest 6` (6 hours), `/digest today`, `/digest вчора`, `/digest 2026-11-25T18:00 2026-11-25T23:00`
