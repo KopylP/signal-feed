@@ -33,7 +33,7 @@ public static class SettingsCatalog
         Int("AlertCooldownHours", SettingGroup.Alerts, "Пауза між алертами, год"),
         Int("AlertMaxPerRun", SettingGroup.Alerts, "Записів в алерті"),
         Other("AlertQuietHours", SettingGroup.Alerts, SettingKind.QuietHours, "Тихі години"),
-        Other("AlertTimeZone", SettingGroup.Alerts, SettingKind.Text, "Часовий пояс"),
+        Other("AlertTimeZone", SettingGroup.Alerts, SettingKind.Text, "Часовий пояс тихих годин"),
 
         Int("MinPostChars", SettingGroup.Collecting, "Мін. довжина посту"),
         Int("MaxPostChars", SettingGroup.Collecting, "Макс. довжина посту"),
@@ -45,6 +45,7 @@ public static class SettingsCatalog
         Choice("ChatReasoningEffort", SettingGroup.Chat, "Міркування чату", ReasoningEfforts),
         Int("ChatMaxToolCalls", SettingGroup.Chat, "Викликів інструментів на питання"),
         Int("ChatMaxMessages", SettingGroup.Chat, "Повідомлень у розмові"),
+        Other("TimeZone", SettingGroup.Chat, SettingKind.Text, "Мій часовий пояс"),
 
         Choice("OpenAIModel", SettingGroup.Models, "Модель оцінювання і дайджесту", Models),
     ];

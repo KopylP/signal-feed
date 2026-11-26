@@ -17,10 +17,13 @@ internal sealed class FakeChatAgent(Func<ChatState, string, Task<ChatReply>> ask
 
     public long? LastChatId { get; private set; }
 
-    public Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, CancellationToken ct)
+    public DateTimeOffset? LastSentAt { get; private set; }
+
+    public Task<ChatReply> AskAsync(long chatId, ChatState state, string userText, DateTimeOffset? sentAt, CancellationToken ct)
     {
         Calls++;
         LastChatId = chatId;
+        LastSentAt = sentAt;
         return ask(state, userText);
     }
 }

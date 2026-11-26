@@ -35,6 +35,20 @@ public class DigestMessageTests
     }
 
     [Fact]
+    public void Shows_the_date_of_a_post_in_the_reader_time_zone()
+    {
+        // 23:30 UTC on the 24th is already the 25th in Kyiv.
+        var post = Post("a", hoursAgo: 8 - 23.5 + 24);
+        var report = Report(headlines: [new DigestEntry(post, "Заголовок", "Суть", "Чому")]);
+
+        var utc = Assert.Single(DigestMessage.Format(report));
+        var kyiv = Assert.Single(DigestMessage.Format(report, TimeZoneInfo.FindSystemTimeZoneById("Europe/Kyiv")));
+
+        Assert.Contains("23.11", utc);
+        Assert.Contains("24.11", kyiv);
+    }
+
+    [Fact]
     public void Escapes_model_generated_text_and_the_url()
     {
         var post = Post("a");

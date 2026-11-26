@@ -25,6 +25,9 @@ public sealed class AgentOptionsValidator : IValidateOptions<AgentOptions>
             options.TelegramWebhookSecret.Length > 0 && !WebhookSecretPattern.IsMatch(options.TelegramWebhookSecret),
             "TelegramWebhookSecret must be 1-256 characters from A-Z, a-z, 0-9, underscore and hyphen (a Telegram limit).");
         errors.AddIfNotNull(QuietHours.Validate(options.AlertQuietHours, options.AlertTimeZone));
+        errors.AddIf(
+            !TimeZoneInfo.TryFindSystemTimeZoneById(options.TimeZone, out _),
+            $"TimeZone '{options.TimeZone}' was not found on this system. Use an IANA id such as Europe/Kyiv.");
 
         // AlertFunction шукає пости за вікно плюс cooldown, а Cleanup зберігає лише RetentionDays.
         errors.AddIf(

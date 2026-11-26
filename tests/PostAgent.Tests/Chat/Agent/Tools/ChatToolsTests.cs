@@ -110,7 +110,11 @@ public class ChatToolsTests
             Found("early", "seo ранок", hoursAgo: 5),
             Found("before", "seo ніч", hoursAgo: 7));
 
-        var result = await Create(repo, o => o.RetentionDays = 2)
+        var result = await Create(repo, o =>
+            {
+                o.RetentionDays = 2;
+                o.TimeZone = "UTC";
+            })
             .SearchPostsBetween(null, "2026-11-24T02:00", "2026-11-24T08:00", CancellationToken.None);
 
         Assert.Contains("seo вечір", result);
@@ -135,11 +139,51 @@ public class ChatToolsTests
     {
         var repo = new InMemoryPostRepository();
 
-        var result = await Create(repo, o => o.RetentionDays = 1)
+        var result = await Create(repo, o =>
+            {
+                o.RetentionDays = 1;
+                o.TimeZone = "UTC";
+            })
             .SearchPostsBetween(null, "2026-11-01", "2026-12-31", CancellationToken.None);
 
         Assert.Equal(Now.AddDays(-1), repo.QueriedSince);
-        Assert.Contains("2026-11-23 08:00 to 2026-11-24 08:00 UTC", result);
+        Assert.Contains("2026-11-23 08:00 to 2026-11-24 08:00 (UTC)", result);
+    }
+
+    [Fact]
+    public async Task A_period_without_an_offset_is_read_in_the_reader_time_zone_and_shown_in_it()
+    {
+        // 06:30 UTC is 08:30 in Kyiv in November (UTC+02:00); 05:30 UTC is 07:30.
+        var repo = new InMemoryPostRepository(
+            Found("in", "seo всередині", hoursAgo: 1.5),
+            Found("out", "seo раніше", hoursAgo: 2.5));
+
+        var result = await Create(repo, o =>
+            {
+                o.RetentionDays = 2;
+                o.TimeZone = "Europe/Kyiv";
+            })
+            .SearchPostsBetween(null, "2026-11-24T08:00", null, CancellationToken.None);
+
+        Assert.Contains("seo всередині", result);
+        Assert.DoesNotContain("seo раніше", result);
+        Assert.Contains("2026-11-24 08:00 to 2026-11-24 10:00 (UTC+02:00)", result);
+        Assert.Contains("2026-11-24 08:30 (UTC+02:00)", result);
+    }
+
+    [Fact]
+    public async Task An_explicit_offset_in_the_period_is_kept_as_written()
+    {
+        var repo = new InMemoryPostRepository(Found("a", "seo новина", hoursAgo: 1));
+
+        var result = await Create(repo, o =>
+            {
+                o.RetentionDays = 2;
+                o.TimeZone = "America/New_York";
+            })
+            .SearchPostsBetween(null, "2026-11-24T06:00:00Z", null, CancellationToken.None);
+
+        Assert.Contains("seo новина", result);
     }
 
     [Fact]

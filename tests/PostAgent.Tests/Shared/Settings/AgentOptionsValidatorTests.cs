@@ -45,6 +45,15 @@ public class AgentOptionsValidatorTests
     }
 
     [Fact]
+    public void Unknown_reader_time_zone_is_reported()
+    {
+        var result = Validate(o => o.TimeZone = "Europe/Nowhere");
+
+        Assert.Contains("TimeZone", result.FailureMessage);
+        Assert.DoesNotContain("AlertTimeZone", result.FailureMessage);
+    }
+
+    [Fact]
     public void Alert_lookback_longer_than_the_retained_data_is_rejected()
     {
         var result = Validate(o =>

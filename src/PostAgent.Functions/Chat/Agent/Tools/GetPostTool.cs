@@ -1,12 +1,14 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Posts;
+using PostAgent.Shared.Settings;
 
 namespace PostAgent.Chat.Agent.Tools;
 
 // Post text is data written by others: it is always inside a <post> block.
-public sealed class GetPostTool(IPostRepository posts) : IChatTool
+public sealed class GetPostTool(IPostRepository posts, IEffectiveOptions options) : IChatTool
 {
     private const string NotFound = "Post not found. It may have been deleted; rely on the digest text.";
 
@@ -26,6 +28,6 @@ public sealed class GetPostTool(IPostRepository posts) : IChatTool
         }
 
         var post = (await posts.GetAsync([reference], ct)).FirstOrDefault();
-        return post is null ? NotFound : DataBlock.Wrap("post", PostDescription.Of(post) + "\n" + post.Text);
+        return post is null ? NotFound : DataBlock.Wrap("post", PostDescription.Of(post, LocalTime.Zone((await options.GetAsync(ct)).TimeZone)) + "\n" + post.Text);
     }
 }

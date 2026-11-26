@@ -1,4 +1,5 @@
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
@@ -36,7 +37,7 @@ public sealed class DigestJob(
 
         // Posts are marked only after every message went out: if one fails, the next run repeats the digest
         // (a duplicate is better than a lost digest).
-        foreach (var message in DigestMessage.Format(report))
+        foreach (var message in DigestMessage.Format(report, LocalTime.Zone(settings.TimeZone)))
         {
             await notifier.SendAsync(message, ct);
         }

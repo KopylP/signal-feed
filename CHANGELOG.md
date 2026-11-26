@@ -8,6 +8,21 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [willow] - 2026-11-26
+
+### Contract changes
+- **`ChatRequest` in the `chat-messages` queue has an optional `sentAt`** (compatible)
+  - Before: `updateId`, `text`, `reportId`, `chatId`
+  - After: the same plus `sentAt` (UTC), absent in messages queued before this change, which are still processed
+  - Affects: only code that writes to the queue itself; the bot does it
+
+### Added
+- **The agent shows and understands time in your time zone, not in UTC**: the new `TimeZone` setting (default `Europe/Kyiv`)
+  - Where it applies: the dates in the digest, the times of posts and of the digest in the chat, and the dates and times in a search («що вийшло сьогодні між 9 і 12?» means 09:00-12:00 for you)
+  - Each question carries the time the message was written (from Telegram) to the model as metadata, so «вчора» and «сьогодні вранці» are resolved against your clock
+  - Change it from the bot: `/settings`, 💬 Chat, «Мій часовий пояс» (an IANA id, for example `Europe/Warsaw`), or ask the agent
+  - Storage, the daily partitions, the schedules (CRON) and the logs stay in UTC; `AlertTimeZone` still only sets the zone of the quiet hours
+
 ## [v2026.11.26.96-thyme] - 2026-11-26
 
 ### Logic

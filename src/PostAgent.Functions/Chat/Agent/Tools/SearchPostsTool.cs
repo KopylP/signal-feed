@@ -1,14 +1,13 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Options;
 using PostAgent.Shared.Common;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Chat.Agent.Tools;
 
-// The hits are capped (ChatSearchMaxHits) and every post is inside a <post> block. The period is the publication time, in UTC.
-public sealed class SearchPostsTool(IPostRepository posts, IOptions<AgentOptions> options, TimeProvider time) : IChatTool
+// The hits are capped (ChatSearchMaxHits) and every post is inside a <post> block. The period is the publication time in the reader's time zone (TimeZone).
+public sealed class SearchPostsTool(IPostRepository posts, IEffectiveOptions options, TimeProvider time) : IChatTool
 {
     private const int ExcerptChars = 300;
 
@@ -16,13 +15,13 @@ public sealed class SearchPostsTool(IPostRepository posts, IOptions<AgentOptions
         (
             [Description("Words to look for, for example: google core update. Optional when a period is given.")] string? query = null,
             [Description("How many days back to search, at least 1. Ignored when 'from' is given. Default 1.")] int? days = null,
-            [Description("Start of the period, UTC: a date (2026-11-25) or a date with time (2026-11-25T09:30).")] string? from = null,
-            [Description("End of the period, UTC: a date (2026-11-25, the whole day) or a date with time (2026-11-25T18:00). Default now.")] string? to = null,
+            [Description("Start of the period in the reader's time zone: a date (2026-11-25) or a date with time (2026-11-25T09:30).")] string? from = null,
+            [Description("End of the period in the reader's time zone: a date (2026-11-25, the whole day) or a date with time (2026-11-25T18:00). Default now.")] string? to = null,
             CancellationToken ct = default) => RunAsync(query, days ?? 0, from, to, ct),
         new AIFunctionFactoryOptions
         {
             Name = "search_posts",
-            Description = "Search the stored posts for the wider picture, by words, by period (date and time of publication, UTC) or both. "
+            Description = "Search the stored posts for the wider picture, by words, by period (date and time of publication, in the reader's time zone) or both. "
                 + "Every word of the query must appear in the post. Returns a few short hits with ids, newest first.",
         });
 
@@ -35,9 +34,10 @@ public sealed class SearchPostsTool(IPostRepository posts, IOptions<AgentOptions
             return "Give words to look for or a period (from, to).";
         }
 
-        var settings = options.Value;
+        var settings = await options.GetAsync(ct);
+        var zone = LocalTime.Zone(settings.TimeZone);
         var now = time.GetUtcNow();
-        if (!PostSearchWindow.TryCreate(from, to, days, now, settings.RetentionDays, out var window, out var error))
+        if (!PostSearchWindow.TryCreate(from, to, days, now, settings.RetentionDays, zone, out var window, out var error))
         {
             return error;
         }
@@ -52,9 +52,9 @@ public sealed class SearchPostsTool(IPostRepository posts, IOptions<AgentOptions
             .Take(settings.ChatSearchMaxHits)
             .ToList();
 
-        var header = $"Period: {window}.";
+        var header = $"Period: {window.Describe(zone)}.";
         return hits.Count == 0
             ? header + " No posts found."
-            : header + "\n\n" + string.Join("\n\n", hits.Select(p => DataBlock.Wrap("post", PostDescription.Of(p) + "\n" + p.Text.Truncate(ExcerptChars, "…"))));
+            : header + "\n\n" + string.Join("\n\n", hits.Select(p => DataBlock.Wrap("post", PostDescription.Of(p, zone) + "\n" + p.Text.Truncate(ExcerptChars, "…"))));
     }
 }

@@ -2,8 +2,9 @@ using System.Text.Json;
 
 namespace PostAgent.Chat.Intake;
 
-// One question from the reader, as it travels through the chat queue. ReportId says which digest it was asked about, ChatId whose question it is.
-public sealed record ChatRequest(long UpdateId, string Text, string ReportId, long ChatId)
+// One question from the reader, as it travels through the chat queue. ReportId says which digest it was asked about, ChatId whose question it is,
+// SentAt when Telegram says the reader wrote it (metadata for the model; absent in messages queued before it existed).
+public sealed record ChatRequest(long UpdateId, string Text, string ReportId, long ChatId, DateTimeOffset? SentAt = null)
 {
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
 

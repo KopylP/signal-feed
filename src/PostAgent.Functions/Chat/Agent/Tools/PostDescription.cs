@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using PostAgent.Shared.Chat;
+using PostAgent.Shared.Common;
 using PostAgent.Shared.Posts;
 
 namespace PostAgent.Chat.Agent.Tools;
@@ -8,12 +9,12 @@ namespace PostAgent.Chat.Agent.Tools;
 public static class PostDescription
 {
     // The topic and the source name come from channel text too, so the details travel inside the block with the post.
-    public static string Of(PostEntity post)
+    public static string Of(PostEntity post, TimeZoneInfo zone)
     {
         var line = new StringBuilder();
         line.Append("id: ").Append(ChatPostId.Format(post.ToRef()));
         line.Append(" | @").Append(post.Source);
-        line.Append(" | ").Append(post.PublishedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).Append(" UTC");
+        line.Append(" | ").Append(LocalTime.StampWithOffset(post.PublishedAt, zone));
         if (post.Topic is not null)
         {
             line.Append(" | ").Append(post.Topic);
