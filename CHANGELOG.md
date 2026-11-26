@@ -8,6 +8,24 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [cypress] - 2026-11-26
+
+### Setup required
+- **Rename the GitHub variable `TF_CLEANUP_SCHEDULE` to `TF_DAILY_SUMMARY_SCHEDULE`** (only if you set it)
+  - Where: GitHub repository variables, and `daily_summary_schedule` in `terraform.tfvars` if you run Terraform locally
+  - Value: the same CRON as before; unset means `0 0 3 * * *`
+  - Apply: run `infra` with apply; the app setting `CleanupSchedule` becomes `DailySummarySchedule`
+
+### Contract changes
+- **The cleanup is started by the daily summary, not by a timer** (compatible)
+  - Before: one timer function, `CleanupFunction` on `CleanupSchedule`, wrote the summary and deleted old data
+  - After: `DailySummaryFunction` (timer on `DailySummarySchedule`) writes the daily summaries and queues a request in `cleanup-requests`; `CleanupFunction` (queue trigger) deletes old data only from that request, never past the last summarized day
+  - Affects: the setting `CleanupSchedule` (now `DailySummarySchedule`), the run-now job `cleanup` (now `daily-summary`, which also starts the cleanup); queries on the function name `CleanupFunction` now see the queue-started cleanup, and `DailySummaryFunction` is new
+  - Migration: use `daily-summary` in `tools/run-now.cs` and in any script; rename the schedule variable
+
+### Fixed
+- A day's posts can no longer be deleted before its daily summary is written: a failed summary holds the deletion back until the next run
+
 ## [hawthorn] - 2026-11-26
 
 ### Added

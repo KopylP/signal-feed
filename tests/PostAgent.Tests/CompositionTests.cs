@@ -76,6 +76,7 @@ public class CompositionTests
         Assert.NotNull(ActivatorUtilities.CreateInstance<AlertFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.DailySummary.DailySummaryFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<TelegramWebhookFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<RunNowFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<ChatFunction>(services));
@@ -201,7 +202,7 @@ public class CompositionTests
 
         var names = scope.ServiceProvider.GetServices<IJob>().Select(j => j.Name).Order().ToList();
 
-        Assert.Equal(["alert", "cleanup", "collect", "digest"], names);
+        Assert.Equal(["alert", "collect", "daily-summary", "digest"], names);
     }
 
     [Fact]
@@ -223,6 +224,7 @@ public class CompositionTests
 
         Assert.Contains(provider.GetServices<ICleanupTask>(), task => task is PostsCleanup);
         Assert.Contains(provider.GetServices<ICleanupTask>(), task => task is ChatStateCleanup);
+        Assert.Contains(provider.GetServices<ICleanupTask>(), task => task is OldDailySummariesCleanup);
     }
 
     [Fact]

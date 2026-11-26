@@ -3,6 +3,7 @@ using PostAgent.Alerts;
 using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
+using PostAgent.DailySummary;
 using PostAgent.Digest;
 using PostAgent.Feedback;
 using PostAgent.Login;
@@ -52,6 +53,7 @@ public static class ServiceCollectionExtensions
             .AddScoring()
             .AddDigest()
             .AddCleanup()
+            .AddDailySummary()
             .AddAlerts();
     }
 }

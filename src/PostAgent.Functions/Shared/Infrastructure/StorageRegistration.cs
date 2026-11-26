@@ -23,6 +23,7 @@ public static class StorageRegistration
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(connectionString, StorageNames.ChatQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(connectionString, StorageNames.LoginQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.DigestRequestQueue, new QueueClient(connectionString, StorageNames.DigestRequestQueue, queueOptions));
+            services.AddKeyedSingleton(StorageNames.CleanupRequestQueue, new QueueClient(connectionString, StorageNames.CleanupRequestQueue, queueOptions));
         }
         else if (!string.IsNullOrEmpty(account))
         {
@@ -37,6 +38,8 @@ public static class StorageRegistration
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.LoginQueue}"), credential, queueOptions));
             services.AddKeyedSingleton(StorageNames.DigestRequestQueue, new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.DigestRequestQueue}"), credential, queueOptions));
+            services.AddKeyedSingleton(StorageNames.CleanupRequestQueue, new QueueClient(
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.CleanupRequestQueue}"), credential, queueOptions));
         }
         else
         {
@@ -67,6 +70,7 @@ public static class StorageRegistration
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue).CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.LoginQueue).CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.DigestRequestQueue).CreateIfNotExistsAsync(cancellationToken: ct);
+        await services.GetRequiredKeyedService<QueueClient>(StorageNames.CleanupRequestQueue).CreateIfNotExistsAsync(cancellationToken: ct);
 
         var container = services.GetRequiredService<IOptions<AgentOptions>>().Value.SessionBlobContainer;
         var blobs = services.GetRequiredService<BlobServiceClient>();

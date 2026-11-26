@@ -16,7 +16,7 @@
     "MaxItemsPerGroup": "5",
     "MaxBundleChars": "3000",
     "AlertSchedule": "0 30 * * * *",
-    "CleanupSchedule": "0 0 3 * * *",
+    "DailySummarySchedule": "0 0 3 * * *",
     "RetentionDays": "2",
     "AlertSources": "some_group",
     "AlertWindowHours": "3",

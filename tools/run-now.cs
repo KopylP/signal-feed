@@ -20,7 +20,7 @@ using Azure.Identity;
 using Azure.Storage.Queues;
 
 const string queueName = "run-now";
-string[] jobs = ["collect", "digest", "alert", "cleanup"];
+string[] jobs = ["collect", "digest", "alert", "daily-summary"];
 // Jobs that send a Telegram message every time. collect only does it when a source fails, but it moves read cursors.
 string[] sendsToTelegram = ["digest", "alert"];
 

@@ -53,6 +53,7 @@ Build and tests must pass before you finish a task.
 - Take time from `TimeProvider`, never from `DateTime.Now` or `DateTimeOffset.UtcNow`.
 - Logging uses message templates with named parameters (`log.LogInformation("Digest sent: {Count} posts", n)`), no string interpolation.
   Secrets and tokens never reach the logs.
+- Names say what a thing does: a class, function, setting, queue or file is named for its work (`DailySummaryFunction`, `PostsCleanup`, `daily-summary`), never for a generic role (`Task`, `Manager`, `Helper`, `Processor`) alone. When behavior changes, rename in the same change (class, function, setting, run-now job, docs); a name that no longer fits is a bug.
 - Comments explain why, not what. Do not comment the obvious.
 - NuGet versions live only in `Directory.Packages.props`; reference packages in `.csproj` without a version.
 

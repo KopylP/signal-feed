@@ -11,7 +11,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - Each feature has `XxxServices.AddXxx(this IServiceCollection)`, called from `ServiceCollectionExtensions.AddPostAgent`.
 - A function stays thin: it takes dependencies through the constructor, calls the logic and catches only what it can handle. Pure logic (selection, formatting) lives in static classes and is tested on its own.
 - A scheduled job is an `IJob` class (`Shared/Jobs`) registered with `AddJob<T>()`; its timer function only calls `RunAsync`. `RunNowFunction` starts any job by `Name`, so never copy job logic into a second trigger. A new job name also goes into `tools/run-now.cs`.
-- A new cleanup is an `ICleanupTask` class in `Cleanup/`, registered in `CleanupServices`.
+- A new cleanup is an `ICleanupTask` class in `Cleanup/`, registered in `CleanupServices`. The cleanup never runs on a timer: `DailySummaryJob` (the timer) writes the daily summaries and then queues a `CleanupRequest`, and `CleanupFunction` runs the tasks from it. A task must not delete a day after `request.SummarizedThrough`.
 
 ## Settings
 
@@ -65,7 +65,7 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 
 ## Long memory, statistics and commands (ADR-0018)
 
-- `DailyStatsTask` runs first in the cleanup: it summarizes the finished days still in `Posts` (counts and names, never post text) and only then `PostsCleanup` deletes them. Topics and titles in a summary came from channels: data when shown (`DataBlock` in `get_trends`, escaped in `StatsMessage`).
+- `DailySummaryJob` summarizes the finished days still in `Posts` (counts and names, never post text) and only after that queues the cleanup request; a failed summary queues nothing, so no post is deleted without its summary. Topics and titles in a summary came from channels: data when shown (`DataBlock` in `get_trends`, escaped in `StatsMessage`).
 - `/stats` is a handler (`StatsInbox`) with no model call. The model clients are wrapped by `UsageRecordingChatClient` (below the function-calling layer); a failure to record never touches the call.
 - A new bot command is added to `Shared/Chat/BotCommands` too: the agent answers «які є команди» from it (`get_commands`), and `BotCommandsTests` fails when a `"/word"` literal in the source is missing from it (`AddStatsStores` registers the stores, `AddStatsCommand` the handler).
 

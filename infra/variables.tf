@@ -93,8 +93,8 @@ variable "alert_schedule" {
   default     = "0 30 * * * *"
 }
 
-variable "cleanup_schedule" {
-  description = "CRON for cleaning up old data (UTC)."
+variable "daily_summary_schedule" {
+  description = "CRON for the daily summary of the finished days (UTC); the cleanup of old data starts right after it."
   type        = string
   default     = "0 0 3 * * *"
 }

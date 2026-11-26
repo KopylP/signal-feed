@@ -35,3 +35,5 @@ Revisit if the owner wants full-text history or per-post lookups: that needs a s
 ## Updates
 
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
+
+2026-11-26: The summary no longer runs inside the cleanup. `DailySummaryJob` (a timer, `DailySummarySchedule`) writes the summaries and then queues a `CleanupRequest`; `CleanupFunction` runs the cleanup tasks only from that request, and `PostsCleanup` never deletes past the last summarized day. A failed summary now holds the deletion back instead of losing a day. The summary also covers every day still in `Posts`, even older than the retention. The sentence above that `DailyStatsTask` "runs first in the cleanup" is replaced by this.
