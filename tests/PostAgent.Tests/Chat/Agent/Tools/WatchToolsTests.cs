@@ -81,12 +81,22 @@ public class WatchToolsTests
     }
 
     [Fact]
-    public async Task Resetting_the_alerts_group_returns_the_topics_to_the_app_setting()
+    public async Task Resetting_only_the_alerts_group_leaves_the_followed_topics()
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update"] });
 
         await _h.Editor.ProposeAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.ResetGroup, nameof(SettingGroup.Alerts))], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
         await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
+
+        Assert.Equal(["google core update"], _h.Store.Current!.Watches);
+    }
+
+    [Fact]
+    public async Task Resetting_everything_returns_the_topics_to_the_app_setting()
+    {
+        _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update"] });
+
+        await _h.Editor.ResetAllAsync(CancellationToken.None);
 
         Assert.Null(_h.Store.Current!.Watches);
     }

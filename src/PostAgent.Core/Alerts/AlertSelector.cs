@@ -5,8 +5,12 @@ namespace PostAgent.Alerts;
 
 public static class AlertSelector
 {
-    // One run never floods the chat, however many posts match.
+    // One run never floods the chat, however many posts match; the rest are announced by the next runs, while they are still inside the window.
     public const int MaxWatchedPerRun = 5;
+
+    // How far back a followed topic looks: a day (the digest's own window), not the alert window of the groups. Quiet hours or a short AlertWindowHours
+    // must not make a post that scored low disappear, and a post is announced only while its status is Scored, so a wide window repeats nothing.
+    public static readonly TimeSpan WatchWindow = TimeSpan.FromHours(26);
 
     public static DateTimeOffset LookbackStart(AgentOptions options, DateTimeOffset now) =>
         now.AddHours(-(options.AlertWindowHours + options.AlertCooldownHours));
@@ -40,7 +44,7 @@ public static class AlertSelector
             return [];
         }
 
-        var since = LookbackStart(options, now);
+        var since = now - WatchWindow;
         return posts
             .Where(p => p.Status == PostStatus.Scored && p.DuplicateOf is null && p.PublishedAt >= since && !alreadyAlerted.Contains(p.RowKey))
             .Select(p => (Post: p, Phrase: watches.FirstOrDefault(w => WatchMatcher.Matches(p, w))))

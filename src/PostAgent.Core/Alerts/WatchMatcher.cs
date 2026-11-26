@@ -4,7 +4,8 @@ using PostAgent.Shared.Posts;
 namespace PostAgent.Alerts;
 
 // A post matches a followed topic when every word of the phrase is in its text or topic, in any order and any case.
-// A short word (up to three letters, like "ai") must stand alone, so "ai" does not match "said"; a longer one may be part of a word ("update" in "updated").
+// A word must start a word of the text ("update" matches "updated", "core" does not match "score"); a short one (up to three letters, like "ai")
+// must stand alone, so "ai" does not match "said" or "aim".
 public static class WatchMatcher
 {
     private const int WholeWordUpTo = 3;
@@ -24,16 +25,12 @@ public static class WatchMatcher
 
     private static bool ContainsWord(string haystack, string word)
     {
-        if (word.Length > WholeWordUpTo)
-        {
-            return haystack.Contains(word, StringComparison.OrdinalIgnoreCase);
-        }
-
+        var end = word.Length <= WholeWordUpTo ? @"(?![\p{L}\p{N}])" : string.Empty;
         try
         {
             return Regex.IsMatch(
                 haystack,
-                $@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(word)}(?![\p{{L}}\p{{N}}])",
+                $@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(word)}{end}",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
                 MatchTimeout);
         }

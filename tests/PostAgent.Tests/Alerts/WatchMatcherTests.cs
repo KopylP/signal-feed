@@ -18,6 +18,9 @@ public class WatchMatcherTests
     [InlineData("Google rolled out the March core update today", "google core update", true)]
     [InlineData("UPDATE: Google CORE news", "google core update", true)]
     [InlineData("Google updated its core systems", "google core update", true)]
+    [InlineData("Google Ads quality score update rolled out", "google core update", false)]
+    [InlineData("A hardcore Google update", "google core update", false)]
+    [InlineData("Оновлення алгоритму Google", "оновлен google", true)]
     [InlineData("Google rolled out a spam update", "google core update", false)]
     [InlineData("nothing here", "google", false)]
     public void Every_word_must_be_in_the_text_in_any_order_and_case(string text, string phrase, bool expected) =>

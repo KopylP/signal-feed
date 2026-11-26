@@ -69,7 +69,7 @@ public class WatchAlertTests
         var repo = new InMemoryPostRepository(
             Watched("sent", status: PostStatus.Sent),
             Duplicate(),
-            Watched("old", hoursAgo: 48),
+            Watched("old", hoursAgo: 30),
             Unscored("new"));
 
         await Job(repo).RunAsync(CancellationToken.None);
@@ -86,6 +86,31 @@ public class WatchAlertTests
         await Job(repo, o => o.Watches = "ai overviews").RunAsync(CancellationToken.None);
 
         Assert.Empty(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task A_low_scored_match_from_before_the_quiet_hours_ended_is_still_announced_afterwards()
+    {
+        // 20 hours old: far outside the 6 hour alert window, inside the day the followed topics look at.
+        var repo = new InMemoryPostRepository(Watched(score: 2, hoursAgo: 20));
+
+        await Job(repo).RunAsync(CancellationToken.None);
+
+        Assert.Single(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task A_short_alert_window_does_not_shorten_the_followed_topics()
+    {
+        var repo = new InMemoryPostRepository(Watched(hoursAgo: 3));
+
+        await Job(repo, o =>
+        {
+            o.AlertWindowHours = 1;
+            o.AlertCooldownHours = 0;
+        }).RunAsync(CancellationToken.None);
+
+        Assert.Single(_notifier.Sent);
     }
 
     [Fact]

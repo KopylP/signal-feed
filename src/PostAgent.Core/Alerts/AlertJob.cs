@@ -25,7 +25,14 @@ public sealed class AlertJob(
             return;
         }
 
-        var recent = await posts.GetSinceAsync(AlertSelector.LookbackStart(settings, now), now, ct);
+        // The followed topics look further back than the groups' alert window; the regular selection filters by its own window anyway.
+        var since = AlertSelector.LookbackStart(settings, now);
+        if (settings.WatchList.Count > 0 && now - AlertSelector.WatchWindow < since)
+        {
+            since = now - AlertSelector.WatchWindow;
+        }
+
+        var recent = await posts.GetSinceAsync(since, now, ct);
         var alerts = AlertSelector.Select(recent, settings, now);
         if (alerts.Count > 0)
         {

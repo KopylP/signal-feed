@@ -29,7 +29,7 @@ public sealed class SettingsEditor(
     // Everything the bot set goes back to the App Settings. The way out when the stored settings cannot be read.
     public Task<EditResult> ResetAllAsync(CancellationToken ct) =>
         UpdateCoreAsync(
-            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Pending = null, PromptSections = null, Proposals = null },
+            o => o with { Values = new Dictionary<string, string>(), Sources = null, AlertSources = null, Watches = null, Pending = null, PromptSections = null, Proposals = null },
             validate: false,
             replaceUnreadable: true,
             ct);
@@ -320,7 +320,6 @@ public sealed class SettingsEditor(
                     Values = o.Values.Where(v => !keys.Contains(v.Key)).ToDictionary(),
                     Sources = group == SettingGroup.Sources ? null : o.Sources,
                     AlertSources = group == SettingGroup.Sources ? null : o.AlertSources,
-                    Watches = group == SettingGroup.Alerts ? null : o.Watches,
                 };
 
             case SettingChangeKind.AddSource:

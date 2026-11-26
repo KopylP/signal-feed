@@ -8,9 +8,19 @@ public class WatchPhrasesTests
     [InlineData("google core update", "google core update")]
     [InlineData("  Google   CORE\tupdate  ", "Google CORE update")]
     [InlineData("a;b", "a b")]
-    [InlineData("<b>x</b>", "b x /b")]
+    [InlineData("<b>x</b>", "b x b")]
     [InlineData("line\nbreak", "line break")]
     public void A_phrase_is_one_clean_line(string text, string expected) =>
+        Assert.Equal(expected, WatchPhrases.Normalize(text));
+
+    [Theory]
+    [InlineData("\"google core update\"", "google core update")]
+    [InlineData("google, core update?", "google core update")]
+    [InlineData("(march) core-update!", "march core-update")]
+    [InlineData("C# and c++", "C# and c++")]
+    [InlineData("«оновлення google»", "оновлення google")]
+    [InlineData("go\u200bogle core\u00ADupdate \u202Eevil", "google coreupdate evil")]
+    public void Marks_around_a_word_and_invisible_characters_are_dropped_but_not_inside_a_word(string text, string expected) =>
         Assert.Equal(expected, WatchPhrases.Normalize(text));
 
     [Theory]

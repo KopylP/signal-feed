@@ -12,9 +12,9 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 
 ### Added
 - **Follow a topic**: tell the agent «стеж за google core update» (and «перестань стежити за ...», «за чим я стежу?»)
-  - The agent prepares a plan and you confirm it with the button; from then on a new scored post from any source (channels too) that has every word of the phrase is sent as its own message «👀 Стеження за темою» with the matched topic, whatever its score and without the source's alert cooldown
-  - Every hour (the alert job), at most 5 posts per run, best first; each post once (it is marked sent, so the digest does not repeat it); quiet hours hold it back; up to 20 topics
-  - New setting `Watches` (`;`-separated, empty by default), normally set through the agent; «Скинути» for the Alerts group in `/settings` returns it to the App Setting
+  - The agent prepares a plan and you confirm it with the button; from then on a new scored post from any source (channels too) that has every word of the phrase (each word must start a word of the post: «core» does not match «score») is sent as its own message «👀 Стеження за темою» with the matched topic, whatever its score and without the source's alert cooldown
+  - Every hour (the alert job), the posts of the last 26 hours, at most 5 per run, best first; each post once (it is marked sent, so the digest does not repeat it); quiet hours hold it back; up to 20 topics
+  - New setting `Watches` (`;`-separated, empty by default), normally set through the agent; «Скинути все» in `/settings` returns it to the App Setting
 
 ## [v2026.11.26.110-cypress] - 2026-11-26
 
