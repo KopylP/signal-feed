@@ -17,6 +17,10 @@ terraform {
 # The subscription comes from the ARM_SUBSCRIPTION_ID environment variable.
 provider "azurerm" {
   features {}
+
+  # Containers, tables and queues are managed through Entra ID, because the storage account keys are off
+  # (shared_access_key_enabled in storage.tf). The Terraform identity holds the data roles (roles.tf).
+  storage_use_azuread = true
 }
 
 # Signs in like azurerm: ARM_USE_OIDC, ARM_CLIENT_ID, ARM_TENANT_ID and ARM_SUBSCRIPTION_ID.

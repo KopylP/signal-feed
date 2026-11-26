@@ -58,7 +58,7 @@ The digest then adds a separate message «⚠️ Не оцінено N пост�
 
 Write to the bot in the private chat to ask more (after a digest, or before the first one): «розкажи детальніше про пункт 3», «що з цього важливе для каталогу?». The agent can also show and change parts of its own prompts and keep a short profile of you, each change only after you confirm the exact before and after ([configuration](configuration.md#prompts-from-the-chat)). You can also use Telegram's reply or quote on any message: the quoted part (or the message you replied to) goes to the model with your question, so «розкрий цю тему» knows which topic you mean.
 An AI assistant answers in Ukrainian, plain text, using the digest you received. If the digest is not enough, it can open the full text of a post and
-search the posts stored for the last `RetentionDays` days (for example «що ще писали про це вчора?»). A question the posts do not cover is answered from the model's own knowledge,
+search the posts stored for the last `RetentionDays` days, by words, by day or by time of publication (for example «що ще писали про це вчора?» or «що вийшло сьогодні між 9 і 12?»; times are UTC). A question the posts do not cover is answered from the model's own knowledge,
 and the answer says so. It does not browse the web.
 
 - **Settings.** You can also ask the agent to change settings and sources; it only prepares a plan, and you confirm it with a button ([configuration](configuration.md#by-asking-the-agent)).

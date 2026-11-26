@@ -6,6 +6,9 @@ resource "azurerm_storage_account" "main" {
   account_replication_type        = "LRS"
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
+  # Everything uses managed identity and RBAC, so the account keys are not needed: a leaked key would give full access.
+  shared_access_key_enabled       = false
+  default_to_oauth_authentication = true
   tags                            = local.tags
 }
 

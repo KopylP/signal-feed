@@ -10,6 +10,10 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
 
     public Task<string> SearchPosts(string query, int days, CancellationToken ct) => Call("search_posts", ct, ("query", query), ("days", days));
 
+    // The way the model asks by period: only the arguments it names are passed.
+    public Task<string> SearchPostsBetween(string? query, string? from, string? to, CancellationToken ct) =>
+        Call("search_posts", ct, ("query", query), ("from", from), ("to", to));
+
     public Task<string> GetSettings(CancellationToken ct) => Call("get_settings", ct);
 
     public Task<string> ProposeSet(string key, string value, CancellationToken ct) => Call("propose_set_setting", ct, ("key", key), ("value", value));
