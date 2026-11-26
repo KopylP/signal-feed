@@ -5,6 +5,9 @@ namespace PostAgent.Alerts;
 
 public static class AlertSelector
 {
+    // One run never floods the chat, however many posts match.
+    public const int MaxWatchedPerRun = 5;
+
     public static DateTimeOffset LookbackStart(AgentOptions options, DateTimeOffset now) =>
         now.AddHours(-(options.AlertWindowHours + options.AlertCooldownHours));
 
@@ -23,6 +26,28 @@ public static class AlertSelector
 
         return Rank(bestPerSource)
             .Take(options.AlertMaxPerRun)
+            .ToList();
+    }
+
+    // Followed topics: a new scored post from any source (channel or group) that matches one, whatever its score and the cooldown of its source.
+    // Only posts nobody sent yet (status Scored) are taken, and the alert marks them sent, so a post is announced once.
+    // A post that the regular alert took in the same run is left out.
+    public static IReadOnlyList<WatchHit> SelectWatched(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now, IReadOnlySet<string> alreadyAlerted)
+    {
+        var watches = options.WatchList;
+        if (watches.Count == 0)
+        {
+            return [];
+        }
+
+        var since = LookbackStart(options, now);
+        return posts
+            .Where(p => p.Status == PostStatus.Scored && p.DuplicateOf is null && p.PublishedAt >= since && !alreadyAlerted.Contains(p.RowKey))
+            .Select(p => (Post: p, Phrase: watches.FirstOrDefault(w => WatchMatcher.Matches(p, w))))
+            .Where(x => x.Phrase is not null)
+            .OrderByDescending(x => x.Post.Score).ThenByDescending(x => x.Post.PublishedAt)
+            .Take(MaxWatchedPerRun)
+            .Select(x => new WatchHit(x.Post, x.Phrase ?? string.Empty))
             .ToList();
     }
 

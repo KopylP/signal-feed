@@ -18,6 +18,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `MaxItemsPerGroup` | 5 | posts per group per run |
 | `MaxBundleChars` | 3000 | bundle text size |
 | `AlertSources` | | groups that can trigger an alert |
+| `Watches` | empty | topics to follow, separated by `;` (for example `google core update;ai overviews`): a new scored post from any source that has every word of one is sent as its own alert. Normally set by asking the agent, not by hand |
 | `AlertThreshold` / `BurstMinPosts` | 9 / 8 | alert thresholds |
 | `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | window of scored posts and pause between alerts for one group |
 | `AlertMaxPerRun` | 3 | entries in one alert (at most 8) |
@@ -99,7 +100,7 @@ Not available in the bot: schedules, the fixed parts of the prompts, secrets, `R
 
 ### By asking the agent
 
-The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra».
+The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra», «стеж за темою google core update».
 The agent asks when the request is not clear («який саме?», with the list of your sources or the matching settings) and may collect several changes into one plan.
 It never changes anything itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
 The text of that message is made by the bot, not by the model, so check it rather than the agent's wording. The plan waits 30 minutes; the changes are applied together or not at all, with the same rules and limits as in `/settings`.

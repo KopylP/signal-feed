@@ -71,6 +71,11 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 - `/stats` is a handler (`StatsInbox`) with no model call. The model clients are wrapped by `UsageRecordingChatClient` (below the function-calling layer); a failure to record never touches the call.
 - A new bot command is added to `Shared/Chat/BotCommands` too: the agent answers «які є команди» from it (`get_commands`), and `BotCommandsTests` fails when a `"/word"` literal in the source is missing from it (`AddStatsStores` registers the stores, `AddStatsCommand` the handler).
 
+## Followed topics
+
+- A followed topic is a plan step like a source (`AddWatch`/`RemoveWatch`, tools `propose_add_watch`/`propose_remove_watch`), stored in `SettingsOverrides.Watches` and applied to `AgentOptions.Watches` (`;`-separated, `WatchPhrases` cleans and caps it); the owner confirms with the button as always.
+- `AlertJob` announces a watched post once: only status `Scored`, then `MarkSentAsync(alertedAt: null)`, so no cooldown starts for its source. Quiet hours hold it back. Matching is `WatchMatcher` (every word, short words stand alone); never put the topic or the post into a message unescaped.
+
 ## Data and queues
 
 - `run-now` messages start jobs only while `ManualRunsEnabled` is true (off by default in Azure) and are not retried: a failure is logged, not rethrown.

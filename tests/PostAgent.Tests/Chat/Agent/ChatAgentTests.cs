@@ -246,8 +246,8 @@ public class ChatAgentTests
         Assert.Equal(123, client.LastOptions?.MaxOutputTokens);
         Assert.Equal(
             [
-                "get_commands", "get_post", "get_profile", "get_prompt", "get_settings", "get_trends", "propose_add_source", "propose_clear_context", "propose_profile_edit", "propose_prompt_edit",
-                "propose_prompt_reset", "propose_remove_source", "propose_reset_group",
+                "get_commands", "get_post", "get_profile", "get_prompt", "get_settings", "get_trends", "propose_add_source", "propose_add_watch", "propose_clear_context", "propose_profile_edit", "propose_prompt_edit",
+                "propose_prompt_reset", "propose_remove_source", "propose_remove_watch", "propose_reset_group",
                 "propose_reset_setting", "propose_set_setting", "propose_toggle_alert_source", "search_posts",
             ],
             client.LastOptions?.Tools?.Select(t => t.Name).Order());

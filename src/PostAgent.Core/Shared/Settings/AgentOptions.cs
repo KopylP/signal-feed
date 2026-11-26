@@ -39,6 +39,10 @@ public sealed class AgentOptions
 
     // Алерти (лише для груп зі списку AlertSources)
     public string AlertSources { get; set; } = string.Empty;
+
+    // Topics to follow, separated by ";" (WatchPhrases): a new scored post that has every word of one is sent as its own alert,
+    // from any source and whatever its score. Set from the bot by asking the agent.
+    public string Watches { get; set; } = string.Empty;
     [Range(1, 24)] public int AlertWindowHours { get; set; } = 3;
     [Range(0, 24)] public int AlertCooldownHours { get; set; } = 3;
     [Range(0, 10)] public int AlertThreshold { get; set; } = 9;
@@ -93,5 +97,6 @@ public sealed class AgentOptions
     public AgentOptions Clone() => (AgentOptions)MemberwiseClone();
 
     public IReadOnlyList<string> SourceList => SourceNames.Parse(Sources);
+    public IReadOnlyList<string> WatchList => WatchPhrases.Parse(Watches);
     public IReadOnlySet<string> AlertSourceSet => SourceNames.Parse(AlertSources).ToHashSet();
 }

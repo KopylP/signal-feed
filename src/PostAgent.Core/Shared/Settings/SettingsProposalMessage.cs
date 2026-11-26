@@ -51,6 +51,12 @@ public static class SettingsProposalMessage
             case SettingChangeKind.ToggleAlertSource:
                 return $"Перемкнути алерти для <b>@{target}</b>";
 
+            case SettingChangeKind.AddWatch:
+                return $"Стежити за темою <b>«{target}»</b>: новий пост з усіма цими словами прийде окремим алертом";
+
+            case SettingChangeKind.RemoveWatch:
+                return $"Припинити стежити за темою <b>«{target}»</b>";
+
             case SettingChangeKind.EditPrompt:
                 var label = Shipped.Value.FindSection(change.Target)?.Label ?? change.Target;
                 return $"Промпт «{TelegramHtml.Escape(label)}»:\n{Diff(change)}";

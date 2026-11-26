@@ -40,6 +40,11 @@ public static class OverridesApplier
             result.AlertSources = string.Join(',', overrides.AlertSources);
         }
 
+        if (overrides.Watches is not null)
+        {
+            result.Watches = WatchPhrases.Join(overrides.Watches);
+        }
+
         return result;
     }
 
