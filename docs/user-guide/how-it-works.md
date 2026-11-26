@@ -70,7 +70,7 @@ Send `/digest` to the bot in the private chat to get a digest of any period outs
 - `/digest`: the last 24 hours; `/digest 6`: the last 6 hours; `/digest today`, `/digest вчора` (the day in your `TimeZone`);
 - `/digest 2026-11-25T18:00 2026-11-25T23:00`: an exact period (a date without a time is the whole day; use `T`, no spaces inside a value).
 
-An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation or the rating buttons, so the chat keeps talking about the daily digest. The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
+An unreadable period gets this help back. Posts are kept for `RetentionDays` (2 by default), so an older period is empty. A request costs one model call, like the daily digest; it marks nothing as sent and does not replace the conversation, so the chat keeps talking about the daily digest. It has its own 👍/👎 buttons, like the daily digest ([rating](#rating-the-digest)). The reply «⏳ Готую дайджест…» comes at once, the digest follows within a minute.
 
 ## Statistics and trends
 
@@ -84,9 +84,9 @@ Ask the agent «що ти вмієш?» or «які є команди?»: it lis
 
 ## Rating the digest
 
-Right after the digest the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
+Right after the digest (daily or `/digest`) the bot sends one more message, «Оцініть записи», with a row of buttons for every entry: «👍 <title>» and «👎». A tap is recorded at once and the pressed button gets a ✅; tap the other one to change your mind.
 The latest 40 votes (one per post, shared by all chats) go into every scoring request as a hint about your taste: a post clearly about a topic you liked may get one point more, about one you disliked one point less, and never against the scoring rules.
-The votes have no effect on posts that are already scored. A button under an older digest answers «Цей дайджест уже не актуальний». Switch the buttons and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
+The votes have no effect on posts that are already scored. A button under an older daily digest answers «Цей дайджест уже не актуальний»; under `/digest` the buttons of your last 5 requests work. Switch the buttons and the hint off with `FeedbackEnabled` ([configuration](configuration.md#settings)).
 
 ## Asking about the digest
 

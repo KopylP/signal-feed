@@ -24,6 +24,9 @@ public static class StorageNames
     // The reader's 👍 and 👎 on digest entries, shared by every chat; the scoring reads it.
     public const string FeedbackBlob = "feedback.json";
 
+    // The /digest reports one chat can still rate (the daily digest is rated against the conversation).
+    public static string RatedDigestsBlobName(long chatId) => $"feedback/digests/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.json";
+
     // Long memory (ADR-0018): one small summary per day, and the tokens the models used. In the settings container, under a prefix.
     public static string DailyStatsBlobName(string day) => $"stats/daily/{day}.json";
     public const string DailyStatsPrefix = "stats/daily/";

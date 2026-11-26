@@ -23,7 +23,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call, to-score queue
-├── Digest/                daily digest (DigestFeedbackMessage builds the rating buttons from the snapshot) and `/digest`: DigestInbox (a handler that only parses the period, DigestPeriod, and queues a DigestRequest), DigestRequestFunction and OnDemandDigest on the queue side
+├── Digest/                daily digest (DigestFeedbackMessage builds the rating buttons from the snapshot) and `/digest`: DigestInbox (a handler that only parses the period, DigestPeriod, and queues a DigestRequest), DigestRequestFunction and OnDemandDigest on the queue side (it keeps its report in IRatedDigestStore for its rating buttons)
 │   └── Infrastructure/    AI summary and its response schema
 ├── Chat/                  questions about the digest, split by stage (ChatFunction is the queue trigger, ChatTexts the fixed replies)
 │   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)
@@ -31,7 +31,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   ├── Agent/             the model side: IChatAgent and ChatAgent (Microsoft Agent Framework), ChatContext (the digest as data), ChatHistoryReducer, DataBlock, IChatDrafts and ChatDraftStream (the live preview of an answer)
 │   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan; the propose tools only add to a ProposalPlan
 │   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob and the draft sender (TelegramChatDrafts)
-├── Feedback/              the 👍/👎 buttons under the digest: FeedbackInbox (a handler in the chain, registered before the settings menu, which swallows every button it does not know), FeedbackTexts
+├── Feedback/              the 👍/👎 buttons under the digest: FeedbackInbox (resolves a vote against the conversation, or a /digest against IRatedDigestStore; a handler in the chain, registered before the settings menu, which swallows every button it does not know), FeedbackTexts
 ├── Stats/                 /stats: StatsInbox (a handler: no model call), StatsReport (the sums), StatsMessage (the text)
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
@@ -47,7 +47,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Cleanup/           CleanupRequest ("the summaries are written through day D") and its queue: the contract between DailySummary and Cleanup
 │   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
-│   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackCallback (the text under a button), FeedbackPrompt (the scoring block and the message under the digest), IFeedbackStore (Infrastructure/: the blob)
+│   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackCallback (the text under a button), FeedbackPrompt (the scoring block and the message under the digest), IFeedbackStore, RatedDigests and IRatedDigestStore (the /digest reports a chat can still rate; Infrastructure/: the blobs)
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share

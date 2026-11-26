@@ -19,6 +19,7 @@ public class FeedbackInboxTests
 
     private readonly InMemoryChatStateStore _state = new();
     private readonly InMemoryFeedbackStore _store = new();
+    private readonly InMemoryRatedDigestStore _rated = new();
     private readonly RecordingPanel _panel = new();
 
     private static ReportSnapshot Report() => new("r1", Now, null,
@@ -32,7 +33,7 @@ public class FeedbackInboxTests
         await _state.StartNewAsync(BoundChat, Report(), CancellationToken.None);
         var resolver = new ChatResolver(Microsoft.Extensions.Options.Options.Create(new AgentOptions()),
             bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore());
-        return new FeedbackInbox(resolver, _state, _store, _panel, new FakeTimeProvider(Now), NullLogger<FeedbackInbox>.Instance);
+        return new FeedbackInbox(resolver, _state, _rated, _store, _panel, new FakeTimeProvider(Now), NullLogger<FeedbackInbox>.Instance);
     }
 
     private static Update Press(string data, long chatId = BoundChat, ChatType type = ChatType.Private, InlineKeyboardMarkup? markup = null) => new()
@@ -74,6 +75,30 @@ public class FeedbackInboxTests
 
         Assert.Equal("Суть", Assert.Single(_store.Items).Topic);
         Assert.Equal(FeedbackTexts.ThanksDown, Assert.Single(_panel.Answered).Text);
+    }
+
+    [Fact]
+    public async Task A_vote_under_an_on_demand_digest_is_recorded_from_its_kept_report()
+    {
+        var inbox = await Create();
+        await _rated.SaveAsync(BoundChat, Report() with { ReportId = "d1" }, CancellationToken.None);
+
+        await inbox.HandleAsync(Press(FeedbackCallback.Encode("d1", 0, FeedbackVote.Up)), CancellationToken.None);
+
+        Assert.Equal("2026-11-24/a_1", Assert.Single(_store.Items).PostId);
+        Assert.Equal(FeedbackTexts.ThanksUp, Assert.Single(_panel.Answered).Text);
+    }
+
+    [Fact]
+    public async Task A_vote_whose_report_cannot_be_read_is_not_recorded_and_the_reader_is_told()
+    {
+        var inbox = await Create();
+        _rated.ThrowOnFind = true;
+
+        await inbox.HandleAsync(Press(FeedbackCallback.Encode("d1", 0, FeedbackVote.Up)), CancellationToken.None);
+
+        Assert.Empty(_store.Items);
+        Assert.Equal(FeedbackTexts.Failed, Assert.Single(_panel.Answered).Text);
     }
 
     [Fact]

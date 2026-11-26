@@ -32,7 +32,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `ChatMaxOutputTokens` / `ChatMaxToolCalls` | 4000 / 5 | longest model output including the hidden reasoning, and how many times per question the model may stop to use tools (one round can call several tools); a question costs up to `ChatMaxToolCalls + 1` model calls |
 | `ChatSearchMaxHits` | 8 | posts returned by one search of stored posts |
 | `StatsRetentionDays` | 90 | how many days the daily summaries (counts per source and topic, the best posts, no post text) are kept for `/stats` and for the agent's trends: 7-365 |
-| `FeedbackEnabled` | `true` | the 👍/👎 buttons under the digest, and the recent votes as a hint in every scoring request; `false`: no buttons and no hint (votes already given stay in `settings/feedback.json`) |
+| `FeedbackEnabled` | `true` | the 👍/👎 buttons under the daily digest and `/digest`, and the recent votes as a hint in every scoring request; `false`: no buttons and no hint (votes already given stay in `settings/feedback.json`) |
 | `ChatStreamEnabled` | `true` | shows the chat answer as it is written (a Telegram draft with «💭 Думаю», then the real message); `false` sends it at once |
 | `OpenAIApiKey`, `TelegramBotToken`, `TelegramApiHash` | | **secrets**, Key Vault only |
 | `TelegramPairingKey`, `TelegramWebhookSecret` | | **secrets**, Key Vault only: the key that binds your chat (16-64 characters of `A-Z a-z 0-9 _ -`) and the token Telegram sends with every webhook call (`A-Z a-z 0-9 _ -`) |

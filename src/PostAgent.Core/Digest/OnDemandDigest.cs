@@ -1,4 +1,6 @@
+using PostAgent.Shared.Chat;
 using PostAgent.Shared.Common;
+using PostAgent.Shared.Feedback;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
@@ -7,13 +9,20 @@ namespace PostAgent.Digest;
 
 // A /digest: the best posts of a period, written by the same summarizer as the daily digest and sent only to the chat that asked.
 // It marks nothing as sent and does not replace the conversation, so it never changes what the daily digest or the chat sees.
+// Its rating buttons are resolved against its own copy in IRatedDigestStore, since the conversation does not hold it.
 public sealed class OnDemandDigest(
     IPostRepository posts,
     IDigestSummarizer summarizer,
     ITelegramNotifier notifier,
+    ITelegramPanel panel,
+    IRatedDigestStore rated,
     IEffectiveOptions options,
+    TimeProvider time,
     ILogger<OnDemandDigest> log)
 {
+    // Keeps a /digest apart from a daily digest made in the same second.
+    private const string ReportIdPrefix = "d";
+
     public async Task RunAsync(DigestRequest request, CancellationToken ct)
     {
         try
@@ -38,6 +47,11 @@ public sealed class OnDemandDigest(
             }
 
             log.LogInformation("On-demand digest sent: {Count} posts", items.Count);
+
+            if (settings.FeedbackEnabled)
+            {
+                await SendRatingButtonsAsync(request.ChatId, report, ct);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -57,6 +71,28 @@ public sealed class OnDemandDigest(
         {
             log.LogWarning(ex, "The on-demand digest summary failed, sending the posts without it");
             return DigestReport.Plain(items);
+        }
+    }
+
+    // The digest is already delivered: a failure here is logged and never reaches the reader as "the digest failed".
+    private async Task SendRatingButtonsAsync(long chatId, DigestReport report, CancellationToken ct)
+    {
+        try
+        {
+            var snapshot = report.ToSnapshot(time.GetUtcNow());
+            snapshot = snapshot with { ReportId = ReportIdPrefix + snapshot.ReportId };
+            if (DigestFeedbackMessage.Build(snapshot) is not var (html, keyboard))
+            {
+                return;
+            }
+
+            // Saved first: a button without its report could only answer "outdated".
+            await rated.SaveAsync(chatId, snapshot, ct);
+            await panel.SendAsync(chatId, html, keyboard, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "On-demand digest sent, but the rating buttons could not be sent");
         }
     }
 

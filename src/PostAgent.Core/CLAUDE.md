@@ -57,13 +57,13 @@ General C# rules are in the root `CLAUDE.md`. Feature structure: `docs/developer
 
 ## Rating the digest
 
-- `DigestJob` sends a 👍/👎 row per entry after the snapshot is saved (`DigestFeedbackMessage`, skipped when `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`), resolved by `FeedbackInbox` against the pressing chat's snapshot.
+- `DigestJob` sends a 👍/👎 row per entry after the snapshot is saved (`DigestFeedbackMessage`, skipped when `FeedbackEnabled` is off; its failure never fails the job). A button is `fb:<report id>:<entry number>:<u|d>` (`FeedbackCallback`), resolved by `FeedbackInbox` against the pressing chat's snapshot, or, for a `/digest` (report id `d…`), against `IRatedDigestStore` (`settings/feedback/digests/<chat id>.json`, the last `RatedDigests.MaxKept`), which `OnDemandDigest` writes before it sends the buttons.
 - `FeedbackInbox` is registered before `SettingsInbox`, which swallows every callback it does not know. Votes go through `IFeedbackStore` only (ETag retry, latest `FeedbackLog.MaxItems`, one per post).
 - The scorer puts the votes before the posts in `<reader_feedback>` (channel-derived text: one line, escaped, data); a read error is logged and skipped, never a reason to fail scoring.
 
 ## Digest on demand
 
-- `/digest` is a handler like the others: `DigestInbox` only parses (`DigestPeriod`, `PostPeriod`) and queues; `OnDemandDigest` runs on `digest-requests`, answers only the asking chat, never marks posts as sent, never touches the conversation, and never rethrows (a retry would send half a digest twice).
+- `/digest` is a handler like the others: `DigestInbox` only parses (`DigestPeriod`, `PostPeriod`) and queues; `OnDemandDigest` runs on `digest-requests`, answers only the asking chat, never marks posts as sent, never touches the conversation (its rating buttons use `IRatedDigestStore`), and never rethrows (a retry would send half a digest twice).
 
 ## Long memory, statistics and commands (ADR-0018)
 

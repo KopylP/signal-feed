@@ -10,9 +10,11 @@ using KeyboardButton = PostAgent.Shared.Notifications.KeyboardButton;
 namespace PostAgent.Feedback;
 
 // A press of a 👍 or 👎 under the digest. Registered before the settings menu, which swallows every button it does not know.
+// The daily digest is found in the conversation, a /digest in IRatedDigestStore.
 public sealed class FeedbackInbox(
     ChatResolver resolver,
     IChatStateStore state,
+    IRatedDigestStore rated,
     IFeedbackStore store,
     ITelegramPanel panel,
     TimeProvider time,
@@ -39,8 +41,19 @@ public sealed class FeedbackInbox(
             return true;
         }
 
-        var report = (await state.LoadAsync(message.Chat.Id, ct))?.State.Report;
-        if (report is null || report.ReportId != reportId || index >= report.Entries.Count)
+        ReportSnapshot? report;
+        try
+        {
+            report = await FindReportAsync(message.Chat.Id, reportId, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "The digest of a vote could not be read");
+            await panel.AnswerCallbackAsync(query.Id, FeedbackTexts.Failed, ct);
+            return true;
+        }
+
+        if (report is null || index >= report.Entries.Count)
         {
             await panel.AnswerCallbackAsync(query.Id, FeedbackTexts.Outdated, ct);
             return true;
@@ -62,6 +75,11 @@ public sealed class FeedbackInbox(
         await AnswerAsync(query.Id, vote == FeedbackVote.Up ? FeedbackTexts.ThanksUp : FeedbackTexts.ThanksDown, ct);
         return true;
     }
+
+    private async Task<ReportSnapshot?> FindReportAsync(long chatId, string reportId, CancellationToken ct) =>
+        (await state.LoadAsync(chatId, ct))?.State.Report is { } current && current.ReportId == reportId
+            ? current
+            : await rated.FindAsync(chatId, reportId, ct);
 
     // What the scorer reads as the topic: the digest title, or the text of an entry that has none (Recommended), cut so a vote stays small.
     private static string Topic(SnapshotEntry entry) =>
