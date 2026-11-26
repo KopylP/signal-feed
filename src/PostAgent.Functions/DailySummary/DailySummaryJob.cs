@@ -21,6 +21,20 @@ public sealed class DailySummaryJob(
 
     public async Task RunAsync(CancellationToken ct)
     {
+        try
+        {
+            await SummarizeAndRequestCleanupAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Nothing is queued, so old posts and conversations are NOT deleted until a run succeeds: the operator must see this.
+            log.LogError(ex, "Daily summaries failed: the cleanup of old data is held back until this succeeds");
+            throw;
+        }
+    }
+
+    private async Task SummarizeAndRequestCleanupAsync(CancellationToken ct)
+    {
         var settings = await options.GetAsync(ct);
         var now = time.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);

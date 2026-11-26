@@ -3,9 +3,9 @@ using PostAgent.Shared.Infrastructure;
 
 namespace PostAgent.Shared.Settings;
 
-// Усі App Settings, що читає код. Прив'язуються з кореня конфігурації за іменами властивостей.
-// Розклади (CollectorSchedule, DigestSchedule, AlertSchedule, DailySummarySchedule) сюди не входять:
-// їх читають атрибути [TimerTrigger("%...%")] безпосередньо з App Settings.
+// Every App Setting the code reads, bound from the configuration root by property name.
+// The schedules (CollectorSchedule, DigestSchedule, AlertSchedule, DailySummarySchedule) are not here:
+// the [TimerTrigger("%...%")] attributes read them straight from the App Settings.
 public sealed class AgentOptions
 {
     // Скільки записів вміщує одне повідомлення алерта (ліміт Telegram 4096 символів). Запис не перевищує ~450

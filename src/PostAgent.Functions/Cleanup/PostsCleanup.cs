@@ -5,9 +5,10 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Cleanup;
 
-// Видаляє з Posts дні старші за RetentionDays, але не пізніше за останній день, що має підсумок (SummarizedThrough).
-// Posts розбита на партиції-дні, тож з RetentionDays = 2 лишаються позавчорашня, вчорашня й сьогоднішня партиції.
-// ChannelState (курсори читання) не чіпаємо: без неї Collector почав би читати джерела з нуля.
+// Deletes the days of Posts older than RetentionDays, but never past the last day that has a summary (SummarizedThrough).
+// The retention is always at most yesterday, so a request that names a later day cannot make it delete more.
+// Posts is partitioned by day, so with RetentionDays = 2 the day before yesterday, yesterday and today stay.
+// ChannelState (the read cursors) is not touched: without it the Collector would read the sources from the start.
 public sealed class PostsCleanup(IPostRepository posts, IOptions<AgentOptions> options) : ICleanupTask
 {
     public string Name => "Posts";
