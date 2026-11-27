@@ -63,6 +63,12 @@ removed {
   }
 }
 
+# Collected posts on their way to EmbeddingFunction, which drops near-duplicates and passes the rest to to-score (ADR-0023).
+resource "azurerm_storage_queue" "posts_collected" {
+  name               = "posts-collected"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
 resource "azurerm_storage_queue" "to_score" {
   name               = "to-score"
   storage_account_id = azurerm_storage_account.main.id
