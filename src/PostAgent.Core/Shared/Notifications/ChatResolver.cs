@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Settings;
+using Telegram.Bot.Types.Enums;
+using TelegramChat = Telegram.Bot.Types.Chat;
 
 namespace PostAgent.Shared.Notifications;
 
@@ -11,6 +13,10 @@ public sealed class ChatResolver(IOptions<AgentOptions> options, IChatBindingSto
 
     public async Task<bool> IsBoundAsync(long chatId, CancellationToken ct) =>
         (await GetChatIdsAsync(ct)).Contains(chatId);
+
+    // Only a bound private chat is served: in a group every member's message would cost a model call. Every handler but pairing asks this.
+    public async Task<bool> ServesAsync(TelegramChat chat, CancellationToken ct) =>
+        chat.Type == ChatType.Private && await IsBoundAsync(chat.Id, ct);
 
     public async Task<IReadOnlyList<long>> RequireChatIdsAsync(CancellationToken ct)
     {

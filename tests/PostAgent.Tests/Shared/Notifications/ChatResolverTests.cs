@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using PostAgent.Tests.Fakes;
+using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Tests.Shared.Notifications;
 
@@ -44,5 +45,17 @@ public class ChatResolverTests
             () => Resolver(configured: 0).RequireChatIdsAsync(CancellationToken.None));
 
         Assert.Contains("/start", error.Message);
+    }
+
+    [Theory]
+    [InlineData(42, ChatType.Private, true)]
+    [InlineData(43, ChatType.Private, false)]
+    [InlineData(42, ChatType.Group, false)]
+    [InlineData(42, ChatType.Supergroup, false)]
+    public async Task Serves_only_a_bound_private_chat(long chatId, ChatType type, bool expected)
+    {
+        var chat = new Telegram.Bot.Types.Chat { Id = chatId, Type = type };
+
+        Assert.Equal(expected, await Resolver(configured: 0, 42).ServesAsync(chat, CancellationToken.None));
     }
 }

@@ -1,10 +1,10 @@
 using System.Globalization;
+using PostAgent.Shared.Chat;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Shared.Stats;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Stats;
 
@@ -24,12 +24,12 @@ public sealed class StatsInbox(
 
     public async Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
-        if (update.Message is not { Text: { } text } message || Arguments(text) is not { } arguments)
+        if (update.Message is not { Text: { } text } message || BotCommandText.Parse(text) is not { Name: "/stats", Arguments: var arguments })
         {
             return false;
         }
 
-        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
+        if (!await resolver.ServesAsync(message.Chat, ct))
         {
             return false;
         }
@@ -80,14 +80,5 @@ public sealed class StatsInbox(
         days = DefaultDays;
         var text = arguments.Trim();
         return text.Length == 0 || (int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out days) && days >= 1 && days <= max);
-    }
-
-    // The text after "/stats" (also "/stats@botname"), or null when the message is another command or text.
-    private static string? Arguments(string text)
-    {
-        var parts = text.Trim().Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length > 0 && parts[0].Split('@', 2)[0].Equals("/stats", StringComparison.OrdinalIgnoreCase)
-            ? parts.Length > 1 ? parts[1] : string.Empty
-            : null;
     }
 }

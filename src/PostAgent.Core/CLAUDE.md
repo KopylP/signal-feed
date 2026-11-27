@@ -8,7 +8,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - A feature is a folder (root: logic, `XxxServices.AddXxx`, models; `Infrastructure/`: adapters). A large one splits by stage (`Chat/Intake`, `Answering`, `Agent`); a stage never reaches into another's internals.
 - `Shared/` never references a feature; features never reference each other, they share types in `Shared/` (`ArchitectureTests`).
 - A function stays thin. A scheduled job is an `IJob` (`AddJob<T>()`, name also in `tools/run-now.cs`); never copy job logic into a second trigger.
-- A new bot command is a new `IIncomingMessageHandler` (never a branch in `TelegramWebhook`) and goes into `Shared/Chat/BotCommands` (`BotCommandsTests`).
+- A new bot command is a new `IIncomingMessageHandler` (never a branch in `TelegramWebhook`), parses its text with `BotCommandText` (never by hand) and goes into `Shared/Chat/BotCommands` (`BotCommandsTests`).
 - A new chat tool is one `IChatTool` class in `Chat/Agent/Tools/`; it is found by assembly scan, nothing to register.
 
 ## Settings
@@ -16,6 +16,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - App Settings are read only through `AgentOptions`; defaults live only there, validated on start. A new or changed one updates `docs/user-guide/configuration.md` and `local.settings.json.example`.
 - A job reads `IEffectiveOptions.GetAsync` once per run; never hold `AgentOptions` in a singleton. Secrets and infrastructure values use `IOptions<AgentOptions>` and never enter `SettingsCatalog`.
 - Every write to `settings/overrides.json` goes through `SettingsEditor` (ETag, retries, validated as a whole); reset is never refused, an unreadable blob is overwritten only by "reset all".
+  What a change does is `OverridesChanges` (no I/O); the agent's plans are `SettingsProposals`; the menu's question and handled ids are `MenuState`.
 - Callback data is at most 64 bytes and carries the target value, not a step.
 
 ## Security (never break)
@@ -24,7 +25,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - `TelegramWebhook` checks the secret header (constant time) before reading the body (a `Stream`, capped at 64 KB).
 - `/login` (ADR-0016): `LoginForm` trusts only `WebAppInitData` (HMAC, fresh `auth_date`), then the attempt id, chat and binding. The 2FA password never reaches the server: only the SRP proof (`LoginSrp` matches `LoginSrpTests`).
 - The session blob and `login-attempt.json` are read and written only through `ISessionCipher` (ADR-0017), never in clear outside Azurite. The collector and a sign-in share the session only through `ISessionLock`.
-- Only bound private chats are served. Never read "the" chat from `ChatResolver`: take the list or check `IsBoundAsync`.
+- Only bound private chats are served: a handler asks `ChatResolver.ServesAsync`. Never read "the" chat from `ChatResolver`: take the list or check the chat.
 
 ## Model and channel text
 
@@ -49,6 +50,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 
 ## Data and jobs
 
+- A small document blob (settings, profile, votes, usage, conversation, sign-in) is read and written with `ConditionalBlobAccess` (ETag), never with hand-built request conditions.
 - `Posts` is partitioned by day; new `PostEntity` fields are optional. `to-score` is idempotent. `run-now` works only with `ManualRunsEnabled` and is not retried.
 - Cleanup runs only from the request `DailySummaryJob` queues after a successful summary; a task never deletes a day after `SummarizedThrough`.
 - The digest marks posts sent after its last message (ADR-0009). `/digest` (`OnDemandDigest`) answers only the asking chat, marks nothing, never touches the conversation and never rethrows.

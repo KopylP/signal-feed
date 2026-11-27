@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Azure;
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Settings;
@@ -106,44 +105,30 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, ISessionCiphe
 
     public async Task DeleteAsync(string attemptId, CancellationToken ct)
     {
-        if (await ReadAsync(ct) is not { Attempt: var attempt, ETag: var etag } || attempt.Id != attemptId)
+        // A late form may change it meanwhile: then once more on the new version.
+        for (var i = 0; i < 2; i++)
         {
-            return;
-        }
-
-        try
-        {
-            await Blob.DeleteIfExistsAsync(conditions: new BlobRequestConditions { IfMatch = etag }, cancellationToken: ct);
-        }
-        catch (RequestFailedException ex) when (ex.Status == 412)
-        {
-            // Changed meanwhile (a late form): try once more on the new version.
-            if (await ReadAsync(ct) is { Attempt.Id: var id, ETag: var newer } && id == attemptId)
+            if (await ReadAsync(ct) is not { Attempt: var attempt, ETag: var etag } || attempt.Id != attemptId || await Blob.TryDeleteAsync(etag, ct))
             {
-                await Blob.DeleteIfExistsAsync(conditions: new BlobRequestConditions { IfMatch = newer }, cancellationToken: ct);
+                return;
             }
         }
     }
 
     private async Task<(LoginAttempt Attempt, ETag ETag)?> ReadAsync(CancellationToken ct)
     {
-        BlobDownloadResult content;
-        try
-        {
-            content = (await Blob.DownloadContentAsync(ct)).Value;
-        }
-        catch (RequestFailedException ex) when (ex.Status == 404)
+        if (await Blob.TryDownloadAsync(ct) is not { } content)
         {
             return null;
         }
 
         try
         {
-            var json = await cipher.UnprotectAsync(content.Content.ToArray(), StorageNames.LoginAttemptBlob, ct);
+            var json = await cipher.UnprotectAsync(content.Data.ToArray(), StorageNames.LoginAttemptBlob, ct);
             var attempt = JsonSerializer.Deserialize<LoginAttempt>(json);
             if (attempt is not null)
             {
-                return (attempt, content.Details.ETag);
+                return (attempt, content.ETag);
             }
         }
         catch (Exception ex) when (ex is JsonException or CryptographicException)
@@ -152,23 +137,12 @@ public sealed class BlobLoginAttemptStore(BlobServiceClient blobs, ISessionCiphe
         }
 
         // A blob that cannot be read is treated as an expired attempt, so the next start replaces it instead of being blocked by it.
-        return (Unreadable, content.Details.ETag);
+        return (Unreadable, content.ETag);
     }
 
     private async Task<bool> TryWriteAsync(LoginAttempt attempt, ETag? etag, CancellationToken ct)
     {
-        var conditions = etag is { } match
-            ? new BlobRequestConditions { IfMatch = match }
-            : new BlobRequestConditions { IfNoneMatch = ETag.All };
-        try
-        {
-            var sealedAttempt = await cipher.ProtectAsync(JsonSerializer.SerializeToUtf8Bytes(attempt), StorageNames.LoginAttemptBlob, ct);
-            await Blob.UploadAsync(BinaryData.FromBytes(sealedAttempt), new BlobUploadOptions { Conditions = conditions }, ct);
-            return true;
-        }
-        catch (RequestFailedException ex) when (ex.Status is 409 or 412)
-        {
-            return false;
-        }
+        var sealedAttempt = await cipher.ProtectAsync(JsonSerializer.SerializeToUtf8Bytes(attempt), StorageNames.LoginAttemptBlob, ct);
+        return await Blob.TryUploadAsync(BinaryData.FromBytes(sealedAttempt), etag, ct);
     }
 }

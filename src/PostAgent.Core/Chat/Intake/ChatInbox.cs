@@ -2,7 +2,6 @@ using PostAgent.Shared.Chat;
 using PostAgent.Shared.Common;
 using PostAgent.Shared.Notifications;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Chat.Intake;
 
@@ -26,7 +25,7 @@ public sealed class ChatInbox(
         }
 
         // Only the private chat with the bot is served: in a group every member's message would cost a model call.
-        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
+        if (!await resolver.ServesAsync(message.Chat, ct))
         {
             return false;
         }

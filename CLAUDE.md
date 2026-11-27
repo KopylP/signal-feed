@@ -45,7 +45,7 @@ Build and tests must pass before you finish a task.
 ## General C# rules
 
 - `Nullable` is on and `TreatWarningsAsErrors = true`. Do not silence warnings with `#pragma` or `!`, fix the cause.
-- File-scoped namespace matching the folder path (root `PostAgent`). One type per file, and the file name is the type name.
+- File-scoped namespace matching the folder path (root `PostAgent`). One type per file, and the file name is the type name; the only exception is a private nested record that is just a serialization shape.
 - Every class is `sealed` (or `static`) unless it is designed for inheritance. Use primary constructors for DI.
 - Code is organized by feature (see `docs/developer-guide/code-structure.md`). Do not put feature logic in `Shared/`, and do not make `Shared/` depend on a feature.
 - A method that does I/O is async and takes `CancellationToken ct` as its last parameter and passes it on.

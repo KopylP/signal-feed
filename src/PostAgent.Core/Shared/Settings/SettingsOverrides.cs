@@ -16,4 +16,12 @@ public sealed record SettingsOverrides(
     IReadOnlyList<string>? Watches = null)
 {
     public static readonly SettingsOverrides Empty = new(new Dictionary<string, string>(), null, null, null, []);
+
+    // Until the bot changes a list, the App Setting one is in force; its sources count as verified.
+    public IReadOnlyList<SourceEntry> EffectiveSources(AgentOptions app) =>
+        Sources ?? app.SourceList.Select(name => new SourceEntry(name, true)).ToList();
+
+    public IReadOnlyList<string> EffectiveAlertSources(AgentOptions app) => AlertSources ?? app.AlertSourceSet.ToList();
+
+    public IReadOnlyList<string> EffectiveWatches(AgentOptions app) => Watches ?? app.WatchList.ToList();
 }

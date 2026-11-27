@@ -15,5 +15,7 @@ public static class SettingsServices
             .AddSingleton<IFeedbackStore, BlobFeedbackStore>()
             .AddSingleton<PromptLibrary>()
             .AddSingleton<IPromptProvider, PromptProvider>()
-            .AddSingleton<SettingsEditor>();
+            .AddSingleton<OverridesChanges>()
+            .AddSingleton<SettingsEditor>()
+            .AddSingleton<SettingsProposals>();
 }

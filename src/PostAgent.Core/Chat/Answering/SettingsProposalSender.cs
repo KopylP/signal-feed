@@ -6,7 +6,7 @@ namespace PostAgent.Chat.Answering;
 // Stores the plan the agent prepared and sends it with the confirm button. The text comes from SettingsProposalMessage, not from the model.
 // Never throws: the answer is already saved, and a plan that did not arrive is simply asked for again.
 public sealed class SettingsProposalSender(
-    SettingsEditor editor,
+    SettingsProposals proposals,
     IEffectiveOptions effective,
     ITelegramPanel panel,
     TimeProvider time,
@@ -17,7 +17,7 @@ public sealed class SettingsProposalSender(
         try
         {
             var proposal = new SettingsProposal(updateId.ToString(System.Globalization.CultureInfo.InvariantCulture), changes, time.GetUtcNow() + SettingsProposal.Lifetime, chatId);
-            var saved = await editor.ProposeAsync(proposal, ct);
+            var saved = await proposals.AddAsync(proposal, ct);
             if (!saved.Ok)
             {
                 await panel.SendAsync(chatId, SettingsProposalMessage.NotSaved(saved.Error), InlineKeyboard.Empty, ct);

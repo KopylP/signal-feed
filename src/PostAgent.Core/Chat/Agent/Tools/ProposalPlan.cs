@@ -6,7 +6,7 @@ namespace PostAgent.Chat.Agent.Tools;
 
 // The changes the agent prepared while answering one question. They are only checked here; they are stored and shown by SettingsProposalSender,
 // and applied by the owner's button.
-public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draft, long chatId)
+public sealed class ProposalPlan(SettingsProposals proposals, SettingsEditor editor, List<SettingChange> draft, long chatId)
 {
     public const string Proposed =
         "Added to the plan. Nothing is changed yet: the system will show the plan with a confirm button. Do not say it is applied.";
@@ -27,7 +27,7 @@ public sealed class ProposalPlan(SettingsEditor editor, List<SettingChange> draf
             return $"Too many changes in one plan (at most {SettingsProposal.MaxChanges.ToString(CultureInfo.InvariantCulture)}). Ask the reader to do the rest separately.";
         }
 
-        var check = await editor.CheckAsync(plan, chatId, ct);
+        var check = await proposals.CheckAsync(plan, chatId, ct);
         if (!check.Ok)
         {
             return "Rejected, not added to the plan: " + check.Error;

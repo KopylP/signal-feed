@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using PostAgent.Shared.Notifications;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Login;
 
@@ -25,7 +24,7 @@ public sealed class LoginInbox(
         }
 
         // Anyone else gets no answer: the bot is not an oracle for who may sign in.
-        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
+        if (!await resolver.ServesAsync(message.Chat, ct))
         {
             log.LogInformation("Sign-in ignored: not a bound private chat");
             return true;

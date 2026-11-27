@@ -71,9 +71,9 @@ public class WatchToolsTests
     [Fact]
     public async Task A_watch_step_of_a_plan_stored_before_the_change_still_applies()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.AddWatch, "google core update")], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.AddWatch, "google core update")], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
 
-        var outcome = await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
+        var outcome = await _h.Proposals.ApplyAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Applied, outcome.Status);
         Assert.Equal(["google core update"], _h.Store.Current?.Watches);
@@ -84,8 +84,8 @@ public class WatchToolsTests
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Watches = ["google core update"] });
 
-        await _h.Editor.ProposeAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.ResetGroup, nameof(SettingGroup.Alerts))], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
-        await _h.Editor.ApplyProposalAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("1", [new SettingChange(SettingChangeKind.ResetGroup, nameof(SettingGroup.Alerts))], _h.Time.GetUtcNow() + SettingsProposal.Lifetime), CancellationToken.None);
+        await _h.Proposals.ApplyAsync("1", TestData.ChatId, _h.Time.GetUtcNow(), CancellationToken.None);
 
         Assert.Equal(["google core update"], _h.Store.Current!.Watches);
     }

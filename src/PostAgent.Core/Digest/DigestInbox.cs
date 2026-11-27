@@ -1,8 +1,8 @@
+using PostAgent.Shared.Chat;
 using PostAgent.Shared.Common;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Digest;
 
@@ -17,12 +17,12 @@ public sealed class DigestInbox(
 {
     public async Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
-        if (update.Message is not { Text: { } text } message || Command(text) is not { } arguments)
+        if (update.Message is not { Text: { } text } message || BotCommandText.Parse(text) is not { Name: "/digest", Arguments: var arguments })
         {
             return false;
         }
 
-        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
+        if (!await resolver.ServesAsync(message.Chat, ct))
         {
             return false;
         }
@@ -47,14 +47,5 @@ public sealed class DigestInbox(
         }
 
         return true;
-    }
-
-    // The text after "/digest" (also "/digest@botname"), or null when the message is another command or text.
-    private static string? Command(string text)
-    {
-        var parts = text.Trim().Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length > 0 && parts[0].Split('@', 2)[0].Equals("/digest", StringComparison.OrdinalIgnoreCase)
-            ? parts.Length > 1 ? parts[1] : string.Empty
-            : null;
     }
 }

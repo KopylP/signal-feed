@@ -1,7 +1,6 @@
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Notifications;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.Chat.Intake;
 
@@ -14,12 +13,12 @@ public sealed class ClearInbox(
 {
     public async Task<bool> HandleAsync(Update update, CancellationToken ct)
     {
-        if (update.Message is not { Text: { } text } message || CommandName(text) != "/clear")
+        if (update.Message is not { Text: { } text } message || BotCommandText.Parse(text)?.Name != "/clear")
         {
             return false;
         }
 
-        if (message.Chat.Type != ChatType.Private || !await resolver.IsBoundAsync(message.Chat.Id, ct))
+        if (!await resolver.ServesAsync(message.Chat, ct))
         {
             return false;
         }
@@ -34,6 +33,4 @@ public sealed class ClearInbox(
         await notifier.SendToAsync(message.Chat.Id, ChatTexts.Cleared, ct);
         return true;
     }
-
-    private static string CommandName(string text) => text.Trim().Split(' ', 2)[0].Split('@', 2)[0].ToLowerInvariant();
 }
