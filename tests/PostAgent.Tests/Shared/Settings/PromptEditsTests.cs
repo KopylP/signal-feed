@@ -92,70 +92,15 @@ public class PromptEditsTests
     }
 
     [Fact]
-    public async Task Reset_all_takes_the_prompt_edits_away_but_leaves_the_profile()
+    public async Task Reset_all_takes_the_prompt_edits_away_but_leaves_the_reader_memory()
     {
         await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditPrompt, "chat-style", "Own.", Default("chat-style")));
-        _h.Profile.Seed("I run a catalog.");
+        _h.Memory.Seed("2026-11-24-work.md", "# Work\n");
 
         await _h.Editor.ResetAllAsync(CancellationToken.None);
 
         Assert.Null(_h.Store.Current!.PromptSections);
-        Assert.Equal("I run a catalog.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_profile_edit_is_written_to_its_own_blob()
-    {
-        _h.Profile.Seed("I run a catalog. I like numbers.");
-
-        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", "I run a media site.", "I run a catalog."));
-
-        Assert.Equal(ProposalStatus.Applied, outcome.Status);
-        Assert.Equal("I run a media site. I like numbers.", _h.Profile.Text);
-        Assert.Null(_h.Store.Current!.Proposals!.FirstOrDefault(p => p.Id == "7"));
-    }
-
-    [Fact]
-    public async Task A_profile_can_start_from_nothing()
-    {
-        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", "I run a catalog.", ""));
-
-        Assert.Equal(ProposalStatus.Applied, outcome.Status);
-        Assert.Equal("I run a catalog.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_profile_edit_that_no_longer_fits_changes_nothing()
-    {
-        _h.Profile.Seed("I run a media site.");
-
-        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "I run a catalog."));
-
-        Assert.Equal(ProposalStatus.Failed, outcome.Status);
-        Assert.Equal("I run a media site.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_lost_write_race_on_the_profile_is_reported_as_not_changed()
-    {
-        _h.Profile.Seed("I run a catalog.");
-        _h.Profile.FailNextSave = true;
-
-        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", "I run a shop.", "I run a catalog."));
-
-        Assert.Equal(ProposalStatus.Failed, outcome.Status);
-        Assert.Equal("I run a catalog.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_profile_edit_is_not_mixed_with_other_changes()
-    {
-        var check = await _h.Proposals.CheckAsync(
-            [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", ""), new SettingChange(SettingChangeKind.Set, "DigestSize", "8")],
-            Chat,
-            CancellationToken.None);
-
-        Assert.False(check.Ok);
+        Assert.Equal("# Work\n", _h.Memory.TextOf("2026-11-24-work.md"));
     }
 
     [Fact]
@@ -172,83 +117,11 @@ public class PromptEditsTests
     }
 
     [Fact]
-    public async Task A_tap_never_applies_a_profile_edit_twice()
-    {
-        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-
-        var first = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
-        var second = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
-
-        Assert.Equal(ProposalStatus.Applied, first.Status);
-        Assert.Equal(ProposalStatus.Gone, second.Status);
-        Assert.Equal("Likes numbers.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task An_expired_profile_edit_writes_nothing()
-    {
-        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-
-        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now.AddHours(1), CancellationToken.None);
-
-        Assert.Equal(ProposalStatus.Expired, outcome.Status);
-        Assert.Null(_h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task When_the_proposal_cannot_be_taken_out_the_profile_is_not_written()
-    {
-        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-        _h.Store.BeforeSave = () => _h.Store.Seed(_h.Store.Current! with { HandledUpdateIds = [1] });
-
-        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
-
-        Assert.Equal(ProposalStatus.Failed, outcome.Status);
-        Assert.Null(_h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_storage_error_on_the_profile_is_reported_and_the_profile_stays()
-    {
-        _h.Profile.Seed("I run a catalog.");
-        _h.Profile.ThrowOnSave = true;
-
-        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.EditProfile, "profile", "I run a shop.", "I run a catalog."));
-
-        Assert.Equal(ProposalStatus.Failed, outcome.Status);
-        Assert.Equal("I run a catalog.", _h.Profile.Text);
-    }
-
-    [Fact]
-    public async Task A_proposal_replaced_during_the_tap_does_not_write_the_old_profile_text()
-    {
-        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-        var replaced = false;
-        _h.Store.BeforeSave = () =>
-        {
-            if (replaced)
-            {
-                return;
-            }
-
-            replaced = true;
-            var other = new SettingsProposal("7", [new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], TestData.Now.AddMinutes(30), Chat);
-            _h.Store.Seed(_h.Store.Current! with { Proposals = [other] });
-        };
-
-        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
-
-        Assert.Equal(ProposalStatus.Failed, outcome.Status);
-        Assert.Null(_h.Profile.Text);
-        Assert.DoesNotContain("DigestSize", _h.Store.Current!.Values.Keys);
-    }
-
-    [Fact]
     public async Task A_text_edit_is_not_refused_because_of_an_unrelated_invalid_setting_combination()
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Values = new Dictionary<string, string> { ["AlertWindowHours"] = "20", ["AlertCooldownHours"] = "20" } });
 
-        var text = await _h.Proposals.CheckAsync([new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], Chat, CancellationToken.None);
+        var text = await _h.Proposals.CheckAsync([new SettingChange(SettingChangeKind.EditPrompt, "chat-style", "Own.", Default("chat-style"))], Chat, CancellationToken.None);
         var setting = await _h.Proposals.CheckAsync([new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], Chat, CancellationToken.None);
 
         Assert.True(text.Ok);
@@ -256,9 +129,9 @@ public class PromptEditsTests
     }
 
     [Fact]
-    public async Task Reset_all_also_removes_waiting_proposals_that_may_hold_profile_text()
+    public async Task Reset_all_also_removes_waiting_proposals()
     {
-        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Private.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditPrompt, "chat-style", "Private.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
 
         await _h.Editor.ResetAllAsync(CancellationToken.None);
 
@@ -266,10 +139,10 @@ public class PromptEditsTests
     }
 
     [Fact]
-    public void The_confirmation_of_a_profile_edit_shows_an_addition_and_a_removal()
+    public void The_confirmation_of_a_text_edit_shows_an_addition_and_a_removal()
     {
-        var added = new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes <numbers>.", "")], TestData.Now.AddMinutes(30), Chat);
-        var removed = new SettingsProposal("8", [new SettingChange(SettingChangeKind.EditProfile, "profile", "", "Old fact.")], TestData.Now.AddMinutes(30), Chat);
+        var added = new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditPrompt, "chat-style", "Likes <numbers>.", "")], TestData.Now.AddMinutes(30), Chat);
+        var removed = new SettingsProposal("8", [new SettingChange(SettingChangeKind.EditPrompt, "chat-style", "", "Old fact.")], TestData.Now.AddMinutes(30), Chat);
 
         var addedHtml = SettingsProposalMessage.Proposed(added, new AgentOptions());
         var removedHtml = SettingsProposalMessage.Proposed(removed, new AgentOptions());

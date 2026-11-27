@@ -35,3 +35,5 @@ The rating buttons under the digest are removed: the reader rates through the ag
 ## Updates
 
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
+
+2026-11-27: [ADR-0022](0022-keep-a-reader-memory-the-chat-agent-manages-itself.md) moves what the agent knows about the reader to the non-invasive kind: the profile is replaced by a reader memory that `save_memory` and `forget_memory` write at once, with a line under the answer for every change.

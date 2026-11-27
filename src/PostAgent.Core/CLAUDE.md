@@ -34,10 +34,11 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - Prompts reach the model only through `IPromptProvider`. The chat client is the Responses API with `store=false` and encrypted reasoning (ADR-0011); keep `ChatModelRequestTests` and `ChatStreamingRequestTests` green.
 - Every tool caps its output; `ChatMaxToolCalls`, `ChatMaxOutputTokens`, `ChatMaxMessages` bound a turn.
 
-## Agent actions (ADR-0013, ADR-0021)
+## Agent actions (ADR-0013, ADR-0021, ADR-0022)
 
-- Invasive (settings, sources, alert sources, prompts, profile) only through propose tools that add to `turn.Plan` and never write. The plan is shown by code (`SettingsProposalMessage`, never model text) and applied only by the button. Never add an apply tool for it.
-- Non-invasive (`rate_post`, `add_watch`, `remove_watch`, `clear_context`) acts at once, with the same checks (`SettingsEditor`, `IFeedbackStore`).
+- Invasive (settings, sources, alert sources, prompts) only through propose tools that add to `turn.Plan` and never write. The plan is shown by code (`SettingsProposalMessage`, never model text) and applied only by the button. Never add an apply tool for it.
+- Non-invasive (`rate_post`, `add_watch`, `remove_watch`, `clear_context`, `save_memory`, `forget_memory`) acts at once, with the same checks (`SettingsEditor`, `IFeedbackStore`, `ReaderMemory`).
+- Reader memory (`Chat/Memory`): per chat, at most 10 notes; the file name and layout come from `MemoryNoteFormat`, never from the model's text; every change adds a code-built line under the answer (`ChatTurn.RecordMemory`).
 - `offer_choices` sets the answer's reply keyboard (last part; an answer without options sends `ReplyKeyboard.Remove`). A tap is an ordinary message: never store choices or make them callback data; leave an option out, never shorten it.
 
 ## Chat and delivery
@@ -50,7 +51,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 
 ## Data and jobs
 
-- A small document blob (settings, profile, votes, usage, conversation, sign-in) is read and written with `ConditionalBlobAccess` (ETag), never with hand-built request conditions.
+- A small document blob (settings, reader memory note, votes, usage, conversation, sign-in) is read and written with `ConditionalBlobAccess` (ETag), never with hand-built request conditions.
 - `Posts` is partitioned by day; new `PostEntity` fields are optional. `to-score` is idempotent. `run-now` works only with `ManualRunsEnabled` and is not retried.
 - Cleanup runs only from the request `DailySummaryJob` queues after a successful summary; a task never deletes a day after `SummarizedThrough`.
 - The digest marks posts sent after its last message (ADR-0009). `/digest` (`OnDemandDigest`) answers only the asking chat, marks nothing, never touches the conversation and never rethrows.

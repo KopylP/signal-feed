@@ -6,6 +6,7 @@ using PostAgent.Chat;
 using PostAgent.Chat.Agent;
 using PostAgent.Chat.Agent.Tools;
 using PostAgent.Chat.Answering;
+using PostAgent.Chat.Memory;
 using PostAgent.SettingsMenu;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
@@ -23,7 +24,7 @@ internal sealed class MenuHarness
     public const long BoundChat = 42;
 
     public InMemoryOverridesStore Store { get; } = new();
-    public InMemoryProfileStore Profile { get; } = new();
+    public InMemoryReaderMemoryStore Memory { get; } = new();
     public InMemoryChatStateStore ChatState { get; } = new();
     public FakeTimeProvider Time { get; } = new(TestData.Now);
     public RecordingPanel Panel { get; } = new();
@@ -51,7 +52,7 @@ internal sealed class MenuHarness
     public ChatToolFactory ToolsFactory => new(
         new ServiceCollection()
             .AddSingleton(Editor).AddSingleton(Proposals).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
-            .AddSingleton<IOverridesStore>(Store).AddSingleton<IProfileStore>(Profile)
+            .AddSingleton<IOverridesStore>(Store).AddSingleton(ReaderMemory)
             .AddSingleton<IPostRepository>(Posts).AddSingleton<PostAgent.Shared.Stats.IDailyStatsStore>(Stats).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
             .AddSingleton<PostAgent.Shared.Feedback.IFeedbackStore>(Feedback).AddLogging()
             .AddChatTools().BuildServiceProvider().GetServices<IChatTool>(),
@@ -63,6 +64,9 @@ internal sealed class MenuHarness
 
     public IReadOnlyList<Microsoft.Extensions.AI.AIFunction> Tools(List<SettingChange> draft, long chatId) => ToolsFactory.Create(Turn(draft, chatId));
 
+    // The reader memory the agent reads and remember / forget write, over the in-memory notes.
+    public ReaderMemory ReaderMemory => new(Memory, Effective, Time, NullLogger<ReaderMemory>.Instance);
+
     public SettingsProposalSender ProposalSender => new(Proposals, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
@@ -71,7 +75,7 @@ internal sealed class MenuHarness
         var options = Options.Create(App);
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
         Editor = new SettingsEditor(Store, options, Effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance);
-        Proposals = new SettingsProposals(Editor, new OverridesChanges(options, DefaultPrompts.Library), Store, Profile, ChatState, NullLogger<SettingsProposals>.Instance);
+        Proposals = new SettingsProposals(Editor, new OverridesChanges(options, DefaultPrompts.Library), Store, ChatState, NullLogger<SettingsProposals>.Instance);
         Menu = new MenuState(Editor);
         Controller = new MenuController(Editor, Proposals, Menu, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
         Bindings = bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore();

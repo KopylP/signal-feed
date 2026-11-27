@@ -51,6 +51,19 @@ public class ChatProcessorTests
     }
 
     [Fact]
+    public async Task A_change_of_the_reader_memory_is_told_under_the_answer_and_not_kept_in_the_conversation()
+    {
+        await Started();
+        var agent = new FakeChatAgent((_, _) => Task.FromResult(new ChatReply("Добре", FakeChatAgent.Session(), MemoryNotices: ["🧠 Запам'ятав: «Робота»"])));
+
+        await Create(agent).HandleAsync(Request(10), CancellationToken.None);
+
+        var sent = Assert.Single(_notifier.Replies);
+        Assert.StartsWith("Добре\n\n", sent);
+        Assert.Contains("Запам&#39;ятав", sent);
+    }
+
+    [Fact]
     public async Task An_answer_without_choices_takes_away_the_buttons_of_an_earlier_one()
     {
         await Started();

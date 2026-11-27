@@ -36,7 +36,7 @@ public class ChatModelRequestTests
         var options = Microsoft.Extensions.Options.Options.Create(settings);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
-        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(ChatId, state, "питання", null, CancellationToken.None);
+        var reply = await new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new PostAgent.Tests.SettingsMenu.MenuHarness().ReaderMemory, new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance).AskAsync(ChatId, state, "питання", null, CancellationToken.None);
         return (handler, reply);
     }
 
@@ -86,7 +86,7 @@ public class ChatModelRequestTests
         });
         var chat = AiServices.CreateChatClient(settings, new OpenAIClientOptions { Transport = new HttpClientPipelineTransport(new HttpClient(handler)) });
         var options = Microsoft.Extensions.Options.Options.Create(settings);
-        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
+        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new PostAgent.Tests.SettingsMenu.MenuHarness().ReaderMemory, new ChatDraftStreams(new RecordingDrafts(), new FakeTimeProvider(Now), NullLogger<ChatDraftStream>.Instance), new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
         var first = await agent.AskAsync(ChatId, state, "перше", null, CancellationToken.None);
