@@ -20,8 +20,8 @@ public class ClearContextTests
 
     private async Task<ProposalOutcome> ApplyAsync(params SettingChange[] changes)
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", changes, TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-        return await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", changes, TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        return await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class ClearContextTests
         await ApplyAsync(new SettingChange(SettingChangeKind.ClearContext, "context"));
         await SeedAsync(Chat);
 
-        var second = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        var second = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Gone, second.Status);
         Assert.NotNull(_h.ChatState.Of(Chat)!.Session);

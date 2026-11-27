@@ -14,41 +14,7 @@ public class SettingsEditorSafetyTests
     {
         var options = Options.Create(OverridesApplierTests.ValidApp());
         var effective = new EffectiveOptions(_store, options, new FakeTimeProvider(TestData.Now), NullLogger<EffectiveOptions>.Instance);
-        return new SettingsEditor(_store, options, effective, DefaultPrompts.Library, new InMemoryProfileStore(), new InMemoryChatStateStore(), NullLogger<SettingsEditor>.Instance);
-    }
-
-    [Fact]
-    public async Task Records_a_handled_id_and_refuses_the_same_id_again()
-    {
-        var editor = Create();
-
-        Assert.True(await editor.TryMarkHandledAsync(10, CancellationToken.None));
-        Assert.False(await editor.TryMarkHandledAsync(10, CancellationToken.None));
-        Assert.Equal([10L], _store.Current?.HandledUpdateIds);
-    }
-
-    [Fact]
-    public async Task A_lower_id_after_a_higher_one_is_still_recorded()
-    {
-        var editor = Create();
-        await editor.TryMarkHandledAsync(101, CancellationToken.None);
-
-        Assert.True(await editor.TryMarkHandledAsync(100, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Keeps_only_the_last_thirty_ids()
-    {
-        var editor = Create();
-
-        for (long id = 1; id <= 35; id++)
-        {
-            await editor.TryMarkHandledAsync(id, CancellationToken.None);
-        }
-
-        Assert.Equal(30, _store.Current?.HandledUpdateIds.Count);
-        Assert.DoesNotContain(5L, _store.Current!.HandledUpdateIds);
-        Assert.Contains(35L, _store.Current.HandledUpdateIds);
+        return new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance);
     }
 
     [Fact]

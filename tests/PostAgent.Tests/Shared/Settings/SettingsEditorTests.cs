@@ -15,7 +15,7 @@ public class SettingsEditorTests
     {
         var options = Options.Create(app ?? OverridesApplierTests.ValidApp());
         var effective = new EffectiveOptions(_store, options, _time, NullLogger<EffectiveOptions>.Instance);
-        return (new SettingsEditor(_store, options, effective, DefaultPrompts.Library, new InMemoryProfileStore(), new InMemoryChatStateStore(), NullLogger<SettingsEditor>.Instance), effective);
+        return (new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance), effective);
     }
 
     [Fact]

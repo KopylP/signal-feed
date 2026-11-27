@@ -25,7 +25,7 @@ public static class DigestMessage
     public static IReadOnlyList<string> Format(DigestReport report, TimeZoneInfo? zone = null)
     {
         zone ??= TimeZoneInfo.Utc;
-        var writer = new MessageWriter();
+        var writer = new TelegramMessageBuilder(MaxMessageChars);
 
         var intro = "📰 <b>Дайджест</b>";
         if (report.Overview is not null)
@@ -41,7 +41,7 @@ public static class DigestMessage
         writer.Section("⚠️ <b>Потребує перевірки</b>", report.NeedsVerification.Count == 0 ? [] : [Verification(report.NeedsVerification)]);
         writer.Section("📌 <b>Можна пропустити</b>", report.Skipped.Total == 0 ? [] : [SkippedLine(report.Skipped)]);
 
-        return writer.Messages();
+        return writer.Build();
     }
 
     private static string Entry(DigestEntry entry, TimeZoneInfo zone)
@@ -117,70 +117,4 @@ public static class DigestMessage
         (_, >= 2 and <= 4) => "пости",
         _ => "постів",
     };
-
-    // Packs blocks into messages. A section that continues in the next message repeats its header.
-    private sealed class MessageWriter
-    {
-        private readonly List<string> _messages = [];
-        private readonly StringBuilder _current = new();
-
-        public void Add(string block)
-        {
-            if (_current.Length > 0 && _current.Length + 2 + block.Length > MaxMessageChars)
-            {
-                Flush();
-            }
-
-            AppendBlock(block);
-        }
-
-        public void Section(string header, IEnumerable<string> blocks)
-        {
-            var headerWritten = false;
-            var continued = false;
-            foreach (var block in blocks)
-            {
-                var headerCost = headerWritten ? 0 : header.Length + 2;
-                if (_current.Length > 0 && _current.Length + 2 + headerCost + block.Length > MaxMessageChars)
-                {
-                    Flush();
-                    headerWritten = false;
-                    continued = true;
-                }
-
-                if (!headerWritten)
-                {
-                    AppendBlock(continued ? header + " (далі)" : header);
-                    headerWritten = true;
-                }
-
-                AppendBlock(block);
-            }
-        }
-
-        public IReadOnlyList<string> Messages()
-        {
-            Flush();
-            return _messages;
-        }
-
-        private void AppendBlock(string block)
-        {
-            if (_current.Length > 0)
-            {
-                _current.Append("\n\n");
-            }
-
-            _current.Append(block);
-        }
-
-        private void Flush()
-        {
-            if (_current.Length > 0)
-            {
-                _messages.Add(_current.ToString());
-                _current.Clear();
-            }
-        }
-    }
 }

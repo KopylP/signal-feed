@@ -34,8 +34,8 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 ├── Stats/                 /stats: StatsInbox (a handler: no model call), StatsReport (the sums), StatsMessage (the text)
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue
-├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), CallbackData (the screen in the button)
-├── Login/                 /login (ADR-0016): LoginInbox (the command), LoginProcessor (the waiting side: phone, code, password), LoginForm and LoginPage (the Mini App), WebAppInitData (checks the signature)
+├── SettingsMenu/          /settings: SettingsInbox (checks the chat and replays), MenuController (button and typed answer to the next screen), MenuScreens (what it looks like), MenuState (the pending question and the handled update ids), CallbackData (the screen in the button)
+├── Login/                 /login (ADR-0016): LoginInbox (the command), LoginProcessor (the waiting side: phone, code, password; LoginProgress and LoginButtons hold one sign-in's step and buttons), LoginForm and LoginPage (the Mini App), WebAppInitData (checks the signature)
 │   └── Infrastructure/    the attempt blob, the session blob, the tg-login queue, the WTelegram sign-in
 ├── Webhook/               the bot's entry point (TelegramWebhookFunction, TelegramWebhook: secret check, parsing, the handler chain)
 ├── Pairing/               /start <key> binds the chat (PairingInbox: a handler in the chain, StartCommand)
@@ -43,16 +43,16 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 ├── Cleanup/               cleanup of old data, started by that request (CleanupFunction is the queue trigger, CleanupRunner runs every ICleanupTask)
 ├── Shared/                shared by features
 │   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
-│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits, ReplyKeyboard: tiles in place of the keyboard), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one) (Telegram/: Telegram.Bot, ChatBinding table)
+│   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits, ReplyKeyboard: tiles in place of the keyboard, TelegramMessageBuilder: packs blocks into messages), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one; ServesAsync: is this a bound private chat) (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Cleanup/           CleanupRequest ("the summaries are written through day D") and its queue: the contract between DailySummary and Cleanup
 │   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
 │   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackPrompt (the scoring block), IFeedbackStore (Infrastructure/: the blob); written by the chat agent's rate_post
-│   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup)
+│   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup); BotCommands (the list) and BotCommandText (parses "/name@bot args")
 │   ├── Ai/                IChatClient, prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
-│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob, SettingsProposal and SettingsProposalMessage (the agent's plan and its text, ADR-0013)
+│   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob (the safe write), OverridesChanges (what a change does, no I/O), SettingsProposals, SettingsProposal and SettingsProposalMessage (the agent's plans, their lifecycle and text, ADR-0013)
 │   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once; ISessionCipher, EnvelopeCipher and SessionEnvelope: the session and the sign-in are encrypted with the Key Vault key (KeyVaultKeyWrapper, ADR-0017)
-│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource)
+│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource), ConditionalBlobAccess (read with the ETag, write or delete only that version)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features

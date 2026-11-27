@@ -30,6 +30,8 @@ internal sealed class MenuHarness
     public AgentOptions App { get; }
     public EffectiveOptions Effective { get; }
     public SettingsEditor Editor { get; }
+    public SettingsProposals Proposals { get; }
+    public MenuState Menu { get; }
     public MenuController Controller { get; }
     public SettingsInbox Inbox { get; }
     public ChatResolver Resolver { get; }
@@ -48,30 +50,33 @@ internal sealed class MenuHarness
 
     public ChatToolFactory ToolsFactory => new(
         new ServiceCollection()
-            .AddSingleton(Editor).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
+            .AddSingleton(Editor).AddSingleton(Proposals).AddSingleton<IEffectiveOptions>(Effective).AddSingleton(DefaultPrompts.Library)
             .AddSingleton<IOverridesStore>(Store).AddSingleton<IProfileStore>(Profile)
             .AddSingleton<IPostRepository>(Posts).AddSingleton<PostAgent.Shared.Stats.IDailyStatsStore>(Stats).AddSingleton<IOptions<AgentOptions>>(Options.Create(App)).AddSingleton<TimeProvider>(Time)
             .AddSingleton<PostAgent.Shared.Feedback.IFeedbackStore>(Feedback).AddLogging()
             .AddChatTools().BuildServiceProvider().GetServices<IChatTool>(),
+        Proposals,
         Editor);
 
     // A turn whose plan is the given list, so a test can read what was proposed and what the direct actions asked for.
-    public ChatTurn Turn(List<SettingChange> draft, long chatId) => new(new ProposalPlan(Editor, draft, chatId));
+    public ChatTurn Turn(List<SettingChange> draft, long chatId) => new(new ProposalPlan(Proposals, Editor, draft, chatId));
 
     public IReadOnlyList<Microsoft.Extensions.AI.AIFunction> Tools(List<SettingChange> draft, long chatId) => ToolsFactory.Create(Turn(draft, chatId));
 
-    public SettingsProposalSender ProposalSender => new(Editor, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
+    public SettingsProposalSender ProposalSender => new(Proposals, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
     {
         App = OverridesApplierTests.ValidApp(configure);
         var options = Options.Create(App);
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
-        Editor = new SettingsEditor(Store, options, Effective, DefaultPrompts.Library, Profile, ChatState, NullLogger<SettingsEditor>.Instance);
-        Controller = new MenuController(Editor, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
+        Editor = new SettingsEditor(Store, options, Effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance);
+        Proposals = new SettingsProposals(Editor, new OverridesChanges(options, DefaultPrompts.Library), Store, Profile, ChatState, NullLogger<SettingsProposals>.Instance);
+        Menu = new MenuState(Editor);
+        Controller = new MenuController(Editor, Proposals, Menu, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);
         Bindings = bound is { } b ? new InMemoryChatBindingStore(b) : new InMemoryChatBindingStore();
         Resolver = new ChatResolver(options, Bindings);
-        Inbox = new SettingsInbox(Resolver, Store, Editor, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
+        Inbox = new SettingsInbox(Resolver, Store, Menu, Controller, Panel, Time, NullLogger<SettingsInbox>.Instance);
     }
 
     public static Update Callback(string data, int updateId = 1, long chatId = BoundChat, ChatType type = ChatType.Private, int messageId = 7) =>

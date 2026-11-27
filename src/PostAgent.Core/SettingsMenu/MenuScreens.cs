@@ -77,12 +77,15 @@ public static class MenuScreens
     {
         var html = $"<b>{TelegramHtml.Escape(definition.Label)}</b> (<code>{definition.Key}</code>)\n"
             + (definition.Kind == SettingKind.QuietHours ? SettingsMenuTexts.AskQuietHours : SettingsMenuTexts.AskValue)
-            + (error is null ? string.Empty : "\n\n⚠️ " + TelegramHtml.Escape(error));
+            + (error is null ? string.Empty : "\n\n" + Warning(error));
         return new Screen(html, new InlineKeyboard([[Button("✖ Скасувати", MenuAction.Cancel)]]));
     }
 
+    // An error from the settings, as a note under a screen.
+    public static string Warning(string? error) => "⚠️ " + TelegramHtml.Escape(error ?? string.Empty);
+
     public static Screen AskSource(string? error) =>
-        new($"<b>📡 Нове джерело</b>\n{SettingsMenuTexts.AskSource}" + (error is null ? string.Empty : "\n\n⚠️ " + TelegramHtml.Escape(error)),
+        new($"<b>📡 Нове джерело</b>\n{SettingsMenuTexts.AskSource}" + (error is null ? string.Empty : "\n\n" + Warning(error)),
             new InlineKeyboard([[Button("✖ Скасувати", MenuAction.Cancel)]]));
 
     public static Screen Sources(IReadOnlyList<SourceEntry> sources, IReadOnlyCollection<string> alertSources, string? note = null, bool fromBot = false)

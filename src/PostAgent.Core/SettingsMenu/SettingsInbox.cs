@@ -1,7 +1,7 @@
+using PostAgent.Shared.Chat;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Settings;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace PostAgent.SettingsMenu;
 
@@ -9,7 +9,7 @@ namespace PostAgent.SettingsMenu;
 public sealed class SettingsInbox(
     ChatResolver resolver,
     IOverridesStore store,
-    SettingsEditor editor,
+    MenuState menu,
     MenuController controller,
     ITelegramPanel panel,
     TimeProvider time,
@@ -24,7 +24,7 @@ public sealed class SettingsInbox(
         }
 
         // Only a bound private chat: a button press from anywhere else is swallowed, a message goes on and is ignored by the chat as well.
-        if (chat.Type != ChatType.Private || !await resolver.IsBoundAsync(chat.Id, ct))
+        if (!await resolver.ServesAsync(chat, ct))
         {
             return update.CallbackQuery is not null;
         }
@@ -88,7 +88,7 @@ public sealed class SettingsInbox(
 
         if (text.TrimStart().StartsWith('/'))
         {
-            if (MenuController.CommandName(text) is "/settings" or "/cancel")
+            if (BotCommandText.Parse(text)?.Name is "/settings" or "/cancel")
             {
                 if (await ClaimAsync(update.Id, canRecord, ct))
                 {
@@ -101,7 +101,7 @@ public sealed class SettingsInbox(
             // Any other command abandons the question of this chat; the command itself is not ours.
             if (state.Pending is { } asked && asked.IsFor(chatId))
             {
-                await editor.SetPendingAsync(null, ct);
+                await menu.SetPendingAsync(null, ct);
             }
 
             return false;
@@ -116,7 +116,7 @@ public sealed class SettingsInbox(
         // An abandoned question must not cost a blob write for every chat message from now on.
         if (pending.ExpiresAt <= time.GetUtcNow())
         {
-            await editor.SetPendingAsync(null, ct);
+            await menu.SetPendingAsync(null, ct);
             return false;
         }
 
@@ -124,5 +124,5 @@ public sealed class SettingsInbox(
     }
 
     private async Task<bool> ClaimAsync(long updateId, bool canRecord, CancellationToken ct) =>
-        !canRecord || await editor.TryMarkHandledAsync(updateId, ct);
+        !canRecord || await menu.TryMarkHandledAsync(updateId, ct);
 }

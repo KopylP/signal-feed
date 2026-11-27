@@ -14,8 +14,8 @@ public class PromptEditsTests
 
     private async Task<ProposalOutcome> ProposeAndApplyAsync(params SettingChange[] changes)
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", changes, TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
-        return await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", changes, TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        return await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class PromptEditsTests
     {
         var edits = Enumerable.Range(0, 4).Select(i => new SettingChange(SettingChangeKind.EditPrompt, "chat-style", $"v{i}", i == 0 ? Default("chat-style") : $"v{i - 1}")).ToList();
 
-        var check = await _h.Editor.CheckAsync(edits, TestData.ChatId, CancellationToken.None);
+        var check = await _h.Proposals.CheckAsync(edits, TestData.ChatId, CancellationToken.None);
 
         Assert.False(check.Ok);
     }
@@ -150,7 +150,7 @@ public class PromptEditsTests
     [Fact]
     public async Task A_profile_edit_is_not_mixed_with_other_changes()
     {
-        var check = await _h.Editor.CheckAsync(
+        var check = await _h.Proposals.CheckAsync(
             [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", ""), new SettingChange(SettingChangeKind.Set, "DigestSize", "8")],
             Chat,
             CancellationToken.None);
@@ -174,10 +174,10 @@ public class PromptEditsTests
     [Fact]
     public async Task A_tap_never_applies_a_profile_edit_twice()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
 
-        var first = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
-        var second = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        var first = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
+        var second = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Applied, first.Status);
         Assert.Equal(ProposalStatus.Gone, second.Status);
@@ -187,9 +187,9 @@ public class PromptEditsTests
     [Fact]
     public async Task An_expired_profile_edit_writes_nothing()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
 
-        var outcome = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now.AddHours(1), CancellationToken.None);
+        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now.AddHours(1), CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Expired, outcome.Status);
         Assert.Null(_h.Profile.Text);
@@ -198,10 +198,10 @@ public class PromptEditsTests
     [Fact]
     public async Task When_the_proposal_cannot_be_taken_out_the_profile_is_not_written()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
         _h.Store.BeforeSave = () => _h.Store.Seed(_h.Store.Current! with { HandledUpdateIds = [1] });
 
-        var outcome = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Failed, outcome.Status);
         Assert.Null(_h.Profile.Text);
@@ -222,7 +222,7 @@ public class PromptEditsTests
     [Fact]
     public async Task A_proposal_replaced_during_the_tap_does_not_write_the_old_profile_text()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Likes numbers.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
         var replaced = false;
         _h.Store.BeforeSave = () =>
         {
@@ -236,7 +236,7 @@ public class PromptEditsTests
             _h.Store.Seed(_h.Store.Current! with { Proposals = [other] });
         };
 
-        var outcome = await _h.Editor.ApplyProposalAsync("7", Chat, TestData.Now, CancellationToken.None);
+        var outcome = await _h.Proposals.ApplyAsync("7", Chat, TestData.Now, CancellationToken.None);
 
         Assert.Equal(ProposalStatus.Failed, outcome.Status);
         Assert.Null(_h.Profile.Text);
@@ -248,8 +248,8 @@ public class PromptEditsTests
     {
         _h.Store.Seed(SettingsOverrides.Empty with { Values = new Dictionary<string, string> { ["AlertWindowHours"] = "20", ["AlertCooldownHours"] = "20" } });
 
-        var text = await _h.Editor.CheckAsync([new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], Chat, CancellationToken.None);
-        var setting = await _h.Editor.CheckAsync([new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], Chat, CancellationToken.None);
+        var text = await _h.Proposals.CheckAsync([new SettingChange(SettingChangeKind.EditProfile, "profile", "x", "")], Chat, CancellationToken.None);
+        var setting = await _h.Proposals.CheckAsync([new SettingChange(SettingChangeKind.Set, "DigestSize", "8")], Chat, CancellationToken.None);
 
         Assert.True(text.Ok);
         Assert.False(setting.Ok);
@@ -258,7 +258,7 @@ public class PromptEditsTests
     [Fact]
     public async Task Reset_all_also_removes_waiting_proposals_that_may_hold_profile_text()
     {
-        await _h.Editor.ProposeAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Private.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
+        await _h.Proposals.AddAsync(new SettingsProposal("7", [new SettingChange(SettingChangeKind.EditProfile, "profile", "Private.", "")], TestData.Now.AddMinutes(30), Chat), CancellationToken.None);
 
         await _h.Editor.ResetAllAsync(CancellationToken.None);
 
