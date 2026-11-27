@@ -33,6 +33,11 @@ public sealed class AgentOptions
     // How many days the daily summaries (counts per source and topic, no post text) are kept for trends and /stats.
     [Range(7, 365)] public int StatsRetentionDays { get; set; } = 90;
 
+    // Embeddings (ADR-0023), cosine similarity from 0 to 1: how alike two single posts must be to count as one news (the later one is not scored),
+    // and how alike a post and a followed topic must be to match it (the word match of WatchMatcher counts too). 1 turns a check almost off.
+    [Range(0.0, 1.0)] public double DuplicateSimilarityThreshold { get; set; } = 0.9;
+    [Range(0.0, 1.0)] public double WatchSimilarityThreshold { get; set; } = 0.45;
+
     // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки
     [Range(1, 50)] public int MaxItemsPerGroup { get; set; } = 5;
     [Range(1, 20000)] public int MaxBundleChars { get; set; } = 3000;
@@ -40,8 +45,8 @@ public sealed class AgentOptions
     // Алерти (лише для груп зі списку AlertSources)
     public string AlertSources { get; set; } = string.Empty;
 
-    // Topics to follow, separated by ";" (WatchPhrases): a new scored post that has every word of one is sent as its own alert,
-    // from any source and whatever its score. Set from the bot by asking the agent.
+    // Topics to follow, separated by ";" (WatchPhrases): a new scored post that has every word of one, or is about it by meaning
+    // (WatchSimilarityThreshold), is sent as its own alert, from any source and whatever its score. Set from the bot by asking the agent.
     public string Watches { get; set; } = string.Empty;
     [Range(1, 24)] public int AlertWindowHours { get; set; } = 3;
     [Range(0, 24)] public int AlertCooldownHours { get; set; } = 3;

@@ -46,6 +46,29 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
         return posts.Where(p => p.PublishedAt >= since).ToList();
     }
 
+    public Task SaveEmbeddingsAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
+        WriteAllAsync(posts, async (post, token) =>
+        {
+            var columns = new TableEntity(post.PartitionKey, post.RowKey)
+            {
+                [nameof(PostEntity.Embedding)] = post.Embedding,
+                [nameof(PostEntity.Status)] = post.Status.ToString(),
+            };
+            if (post.DuplicateOf is not null)
+            {
+                columns[nameof(PostEntity.DuplicateOf)] = post.DuplicateOf;
+            }
+
+            try
+            {
+                await _posts.UpdateEntityAsync(columns, post.ETag, TableUpdateMode.Merge, token);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412)
+            {
+                // Scored meanwhile by an earlier delivery of the same message: its result stands.
+            }
+        }, ct);
+
     public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
         WriteAllAsync(posts, async (post, token) =>
         {

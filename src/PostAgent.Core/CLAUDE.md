@@ -52,7 +52,8 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 ## Data and jobs
 
 - A small document blob (settings, reader memory note, votes, usage, conversation, sign-in) is read and written with `ConditionalBlobAccess` (ETag), never with hand-built request conditions.
-- `Posts` is partitioned by day; new `PostEntity` fields are optional. `to-score` is idempotent. `run-now` works only with `ManualRunsEnabled` and is not retried.
+- `Posts` is partitioned by day; new `PostEntity` fields are optional. `posts-collected` and `to-score` are idempotent (only `New` posts are taken).
+- The embedding stage (ADR-0023) never holds scoring back: a failed embedding call passes the posts on without vectors. A duplicate it finds is `Scored` with no score. `run-now` works only with `ManualRunsEnabled` and is not retried.
 - Cleanup runs only from the request `DailySummaryJob` queues after a successful summary; a task never deletes a day after `SummarizedThrough`.
 - The digest marks posts sent after its last message (ADR-0009). `/digest` (`OnDemandDigest`) answers only the asking chat, marks nothing, never touches the conversation and never rethrows.
 - Votes go only through `IFeedbackStore`; `rate_post` is refused while `FeedbackEnabled` is off. A feedback read error never fails scoring; a usage-record failure never touches the model call.

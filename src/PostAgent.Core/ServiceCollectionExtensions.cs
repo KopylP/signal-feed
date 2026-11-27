@@ -5,6 +5,7 @@ using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.DailySummary;
 using PostAgent.Digest;
+using PostAgent.Embedding;
 using PostAgent.Login;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
@@ -48,6 +49,7 @@ public static class ServiceCollectionExtensions
             .AddSettingsMenu()
             .AddChat()
             .AddCollecting()
+            .AddEmbedding()
             .AddScoring()
             .AddDigest()
             .AddCleanup()

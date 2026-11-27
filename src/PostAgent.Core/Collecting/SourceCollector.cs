@@ -1,15 +1,15 @@
-using PostAgent.Scoring;
+using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 
 namespace PostAgent.Collecting;
 
-// Collects one source: reads new messages, stores the posts, queues them for scoring, moves the cursor.
+// Collects one source: reads new messages, stores the posts, queues them for the embedding stage, moves the cursor.
 public sealed class SourceCollector(
     ISourceReader reader,
     IPostRepository posts,
     ISourceCursors cursors,
-    IScoringQueue queue,
+    [FromKeyedServices(StorageNames.CollectedQueue)] IPostQueue queue,
     SettingsEditor editor,
     ILogger<SourceCollector> log)
 {
@@ -24,7 +24,7 @@ public sealed class SourceCollector(
         }
 
         // The order matters: posts and the queue first, the cursor last. If a run is cut off,
-        // the next one reads the same messages and the scorer skips the posts that are already scored.
+        // the next one reads the same messages, and the embedding stage and the scorer skip the posts that are already done.
         await queue.EnqueueAsync(newPosts.Select(p => p.ToRef()).ToList(), settings.ScoringBatchSize, ct);
         await cursors.SetLastPostIdAsync(username, batch.LastPostId, ct);
         await TryMarkVerifiedAsync(username, ct);

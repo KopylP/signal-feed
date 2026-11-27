@@ -1,7 +1,7 @@
 using Microsoft.Azure.Functions.Worker;
-using PostAgent.Scoring.Infrastructure;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Posts;
+using PostAgent.Shared.Posts.Storage;
 
 namespace PostAgent.Scoring;
 
@@ -12,7 +12,7 @@ public sealed class ScorerFunction(IPostRepository posts, IPostScorer scorer)
         [QueueTrigger(StorageNames.ScoringQueue, Connection = "AzureWebJobsStorage")] string message,
         CancellationToken ct)
     {
-        var unscored = (await posts.GetAsync(ScoringQueue.Parse(message), ct))
+        var unscored = (await posts.GetAsync(PostQueue.Parse(message), ct))
             .Where(p => p.Status == PostStatus.New)
             .ToList();
         if (unscored.Count == 0)

@@ -10,7 +10,7 @@ namespace PostAgent.Tests.Collecting;
 public class CollectorJobTests
 {
     private readonly InMemoryPostRepository _repo = new();
-    private FakeScoringQueue _queue = new();
+    private FakePostQueue _queue = new();
     private readonly RecordingNotifier _notifier = new();
     private readonly FakeSessionLock _lock = new();
     private FakeEffectiveOptions _effective = new(new AgentOptions());
@@ -128,7 +128,7 @@ public class CollectorJobTests
     [Fact]
     public async Task Does_not_move_the_cursor_when_queueing_fails_so_the_next_run_reads_the_same_messages()
     {
-        _queue = new FakeScoringQueue { Failure = new InvalidOperationException("queue down") };
+        _queue = new FakePostQueue { Failure = new InvalidOperationException("queue down") };
         var reader = new FakeSourceReader(new() { ["news"] = Channel("news", 1, 2) });
         var cursors = new FakeSourceCursors(new() { ["news"] = 0 });
 

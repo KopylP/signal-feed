@@ -34,9 +34,11 @@ public static class AlertSelector
     }
 
     // Followed topics: a new scored post from any source (channel or group) that matches one, whatever its score and the cooldown of its source.
+    // A post matches by meaning (its embedding and the topic's vector, ADR-0023) or by the words of WatchMatcher, which also covers a post without a vector.
     // Only posts nobody sent yet (status Scored) are taken, and the alert marks them sent, so a post is announced once.
     // A post that the regular alert took in the same run is left out.
-    public static IReadOnlyList<WatchHit> SelectWatched(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now, IReadOnlySet<string> alreadyAlerted)
+    public static IReadOnlyList<WatchHit> SelectWatched(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now, IReadOnlySet<string> alreadyAlerted,
+        IReadOnlyDictionary<string, float[]>? watchVectors = null)
     {
         var watches = options.WatchList;
         if (watches.Count == 0)
@@ -47,7 +49,8 @@ public static class AlertSelector
         var since = now - WatchWindow;
         return posts
             .Where(p => p.Status == PostStatus.Scored && p.DuplicateOf is null && p.PublishedAt >= since && !alreadyAlerted.Contains(p.RowKey))
-            .Select(p => (Post: p, Phrase: watches.FirstOrDefault(w => WatchMatcher.Matches(p, w))))
+            .Select(p => (Post: p, Phrase: watches.FirstOrDefault(w => WatchMatcher.Matches(p, w)
+                || PostVectors.Similarity(p.Embedding, watchVectors?.GetValueOrDefault(w)) >= options.WatchSimilarityThreshold)))
             .Where(x => x.Phrase is not null)
             .OrderByDescending(x => x.Post.Score).ThenByDescending(x => x.Post.PublishedAt)
             .Take(MaxWatchedPerRun)

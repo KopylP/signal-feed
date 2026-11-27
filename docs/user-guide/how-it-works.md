@@ -8,8 +8,10 @@ Setting names (in `code`) are explained in [Configuration](configuration.md). Th
 ![The life of a post: Telegram, collect, score with AI, then an instant alert or the daily digest to you in Telegram](images/life-of-a-post.drawio.svg)
 
 1. **Collect.** Every hour the agent reads new messages from your sources. The first time it sees a source, it reads the last 24 hours.
-2. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.
-3. **Deliver.** Once a day the best posts become the digest. Alerts for groups go out sooner, within the hour.
+2. **Drop repeats.** Each post gets an embedding (a list of numbers that stands for its meaning). A single post that says almost the same as another post of the last day,
+   from any channel, is marked as its duplicate and is not scored, so the model does not pay for it twice. Group bundles are never treated as duplicates. If the embedding fails, the posts go on to scoring as before.
+3. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.
+4. **Deliver.** Once a day the best posts become the digest. Alerts for groups go out sooner, within the hour.
 
 A daily summary of the finished days is written first, and then a cleanup removes old posts, so storage stays small and nothing is deleted before its summary is saved.
 
@@ -35,8 +37,11 @@ A daily summary of the finished days is written first, and then a cleanup remove
 
 ### Followed topics
 
-Tell the agent «стеж за google core update» (or «перестань стежити за ...», «за чим я стежу?»). It does it at once, no button needed (following a topic is not invasive). From then on a **new scored post from any source** (channels too) that has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone) is sent as its own message «👀 Стеження за темою» with the topic it matched, whatever its score and without the cooldown of its source.
+Tell the agent «стеж за google core update» (or «перестань стежити за ...», «за чим я стежу?»). It does it at once, no button needed (following a topic is not invasive). From then on a **new scored post from any source** (channels too) that is about the topic is sent as its own message «👀 Стеження за темою» with the topic it matched, whatever its score and without the cooldown of its source.
+A post is about the topic when its meaning is close enough to the phrase (`WatchSimilarityThreshold`), so «google core update» also finds «Google оновив основний алгоритм» and a Ukrainian phrase finds an English post,
+or when it has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone).
 
+- The meaning is compared with the embedding of the post and of the phrase (the phrase is embedded on every run, so a new topic works at once). A post without an embedding, or a run whose call failed, is matched by the words only.
 - The alert job runs every hour, so the message comes within about an hour after the post is scored; at most 5 posts per run, best first. Posts of the last 26 hours are looked at (not the shorter alert window of the groups), so a low-scored match is still announced after quiet hours; adding a topic also announces its matches from the last day.
 - A post is announced once: it is marked as sent, so the digest does not repeat it. A duplicate of another post is skipped.
 - Quiet hours hold these messages back as well, and those posts go into the digest instead.
@@ -52,7 +57,7 @@ It arrives in sections (a section with nothing in it is left out):
 - **👀 Варто звернути увагу**: less obvious cases, tools, studies and opinions.
 - **📖 Рекомендую прочитати**: up to three posts worth reading in full.
 - **⚠️ Потребує перевірки**: claims to check before relying on them.
-- **📌 Можна пропустити**: how many posts were left out (near-duplicates and less important ones).
+- **📌 Можна пропустити**: how many posts were left out (near-duplicates, also those that were never scored, and less important ones).
 
 The model never writes links, channels or dates: the agent adds them from the post data, so they cannot be invented. A long digest is split into several Telegram messages,
 and a section that continues in the next message repeats its header.

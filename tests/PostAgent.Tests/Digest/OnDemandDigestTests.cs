@@ -105,6 +105,8 @@ public class OnDemandDigestTests
 
         public Task<IReadOnlyList<PostEntity>> GetSinceAsync(DateTimeOffset since, DateTimeOffset now, CancellationToken ct) => throw new InvalidOperationException("storage is down");
 
+        public Task SaveEmbeddingsAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => throw new InvalidOperationException("storage is down");
+
         public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => throw new InvalidOperationException("storage is down");
 
         public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) => throw new InvalidOperationException("storage is down");

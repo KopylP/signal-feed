@@ -41,6 +41,9 @@
 | Collection or `/login` fails with a 403 from Key Vault | The function's identity lost the "Key Vault Crypto Service Encryption User" role on the `tg-session` key, or the key is disabled | Run `infra` with apply; if the key was deleted, the stored session cannot be read: sign in again with `/login` |
 | `TgLogin` says «Set SESSION_KEY_ID» | The session is stored encrypted and the tool needs the key | `export SESSION_KEY_ID=$(terraform -chdir=infra output -raw session_key_id)` and run it again |
 | The Telegram sign-in prints `Logged in as ...` and then hangs, with no `Session uploaded` | The tool picks an Azure credential that never answers on this machine | Set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` (it uses only your `az login`) and run it again |
+| «👀 Стеження за темою» brings posts that are not about the topic, or misses ones that are | `WatchSimilarityThreshold` is too low or too high for your topics (the default is a first guess) | Raise it (for example to 0.5) for fewer matches, lower it for more; `1` falls back to the word match. A word match always counts |
+| Different news are missing as if they were duplicates, or the same news comes twice from two channels | `DuplicateSimilarityThreshold` is too low or too high | Raise it (for example to 0.93) to drop fewer posts, lower it to drop more; `1` keeps only exact copies out. Look for «Embedding stage» in Application Insights for the counts |
+| Duplicates are no longer dropped and followed topics match only by words | The embedding call fails (log «Embedding N posts failed» or «The followed topics could not be embedded»), most often the OpenAI key or quota | Fix the key or the quota; nothing is lost meanwhile, posts are scored without the check |
 | «⚠️ Не оцінено N постів» arrives with the digest | Scoring failed 5 times and the message went to the `to-score-poison` queue (most often the OpenAI key, quota or model) | Find the cause in Application Insights (`ScorerFunction` errors), and fix it. The posts already in `to-score-poison` are not retried; new posts are scored again once the cause is fixed |
 | The log shows `Collection skipped: another collection or a sign-in is using the Telegram session` | A manual `collect` overlapped another collection (usually the hourly timer), or a `/login` was running | Nothing to do: the next run reads the messages. Start a manual `collect` away from the collector schedule |
 
@@ -56,6 +59,7 @@ These are deliberate trade-offs or open edges, not bugs to report.
 - **First-run flood waits.** See the symptom table above.
 - **Fresh messages have no reactions yet,** so the prominence order inside a bundle is approximate at first.
 - **A repeated alert.** If an alert went out but saving its "sent" mark failed, the next run can repeat it.
+- **Duplicates only among single posts of the last day.** Bundles of group messages are never dropped as duplicates, and a post is compared only with posts published in the 26 hours before it.
 - **Storage code is tested by hand.** The storage repository is checked manually on Azurite, not by `dotnet test`.
 
 ## Still stuck

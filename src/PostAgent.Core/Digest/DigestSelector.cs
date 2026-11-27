@@ -43,7 +43,9 @@ public static class DigestSelector
         var chosen = selected.Select(i => i.Post.RowKey).ToHashSet();
         var left = Candidates(posts, now).Where(p => !chosen.Contains(p.RowKey)).ToList();
         var duplicates = left.Count(p => p.DuplicateOf is not null);
-        return new DigestSkipped(duplicates, left.Count - duplicates);
+        // The embedding stage's duplicates have no score, so they are not candidates; they are still news the reader did not miss.
+        var notScored = posts.Count(p => p.Status == PostStatus.Scored && p.Score is null && p.DuplicateOf is not null && p.PublishedAt >= now - Window);
+        return new DigestSkipped(duplicates + notScored, left.Count - duplicates);
     }
 
     // Posts whose scoring failed (the message went to the poison queue): without this count

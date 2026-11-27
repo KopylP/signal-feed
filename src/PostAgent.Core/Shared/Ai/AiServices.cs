@@ -2,6 +2,7 @@ using System.ClientModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using OpenAI;
+using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Shared.Stats;
 
@@ -27,6 +28,8 @@ public static class AiServices
             CreateChatClient(sp.GetRequiredService<IOptions<AgentOptions>>().Value),
             sp.GetRequiredService<IEffectiveOptions>(),
             o => o.OpenAIChatModel)));
+        services.AddEmbeddingGenerator(sp => new OpenAI.Embeddings.EmbeddingClient(
+            PostVectors.Model, sp.GetRequiredService<IOptions<AgentOptions>>().Value.OpenAIApiKey).AsIEmbeddingGenerator());
         return services;
     }
 

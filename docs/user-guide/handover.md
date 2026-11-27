@@ -10,7 +10,7 @@ Allow about 30 minutes. The Azure resources, the code and the sources stay as th
 | Chat for the digest and alerts | table `ChatBinding`, or `telegram_chat_id` | Always |
 | Reader account (reads channels) | blob in `tg-session`, Key Vault `TelegramApiHash`, `telegram_api_id` | Only if the new owner brings their own account |
 | Bot | Key Vault `TelegramBotToken` (from @BotFather) | Only if the bot must belong to the new owner |
-| Old posts, read positions, conversation, bot-made settings | tables `Posts`, `ChannelState`, containers `chat-state`, `settings`, queues `to-score`, `chat-messages` | Cleared, so the new owner starts clean |
+| Old posts, read positions, conversation, bot-made settings | tables `Posts`, `ChannelState`, containers `chat-state`, `settings`, queues `posts-collected`, `to-score`, `chat-messages` | Cleared, so the new owner starts clean |
 
 Decide first: **minimal** (only the chat changes, the reader account and bot stay yours) or **full** (reader account and bot change too). Steps marked *full only* are skipped in the minimal case.
 
@@ -83,7 +83,7 @@ for T in Posts ChannelState; do
   echo "$T rows left: $(az storage entity query --account-name $SA --auth-mode login --table-name $T --query 'length(items)' -o tsv)"
 done
 # queues
-for Q in to-score chat-messages; do az storage message clear --account-name $SA --auth-mode login --queue-name $Q; done
+for Q in posts-collected to-score chat-messages; do az storage message clear --account-name $SA --auth-mode login --queue-name $Q; done
 # conversation about the last digest
 az storage blob delete-batch --account-name $SA --auth-mode login -s chat-state
 ```
@@ -111,7 +111,7 @@ Manual runs are off by default. Turn them on, run the two jobs in order, and tur
 ```bash
 az functionapp config appsettings set -g $RG -n $APP --settings ManualRunsEnabled=true >/dev/null   # restarts the app
 dotnet run tools/run-now.cs -- collect --storage $SA
-# wait for the collection (a minute or two), then check the log for RunNowFunction; scoring happens in the to-score queue
+# wait for the collection (a minute or two), then check the log for RunNowFunction; the embedding stage and scoring happen in the posts-collected and to-score queues
 dotnet run tools/run-now.cs -- digest --storage $SA
 az functionapp config appsettings set -g $RG -n $APP --settings ManualRunsEnabled=false >/dev/null
 ```

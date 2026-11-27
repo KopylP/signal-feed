@@ -29,6 +29,9 @@ public sealed class PostEntity : ITableEntity
     public string? DuplicateOf { get; set; }
     public DateTimeOffset? AlertedAt { get; set; }
 
+    // PostVectors: written by the embedding stage, empty when the embedding call failed or the post is older than that stage.
+    public byte[]? Embedding { get; set; }
+
     public static string PartitionFor(DateTimeOffset publishedAt) =>
         publishedAt.UtcDateTime.ToString(PartitionFormat);
 

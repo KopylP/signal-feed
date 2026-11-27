@@ -20,6 +20,7 @@ public static class StorageRegistration
             services.AddSingleton(new TableServiceClient(connectionString));
             services.AddSingleton(new BlobServiceClient(connectionString));
             services.AddSingleton(new QueueClient(connectionString, StorageNames.ScoringQueue, queueOptions));
+            services.AddKeyedSingleton(StorageNames.CollectedQueue, new QueueClient(connectionString, StorageNames.CollectedQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(connectionString, StorageNames.ChatQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(connectionString, StorageNames.LoginQueue, queueOptions));
             services.AddKeyedSingleton(StorageNames.DigestRequestQueue, new QueueClient(connectionString, StorageNames.DigestRequestQueue, queueOptions));
@@ -32,6 +33,8 @@ public static class StorageRegistration
             services.AddSingleton(new BlobServiceClient(new Uri($"https://{account}.blob.core.windows.net"), credential));
             services.AddSingleton(new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ScoringQueue}"), credential, queueOptions));
+            services.AddKeyedSingleton(StorageNames.CollectedQueue, new QueueClient(
+                new Uri($"https://{account}.queue.core.windows.net/{StorageNames.CollectedQueue}"), credential, queueOptions));
             services.AddKeyedSingleton(StorageNames.ChatQueue, new QueueClient(
                 new Uri($"https://{account}.queue.core.windows.net/{StorageNames.ChatQueue}"), credential, queueOptions));
             services.AddKeyedSingleton(StorageNames.LoginQueue, new QueueClient(
@@ -67,6 +70,7 @@ public static class StorageRegistration
         await tables.CreateTableIfNotExistsAsync(StorageNames.CursorsTable, ct);
         await tables.CreateTableIfNotExistsAsync(StorageNames.ChatBindingTable, ct);
         await services.GetRequiredService<QueueClient>().CreateIfNotExistsAsync(cancellationToken: ct);
+        await services.GetRequiredKeyedService<QueueClient>(StorageNames.CollectedQueue).CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.ChatQueue).CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.LoginQueue).CreateIfNotExistsAsync(cancellationToken: ct);
         await services.GetRequiredKeyedService<QueueClient>(StorageNames.DigestRequestQueue).CreateIfNotExistsAsync(cancellationToken: ct);

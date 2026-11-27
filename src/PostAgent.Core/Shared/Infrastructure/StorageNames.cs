@@ -8,6 +8,8 @@ public static class StorageNames
     public const string PostsTable = "Posts";
     public const string CursorsTable = "ChannelState";
     public const string ChatBindingTable = "ChatBinding";
+    // Collected posts on their way to the embedding stage, which drops near-duplicates and passes the rest to ScoringQueue (ADR-0023).
+    public const string CollectedQueue = "posts-collected";
     public const string ScoringQueue = "to-score";
     public const string RunNowQueue = "run-now";
     public const string ChatQueue = "chat-messages";

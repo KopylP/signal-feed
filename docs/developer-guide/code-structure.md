@@ -21,8 +21,9 @@ and `Shared/` never depends on a feature (an architecture test enforces this). T
 src/PostAgent.Core/                (the function classes of a feature, e.g. Chat/ChatFunction.cs, are in src/PostAgent.Functions/<same folder>/)
 ├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
+├── Embedding/             the stage between collecting and scoring (ADR-0023): PostEmbedder (embed, drop near-duplicates, queue to to-score), DuplicateFinder (no I/O)
 ├── Scoring/               scoring posts
-│   └── Infrastructure/    model call, to-score queue
+│   └── Infrastructure/    model call
 ├── Digest/                daily digest and `/digest`: DigestInbox (a handler that only parses the period, DigestPeriod, and queues a DigestRequest), DigestRequestFunction and OnDemandDigest on the queue side (it keeps its report in IRatedDigestStore for its rating buttons)
 │   └── Infrastructure/    AI summary and its response schema
 ├── Chat/                  questions about the digest, split by stage (ChatFunction is the queue trigger, ChatTexts the fixed replies)
@@ -43,13 +44,13 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 ├── DailySummary/          the daily summary of the finished days (DailySummaryFunction is the timer, DailySummaryJob writes the summaries and queues a CleanupRequest)
 ├── Cleanup/               cleanup of old data, started by that request (CleanupFunction is the queue trigger, CleanupRunner runs every ICleanupTask)
 ├── Shared/                shared by features
-│   ├── Posts/             post model, IPostRepository (Storage/: Posts table)
+│   ├── Posts/             post model, IPostRepository, IPostQueue (posts-collected and to-score, keyed by the queue name), PostVectors (embeddings, similarity) (Storage/: Posts table, PostQueue)
 │   ├── Notifications/     sending to Telegram (ITelegramNotifier, ITelegramPanel: buttons and edits, ReplyKeyboard: tiles in place of the keyboard, TelegramMessageBuilder: packs blocks into messages), ChatResolver and IChatBindingStore: which chats (the digest goes to all of them, an answer to one; ServesAsync: is this a bound private chat) (Telegram/: Telegram.Bot, ChatBinding table)
 │   ├── Cleanup/           CleanupRequest ("the summaries are written through day D") and its queue: the contract between DailySummary and Cleanup
 │   ├── Stats/             the long memory: DailyStats and DailyStatsBuilder (a summary of one day), IDailyStatsStore, IUsageStore and UsageLog (tokens per day), Infrastructure/ (the blobs)
 │   ├── Feedback/          the votes: FeedbackItem, FeedbackLog (replace and cap), FeedbackPrompt (the scoring block), IFeedbackStore (Infrastructure/: the blob); written by the chat agent's rate_post
 │   ├── Chat/              the digest snapshot and the conversation state, IChatStateStore (written by Digest, read by Chat, cleaned by Cleanup); BotCommands (the list) and BotCommandText (parses "/name@bot args")
-│   ├── Ai/                IChatClient, prompts
+│   ├── Ai/                IChatClient, the embedding generator (EmbedAsync), prompts
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob (the safe write), OverridesChanges (what a change does, no I/O), SettingsProposals, SettingsProposal and SettingsProposalMessage (the agent's plans, their lifecycle and text, ADR-0013)
 │   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once; ISessionCipher, EnvelopeCipher and SessionEnvelope: the session and the sign-in are encrypted with the Key Vault key (KeyVaultKeyWrapper, ADR-0017)

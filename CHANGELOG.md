@@ -8,6 +8,36 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [harbor] - 2026-11-27
+
+### Setup required
+- **Queue `posts-collected`**: required
+  - Where: Terraform (`infra/storage.tf`, `azurerm_storage_queue.posts_collected`)
+  - Value: nothing to set; the queue is created by Terraform
+  - Apply: run the `infra` workflow with plan (one queue is added, nothing else), then with apply, before or right after the code deploys; until it exists the collector cannot queue new posts and fails every hour
+
+### Contract changes
+- **Pipeline: collected posts go through `posts-collected` and `EmbeddingFunction` before `to-score`** (compatible)
+  - Before: `CollectorFunction` put the post references straight into `to-score`
+  - After: `CollectorFunction` → `posts-collected` → `EmbeddingFunction` → `to-score` → `ScorerFunction`; the message body (a list of `PartitionKey`/`RowKey`) is the same in both queues
+  - Affects: a message already in `to-score` at the deploy is scored as before; nothing else
+  - Migration: none
+- **`Posts`: a new column `Embedding`** (compatible)
+  - Before: no vector
+  - After: 512 floats as bytes (2 KB) on every post the embedding stage handled; an embedding-stage duplicate has `DuplicateOf`, the status `Scored` and no `Score`
+  - Affects: nothing; older rows have no vector and are matched by words only
+  - Migration: none
+
+### Logic
+- **Duplicates: the same news from another channel or another run is not scored again** (ADR-0023)
+  - Before: near-duplicates were found only inside one scoring batch of 10 posts, by the model
+  - After: a single post at least 0.9 alike in meaning (`DuplicateSimilarityThreshold`, cosine of the embeddings) to a single post of the 26 hours before it is marked as its duplicate and never sent to the model; group bundles are never dropped; the model's own check inside a batch stays
+  - Effect: fewer repeats in the digest and alerts, fewer scoring tokens; such posts are counted in «📌 Можна пропустити»; if the embedding call fails, posts are scored as before
+- **Followed topics: a post matches by meaning, not only by words**
+  - Before: a post matched only when it had every word of the phrase
+  - After: it also matches when its meaning is at least 0.45 alike to the phrase (`WatchSimilarityThreshold`), so «google core update» finds «Google оновив основний алгоритм» and a Ukrainian phrase finds an English post; the word match still counts
+  - Effect: more «👀 Стеження за темою» messages for real matches; tune the threshold if they bring unrelated posts ([configuration](docs/user-guide/configuration.md#settings))
+
 ## [v2026.11.27.130-spruce] - 2026-11-27
 
 ### Contract changes

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+using PostAgent.Shared.Ai;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Notifications;
 using PostAgent.Shared.Posts;
@@ -9,6 +11,7 @@ public sealed class AlertJob(
     IPostRepository posts,
     ITelegramNotifier notifier,
     IEffectiveOptions options,
+    IEmbeddingGenerator<string, Embedding<float>> embeddings,
     TimeProvider time,
     ILogger<AlertJob> log) : IJob
 {
@@ -49,7 +52,8 @@ public sealed class AlertJob(
     // Followed topics: their own message, no cooldown for the source (AlertedAt stays empty).
     private async Task SendWatchedAsync(IReadOnlyList<PostEntity> recent, IReadOnlyList<PostEntity> alerts, AgentOptions settings, DateTimeOffset now, CancellationToken ct)
     {
-        var watched = AlertSelector.SelectWatched(recent, settings, now, alerts.Select(a => a.RowKey).ToHashSet());
+        var vectors = await TryEmbedWatchesAsync(settings.WatchList, recent, ct);
+        var watched = AlertSelector.SelectWatched(recent, settings, now, alerts.Select(a => a.RowKey).ToHashSet(), vectors);
         if (watched.Count == 0)
         {
             return;
@@ -58,5 +62,26 @@ public sealed class AlertJob(
         await notifier.SendAsync(WatchAlertMessage.Format(watched), ct);
         await posts.MarkSentAsync(watched.Select(h => h.Post), alertedAt: null, ct);
         log.LogInformation("Watch alert sent: {Count} posts", watched.Count);
+    }
+
+    // The topics are embedded on every run (one small call), so a new topic also matches the posts of the last day at once.
+    // Without vectors the word match still works.
+    private async Task<IReadOnlyDictionary<string, float[]>> TryEmbedWatchesAsync(IReadOnlyList<string> watches, IReadOnlyList<PostEntity> recent, CancellationToken ct)
+    {
+        if (watches.Count == 0 || !recent.Any(p => p.Embedding is not null))
+        {
+            return new Dictionary<string, float[]>();
+        }
+
+        try
+        {
+            var vectors = await embeddings.EmbedAsync(watches, ct);
+            return watches.Zip(vectors).ToDictionary(x => x.First, x => x.Second);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning(ex, "The followed topics could not be embedded, matching them by words only");
+            return new Dictionary<string, float[]>();
+        }
     }
 }

@@ -11,12 +11,13 @@ namespace PostAgent.Tests.Alerts;
 public class AlertJobTests
 {
     private readonly RecordingNotifier _notifier = new();
+    private readonly FakeEmbeddingGenerator _embeddings = new();
 
     private AlertJob CreateJob(InMemoryPostRepository repo, Action<AgentOptions>? configure = null)
     {
         var options = new AgentOptions { AlertSources = "chat", AlertTimeZone = "UTC" };
         configure?.Invoke(options);
-        return new AlertJob(repo, _notifier, new FakeEffectiveOptions(options), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+        return new AlertJob(repo, _notifier, new FakeEffectiveOptions(options), _embeddings, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
     }
 
     private static PostEntity HotChatPost(string rowKey = "chat_1") =>
@@ -26,7 +27,7 @@ public class AlertJobTests
     public async Task Takes_one_snapshot_of_the_effective_options_and_uses_its_threshold()
     {
         var effective = new FakeEffectiveOptions(new AgentOptions { AlertSources = "chat", AlertTimeZone = "UTC", AlertThreshold = 10, BurstMinPosts = 1000 });
-        var job = new AlertJob(new InMemoryPostRepository(HotChatPost()), _notifier, effective, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+        var job = new AlertJob(new InMemoryPostRepository(HotChatPost()), _notifier, effective, _embeddings, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
 
         await job.RunAsync(CancellationToken.None);
 

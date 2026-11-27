@@ -27,6 +27,8 @@
     "AlertQuietHours": "",
     "AlertTimeZone": "Europe/Kyiv",
     "Watches": "",
+    "WatchSimilarityThreshold": "0.45",
+    "DuplicateSimilarityThreshold": "0.9",
     "TimeZone": "Europe/Kyiv",
 
     "ManualRunsEnabled": "true",

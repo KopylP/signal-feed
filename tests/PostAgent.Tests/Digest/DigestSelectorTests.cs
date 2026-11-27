@@ -111,6 +111,15 @@ public class DigestSelectorTests
     }
 
     [Fact]
+    public void A_near_duplicate_that_the_embedding_stage_kept_from_scoring_is_counted_as_skipped()
+    {
+        var posts = new[] { Post("a", score: 9), Post("copy", score: null, duplicateOf: "a") };
+        var items = DigestSelector.Build(posts, Options(), Now);
+
+        Assert.Equal(new DigestSkipped(Duplicates: 1, Other: 0), DigestSelector.CountSkipped(posts, items, Now));
+    }
+
+    [Fact]
     public void Nothing_is_skipped_when_every_candidate_is_in_the_digest()
     {
         var posts = new[] { Post("a", score: 9), Post("b", score: 8) };

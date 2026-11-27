@@ -7,7 +7,7 @@ The Azure parts are derived from the Terraform in `infra/` (nothing was queried 
 ## Overview
 
 Signal Feed is a single .NET 10 (isolated worker) Azure Function App on the Flex Consumption plan.
-Timers drive a pipeline: collect Telegram posts, score them with OpenAI through a queue, then send a digest and alerts through the Telegram Bot API.
+Timers drive a pipeline: collect Telegram posts, embed them and drop near-duplicates, score them with OpenAI through queues, then send a digest and alerts through the Telegram Bot API.
 All state lives in one Storage Account, secrets in Key Vault, telemetry in Application Insights.
 Resources talk to each other with managed identity and RBAC: there are no keys or connection strings between them.
 
@@ -19,9 +19,10 @@ Resources talk to each other with managed identity and RBAC: there are no keys o
 
 | Function | Trigger | Responsibility |
 |---|---|---|
-| `CollectorFunction` | `%CollectorSchedule%` | Reads new messages from the sources over MTProto, stores posts, queues them in batches of `ScoringBatchSize` |
+| `CollectorFunction` | `%CollectorSchedule%` | Reads new messages from the sources over MTProto, builds the group bundles, stores posts, queues them to `posts-collected` in batches of `ScoringBatchSize` |
+| `EmbeddingFunction` | queue `posts-collected` | Embeds the new posts (`PostEmbedder`, `text-embedding-3-small`, 512 dimensions, `PostVectors`), marks a single post that is at least `DuplicateSimilarityThreshold` alike to an earlier one of the last 26 hours as its duplicate (status `Scored`, no score, `DuplicateFinder`) and queues the rest to `to-score`; when the embedding call fails the posts go on without vectors ([ADR-0023](../adr/0023-embed-posts-before-scoring-to-drop-duplicates-and-match-topics.md)) |
 | `ScorerFunction` | queue `to-score` | Scores posts with OpenAI (Structured Outputs) and writes Score, Topic, Reason, DuplicateOf |
-| `AlertFunction` | `%AlertSchedule%` | Sends an alert about a burst or a very important message in the groups of `AlertSources`, and a separate one (`WatchAlertMessage`) for a new scored post of any source that matches a followed topic (`Watches`, `WatchMatcher`); a watched post is marked sent without an alert time, so it is announced once and starts no cooldown |
+| `AlertFunction` | `%AlertSchedule%` | Sends an alert about a burst or a very important message in the groups of `AlertSources`, and a separate one (`WatchAlertMessage`) for a new scored post of any source that matches a followed topic (`Watches`: by meaning, the post's embedding against the topic embedded on every run and `WatchSimilarityThreshold`, or by words, `WatchMatcher`); a watched post is marked sent without an alert time, so it is announced once and starts no cooldown |
 | `DigestFunction` | `%DigestSchedule%` | Picks the best posts, asks the model for a summary and sends the digest (always) |
 | `TelegramWebhookFunction` | HTTP `POST /api/telegram/webhook` (anonymous) | The bot's single entry point: checks the secret token header, parses the update and offers it to the handlers in order: pairing (binds the chat that sends `/start <TelegramPairingKey>`), then sign-in, the settings menu and the chat; the first that claims it wins ([ADR-0008](../adr/0008-bind-the-telegram-chat-with-a-pairing-key-over-a-webhook.md)) |
 | `ChatFunction` | queue `chat-messages` | Answers one question about the latest digest with a Microsoft Agent Framework agent and tools ([ADR-0010](../adr/0010-chat-about-the-digest-with-one-conversation-blob.md)) |
@@ -61,16 +62,17 @@ Text written by channels (the snapshot and tool results) reaches the model only 
 
 Only the blob `chat-state/<chat id>.json` is conversation memory; the other stores are the data the chat reads or the state around it. The model's context for a turn is rebuilt from the blob and is never stored as such.
 
-Scoring is decoupled from collection by the queue, so a slow or failing model call never blocks reading Telegram, and failed messages retry and end in `to-score-poison` after 5 attempts.
+Scoring is decoupled from collection by the queues (`posts-collected`, then `to-score`), so a slow or failing model call never blocks reading Telegram, and failed messages retry and end in `to-score-poison` after 5 attempts.
 Schedules are read through `%Name%` bindings, so they change without a rebuild.
 
 ## Data model
 
 | Store | Name | Holds |
 |---|---|---|
-| Table | `Posts` | Posts and bundles, partitioned by day so cleanup deletes whole partitions; status, score, topic, reason, duplicate link, alert mark |
+| Table | `Posts` | Posts and bundles, partitioned by day so cleanup deletes whole partitions; status, score, topic, reason, duplicate link, alert mark, embedding (512 floats as bytes) |
 | Table | `ChannelState` | Per-source read cursor (never cleaned up) |
 | Table | `ChatBinding` | One row per paired chat (`chat`/`<chat id>`; an earlier version's `chat`/`digest` row still counts), at most `TelegramMaxChats`; deleted by the operator to unbind ([ADR-0014](../adr/0014-serve-several-chats-with-shared-settings.md)) |
+| Queue | `posts-collected` (+ `posts-collected-poison`) | Collected posts for the embedding stage (post references); made by Terraform like every trigger queue |
 | Queue | `to-score` (+ `to-score-poison`) | Work for the scorer; the poison queue is created by the runtime |
 | Queue | `chat-messages` | Questions from the reader (`update_id`, text, id of the digest asked about, chat id); messages live one hour |
 | Queue | `tg-login` | One message per `/login` (attempt id, chat id); lives 10 minutes, never retried |
@@ -146,6 +148,7 @@ The storage account keys are off (`shared_access_key_enabled = false`): nothing,
 | Encrypt the Telegram session with a Key Vault key | Storage access alone (a key, a SAS, a backup) shows only ciphertext; Key Vault is called about once per process | [ADR-0017](../adr/0017-encrypt-the-telegram-session-with-a-key-vault-key.md) |
 | Keep the storage keys off, tables through the Resource Manager | A leaked key would open every blob, table and queue; `azurerm` cannot manage tables without one, `azapi` can | [ADR-0019](../adr/0019-keep-storage-keys-off-and-manage-tables-through-arm.md) |
 | Keep a small summary per day as the long memory | Trends and `/stats` for months without keeping post text | [ADR-0018](../adr/0018-keep-daily-summaries-as-long-memory.md) |
+| Embed posts before scoring | Duplicates across channels and runs cost no scoring tokens, and followed topics match by meaning; a failed embedding never holds scoring back | [ADR-0023](../adr/0023-embed-posts-before-scoring-to-drop-duplicates-and-match-topics.md) |
 | Keep a reader memory the chat agent manages itself | A profile behind a confirmation stayed empty; short structured notes the agent keeps, each change shown under the answer | [ADR-0022](../adr/0022-keep-a-reader-memory-the-chat-agent-manages-itself.md) |
 | Fix formatting and validate Terraform in the build job | One pipeline gates the deploy: a broken format or Terraform change cannot reach it | [ADR-0006](../adr/0006-fix-formatting-and-validate-terraform-in-the-build-job.md) |
 

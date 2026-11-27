@@ -7,6 +7,7 @@ internal sealed class InMemoryPostRepository(params PostEntity[] posts) : IPostR
     public List<PostEntity> Posts { get; } = [.. posts];
     public List<PostEntity> Added { get; } = [];
     public List<PostEntity> ScoresSaved { get; } = [];
+    public List<PostEntity> EmbeddingsSaved { get; } = [];
     public List<(IReadOnlyList<PostEntity> Posts, DateTimeOffset? AlertedAt)> SentMarks { get; } = [];
     public DateTimeOffset? QueriedSince { get; private set; }
     public DateTimeOffset? DeletedBefore { get; private set; }
@@ -28,6 +29,12 @@ internal sealed class InMemoryPostRepository(params PostEntity[] posts) : IPostR
     {
         QueriedSince = since;
         return Task.FromResult<IReadOnlyList<PostEntity>>(Posts.Where(p => p.PublishedAt >= since).ToList());
+    }
+
+    public Task SaveEmbeddingsAsync(IEnumerable<PostEntity> posts, CancellationToken ct)
+    {
+        EmbeddingsSaved.AddRange(posts);
+        return Task.CompletedTask;
     }
 
     public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct)

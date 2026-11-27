@@ -10,6 +10,7 @@ using PostAgent.Chat.Agent;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.Digest;
+using PostAgent.Embedding;
 using PostAgent.Pairing;
 using PostAgent.RunNow;
 using PostAgent.Scoring;
@@ -72,6 +73,7 @@ public class CompositionTests
         var services = scope.ServiceProvider;
 
         Assert.NotNull(ActivatorUtilities.CreateInstance<CollectorFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<EmbeddingFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<ScorerFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<AlertFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));

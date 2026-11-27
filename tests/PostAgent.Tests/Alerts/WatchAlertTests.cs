@@ -11,6 +11,7 @@ namespace PostAgent.Tests.Alerts;
 public class WatchAlertTests
 {
     private readonly RecordingNotifier _notifier = new();
+    private readonly FakeEmbeddingGenerator _embeddings = new();
 
     private static AgentOptions Options(Action<AgentOptions>? configure = null)
     {
@@ -20,7 +21,7 @@ public class WatchAlertTests
     }
 
     private AlertJob Job(InMemoryPostRepository repo, Action<AgentOptions>? configure = null) =>
-        new(repo, _notifier, new FakeEffectiveOptions(Options(configure)), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+        new(repo, _notifier, new FakeEffectiveOptions(Options(configure)), _embeddings, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
 
     private static PostEntity Watched(string key = "w1", int? score = 2, double hoursAgo = 1, string source = "seo_news", SourceType type = SourceType.Channel, PostStatus status = PostStatus.Scored, string text = "Google core update is out")
     {
@@ -137,11 +138,47 @@ public class WatchAlertTests
     }
 
     [Fact]
+    public async Task Announces_a_post_about_the_topic_by_meaning_when_none_of_its_words_match()
+    {
+        var post = Watched(text: "Google оновив основний алгоритм ранжування");
+        post.Embedding = PostVectors.ToBytes((float[])[1, 0, .. new float[510]]);
+        _embeddings.With("google core update", 0.9f, 0.3f);
+
+        await Job(new InMemoryPostRepository(post)).RunAsync(CancellationToken.None);
+
+        Assert.Contains("Тема: «google core update»", Assert.Single(_notifier.Sent));
+    }
+
+    [Fact]
+    public async Task Leaves_a_post_whose_meaning_is_below_the_threshold()
+    {
+        var post = Watched(text: "Bing додав відповіді ШІ");
+        post.Embedding = PostVectors.ToBytes((float[])[1, 0, .. new float[510]]);
+        _embeddings.With("google core update", 0.3f, 0.95f);
+
+        await Job(new InMemoryPostRepository(post)).RunAsync(CancellationToken.None);
+
+        Assert.Empty(_notifier.Sent);
+    }
+
+    [Fact]
+    public async Task Still_matches_by_words_when_the_topics_cannot_be_embedded()
+    {
+        var post = Watched();
+        post.Embedding = PostVectors.ToBytes((float[])[1, 0, .. new float[510]]);
+        _embeddings.Failure = new InvalidOperationException("OpenAI is down");
+
+        await Job(new InMemoryPostRepository(post)).RunAsync(CancellationToken.None);
+
+        Assert.Single(_notifier.Sent);
+    }
+
+    [Fact]
     public async Task A_failed_send_marks_nothing_so_the_next_run_tries_again()
     {
         var failing = new RecordingNotifier { FailBroadcasts = true };
         var repo = new InMemoryPostRepository(Watched());
-        var job = new AlertJob(repo, failing, new FakeEffectiveOptions(Options()), new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
+        var job = new AlertJob(repo, failing, new FakeEffectiveOptions(Options()), _embeddings, new FakeTimeProvider(Now), NullLogger<AlertJob>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => job.RunAsync(CancellationToken.None));
 

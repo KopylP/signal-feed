@@ -31,7 +31,7 @@ The agent runs by itself in your own Azure subscription. Nothing is shared with 
 ## Cost
 
 - Azure: the functions stay within the free grant of the Flex Consumption plan and storage costs pennies.
-- OpenAI is the main expense and depends on how many posts you follow.
+- OpenAI is the main expense and depends on how many posts you follow. Embeddings (for duplicates and followed topics) cost cents a month, and every duplicate they catch is a post the model does not score.
 - A **$5 monthly budget** on the Azure resource group emails you at 80% and 100%.
   It does not cover OpenAI, so watch your OpenAI usage separately.
 

@@ -1,5 +1,4 @@
 using PostAgent.Collecting;
-using PostAgent.Scoring;
 using PostAgent.Shared.Posts;
 using PostAgent.Shared.TelegramSession;
 
@@ -45,7 +44,7 @@ internal sealed class FakeSourceCursors(Dictionary<string, int>? initial = null)
     }
 }
 
-internal sealed class FakeScoringQueue : IScoringQueue
+internal sealed class FakePostQueue : IPostQueue
 {
     public List<PostRef> Enqueued { get; } = [];
     public int? BatchSize { get; private set; }
