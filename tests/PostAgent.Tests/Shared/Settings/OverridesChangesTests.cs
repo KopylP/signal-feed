@@ -51,11 +51,15 @@ public class OverridesChangesTests
     }
 
     [Fact]
-    public void A_profile_edit_cannot_share_a_plan_with_other_changes()
+    public void A_stored_step_of_the_removed_profile_kind_is_refused_and_later_kinds_keep_their_numbers()
     {
-        SettingChange[] plan = [new(SettingChangeKind.EditProfile, "profile", "text"), new(SettingChangeKind.Set, "DigestSize", "9")];
+        SettingChange[] plan = [new((SettingChangeKind)10, "profile", "text")];
 
-        Assert.False(Changes.TryApplyAll(SettingsOverrides.Empty, plan, out _, out _));
+        var ok = Changes.TryApplyAll(SettingsOverrides.Empty, plan, out _, out var error);
+
+        Assert.False(ok);
+        Assert.NotNull(error);
+        Assert.Equal(11, (int)SettingChangeKind.ClearContext);
     }
 
     [Fact]

@@ -29,8 +29,9 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   ├── Intake/            the webhook side: ChatInbox checks a message and queues it (ChatRequest, QuestionText adds a quote or reply)
 │   ├── Answering/         the queue side: ChatProcessor (ask, save, send), ChatDelivery (sends and splits), ChatReplyFormatter, SettingsProposalSender (a plan with its buttons)
 │   ├── Agent/             the model side: IChatAgent and ChatAgent (Microsoft Agent Framework), ChatContext (the digest as data), ChatHistoryReducer, DataBlock, IChatDrafts and ChatDraftStream (the live preview of an answer)
-│   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan, built for one ChatTurn; the propose tools (invasive) only add to its ProposalPlan, the non-invasive ones (rate_post, add_watch, remove_watch, clear_context) act at once (ADR-0021), offer_choices sets the reply keyboard of the answer
-│   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob and the draft sender (TelegramChatDrafts)
+│   │   └── Tools/         every tool is one class (IChatTool), found by assembly scan, built for one ChatTurn; the propose tools (invasive) only add to its ProposalPlan, the non-invasive ones (rate_post, add_watch, remove_watch, clear_context, save_memory, forget_memory) act at once (ADR-0021, ADR-0022), offer_choices sets the reply keyboard of the answer
+│   ├── Memory/            the reader memory (ADR-0022): ReaderMemory (save, forget, the limit of 10, the move of the old profile), MemoryNoteFormat (file name and layout of a note), IReaderMemoryStore
+│   └── Infrastructure/    Azure and Telegram adapters: the queue, the conversation blob, the reader memory blobs (BlobReaderMemoryStore) and the draft sender (TelegramChatDrafts)
 ├── Stats/                 /stats: StatsInbox (a handler: no model call), StatsReport (the sums), StatsMessage (the text)
 ├── Alerts/                alerts about bursts in groups (AlertJob holds the logic, AlertFunction is the timer)
 ├── RunNow/                RunNowFunction: starts any IJob by name from the run-now queue

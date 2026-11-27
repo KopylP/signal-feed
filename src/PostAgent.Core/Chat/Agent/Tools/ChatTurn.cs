@@ -1,3 +1,5 @@
+using PostAgent.Chat.Memory;
+
 namespace PostAgent.Chat.Agent.Tools;
 
 // One question of the reader as the tools see it (ADR-0021). An invasive change goes into the plan and waits for the owner's tap;
@@ -6,13 +8,26 @@ public sealed class ChatTurn(ProposalPlan plan)
 {
     public ProposalPlan Plan => plan;
 
-    // The chat that asked: the profile, the confirmation and the conversation belong to it.
+    private readonly List<string> _memoryNotices = [];
+
+    // The chat that asked: the reader memory, the confirmation and the conversation belong to it.
     public long ChatId => plan.ChatId;
 
     public bool ClearsContext { get; private set; }
 
     // The options shown as buttons under the answer (offer_choices); a later call replaces an earlier one.
     public IReadOnlyList<string>? Choices { get; private set; }
+
+    // One line per change of the reader memory in this turn, built by code, shown under the answer (ADR-0022).
+    public IReadOnlyList<string> MemoryNotices => _memoryNotices;
+
+    public void RecordMemory(MemoryEdit edit)
+    {
+        if (edit.Notice is { } notice)
+        {
+            _memoryNotices.Add(notice);
+        }
+    }
 
     public void ClearContextAfterAnswer() => ClearsContext = true;
 

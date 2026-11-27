@@ -49,10 +49,10 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
 
     public Task<string> ProposePromptReset(string section, CancellationToken ct) => Call("propose_prompt_reset", ct, ("section", section));
 
-    public Task<string> GetProfile(CancellationToken ct) => Call("get_profile", ct);
+    public Task<string> SaveMemory(string? note, string title, string[] keywords, string[] facts, CancellationToken ct) =>
+        Call("save_memory", ct, ("note", note), ("title", title), ("keywords", keywords), ("facts", facts));
 
-    public Task<string> ProposeProfileEdit(string oldText, string newText, CancellationToken ct) =>
-        Call("propose_profile_edit", ct, ("old_text", oldText), ("new_text", newText));
+    public Task<string> ForgetMemory(string note, CancellationToken ct) => Call("forget_memory", ct, ("note", note));
 
     private async Task<string> Call(string name, CancellationToken ct, params (string Key, object? Value)[] args)
     {

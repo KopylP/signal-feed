@@ -11,15 +11,9 @@ public sealed class OverridesChanges(IOptions<AgentOptions> app, PromptLibrary p
     {
         updated = current;
         error = null;
-        if (changes.Count(c => c.Kind is SettingChangeKind.EditPrompt or SettingChangeKind.EditProfile) > TextEdit.MaxEditsPerPlan)
+        if (changes.Count(c => c.Kind == SettingChangeKind.EditPrompt) > TextEdit.MaxEditsPerPlan)
         {
             error = $"Забагато правок тексту в одному плані (до {TextEdit.MaxEditsPerPlan}).";
-            return false;
-        }
-
-        if (changes.Any(c => c.Kind == SettingChangeKind.EditProfile) && changes.Any(c => c.Kind != SettingChangeKind.EditProfile))
-        {
-            error = "Профіль змінюється окремим планом, без інших змін.";
             return false;
         }
 
@@ -98,9 +92,8 @@ public sealed class OverridesChanges(IOptions<AgentOptions> app, PromptLibrary p
                     ? o with { PromptSections = WithoutEmpty(sections.Where(s => s.Key != change.Target).ToDictionary()) }
                     : o;
 
-            case SettingChangeKind.EditProfile:
             case SettingChangeKind.ClearContext:
-                // Not a setting: the profile and the conversation are their own blobs, written by SettingsProposals.ApplyAsync.
+                // Not a setting: the conversation is its own blob, cleared by SettingsProposals.ApplyAsync.
                 return o;
 
             default:

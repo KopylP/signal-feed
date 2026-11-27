@@ -5,7 +5,7 @@ using Azure.Storage.Blobs.Models;
 namespace PostAgent.Shared.Infrastructure;
 
 // Optimistic concurrency over one blob: read with its ETag, then write or delete only that version.
-// Every store that keeps a small document in Blob Storage (settings, profile, votes, usage, conversation, sign-in) uses these
+// Every store that keeps a small document in Blob Storage (settings, reader memory, votes, usage, conversation, sign-in) uses these
 // instead of repeating the request conditions and the status codes of a lost race.
 public static class ConditionalBlobAccess
 {

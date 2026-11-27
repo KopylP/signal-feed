@@ -124,7 +124,7 @@ public class ChatStreamingRequestTests
         var chat = AiServices.CreateChatClient(settings, new OpenAIClientOptions { Transport = new HttpClientPipelineTransport(new HttpClient(handler)) });
         var drafts = new RecordingDrafts();
         var streams = new ChatDraftStreams(drafts, new FakeTimeProvider(Now) { AutoAdvanceAmount = TimeSpan.FromSeconds(1) }, NullLogger<ChatDraftStream>.Instance);
-        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new InMemoryProfileStore(), streams, new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
+        var agent = new ChatAgent(chat, new PostAgent.Tests.SettingsMenu.MenuHarness().ToolsFactory, new DefaultPrompts(), new PostAgent.Tests.SettingsMenu.MenuHarness().ReaderMemory, streams, new FakeEffectiveOptions(settings), NullLogger<ChatAgent>.Instance);
         var state = new ChatState(new ReportSnapshot("r1", Now, "Огляд", [], []), [], null);
 
         var first = await agent.AskAsync(ChatId, state, "перше", null, CancellationToken.None);

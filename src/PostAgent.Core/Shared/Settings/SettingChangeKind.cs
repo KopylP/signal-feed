@@ -1,5 +1,6 @@
 namespace PostAgent.Shared.Settings;
 
+// Stored as a number in the waiting proposals of overrides.json, so a value never moves: a removed kind leaves a gap.
 public enum SettingChangeKind
 {
     Set,
@@ -12,6 +13,7 @@ public enum SettingChangeKind
     RemoveWatch,
     EditPrompt,
     ResetPrompt,
-    EditProfile,
-    ClearContext,
+
+    // 10 was the reader profile edit (ADR-0015), replaced by the reader memory (ADR-0022); a stored step with it is refused as unknown.
+    ClearContext = 11,
 }

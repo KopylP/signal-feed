@@ -102,7 +102,7 @@ Not available in the bot: schedules, the fixed parts of the prompts, secrets, `R
 
 The same settings and sources can be changed by writing to the agent in the private chat, after a digest: «прибери один ресурс», «зроби алерти рідшими», «постав модель чату gpt-6.1-terra».
 The agent asks when the request is not clear («який саме?», with your sources or the matching settings as tiles to tap in place of the keyboard) and may collect several changes into one plan.
-It never changes settings, sources, prompts or your profile itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
+It never changes settings, sources or prompts itself: the bot sends a separate message «⚙️ Агент пропонує змінити налаштування» with the exact changes (the old and the new value) and the buttons «✅ Застосувати» / «✖ Скасувати».
 The text of that message is made by the bot, not by the model, so check it rather than the agent's wording. The plan waits 30 minutes; the changes are applied together or not at all, with the same rules and limits as in `/settings`.
 
 Following a topic («стеж за темою google core update») is not a setting change in this sense: the agent does it at once, like rating a post or clearing the conversation ([ADR-0021](../adr/0021-let-the-chat-agent-do-non-invasive-actions-at-once.md)).
@@ -135,10 +135,14 @@ Everything else (the output fields and limits, the rules that treat post text as
 - A plan holds at most 3 text edits, each fragment up to 500 characters, a section up to 2000. A section cannot get headings and cannot be empty; to go back, ask «поверни стандартний промпт секції …» (a reset).
 - The change applies within about 10 seconds. «Скинути все» in `/settings` returns the prompts to the shipped text.
 
-### About me
+### Reader memory
 
-A short text about you (your work, goals, what you do not care about) that the chat always sees as context, so answers fit you. It is stored per chat in its own blob (`settings/profile/<chat id>.txt`), not in the settings: every paired chat has its own and never sees another's, and «Скинути все» does not clear it.
-Tell the agent: «запам'ятай, що я працюю над каталогом майданчиків», or ask what it knows: «що ти про мене знаєш?». Changes work like prompt edits: the agent proposes an exact before and after, and you confirm with the button. The profile is used by the chat only, not by scoring or the digest.
+The agent keeps short notes about you (your work, projects, goals, interests, how you like answers) and sees them with every question, so answers fit you ([ADR-0022](../adr/0022-keep-a-reader-memory-the-chat-agent-manages-itself.md)). It replaces the earlier «про мене» profile: an existing profile becomes the first note, «Про мене», on your first question after the update.
+
+- **The agent decides what to keep.** When you tell it a lasting fact about yourself («я працюю над каталогом майданчиків»), it saves or updates a note at once, without a confirmation; it removes or corrects a note when you ask («забудь про …», «я більше не займаюсь …») or when a note is no longer true. It saves only what you said yourself, never text from posts.
+- **You always see a change.** A line under the answer says what changed: «🧠 Запам'ятав: …», «🧠 Оновив нотатку: …» or «🧠 Забув: …». Ask «що ти про мене пам'ятаєш?» to see it all.
+- **Short and structured.** At most 10 notes per chat, one topic each, at most 50 lines (best about 20). Each is a Markdown file named by the day it was last changed and its keywords, `settings/reader-memory/<chat id>/2026-11-27-work-seo.md`, with a heading, `Keywords:`, `Updated:` and one fact per line. When the memory is full, the agent merges or removes a note before adding one.
+- Every paired chat has its own memory and never sees another's. «Скинути все» and `/clear` do not touch it; the chat uses it, scoring and the digest do not. To remove everything, ask the agent to forget each note, or delete the blobs in the portal.
 
 ### Prompt files
 

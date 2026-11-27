@@ -11,7 +11,6 @@ public static class SettingsServices
         services
             .AddSingleton<IOverridesStore, BlobOverridesStore>()
             .AddSingleton<IEffectiveOptions, EffectiveOptions>()
-            .AddSingleton<IProfileStore, BlobProfileStore>()
             .AddSingleton<IFeedbackStore, BlobFeedbackStore>()
             .AddSingleton<PromptLibrary>()
             .AddSingleton<IPromptProvider, PromptProvider>()

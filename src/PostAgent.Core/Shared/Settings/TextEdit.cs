@@ -36,7 +36,7 @@ public static class TextEdit
             var first = current.IndexOf(before, StringComparison.Ordinal);
             if (first < 0)
             {
-                error = "Фрагмент не знайдено в поточному тексті. Візьми його дослівно з get_prompt або get_profile.";
+                error = "Фрагмент не знайдено в поточному тексті. Візьми його дослівно з get_prompt.";
                 return false;
             }
 

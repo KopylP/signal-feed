@@ -4,6 +4,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using OpenAI.Responses;
+using PostAgent.Chat.Memory;
 using PostAgent.Shared.Ai;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Common;
@@ -17,7 +18,7 @@ public sealed class ChatAgent(
     [FromKeyedServices(AiServices.ChatClientKey)] IChatClient chat,
     ChatToolFactory toolFactory,
     IPromptProvider prompts,
-    IProfileStore profile,
+    ReaderMemory memory,
     ChatDraftStreams streams,
     IEffectiveOptions options,
     ILogger<ChatAgent> log) : IChatAgent
@@ -55,7 +56,8 @@ public sealed class ChatAgent(
 
         var serialized = await agent.SerializeSessionAsync(session, cancellationToken: ct);
         var proposed = turn.Plan.Changes.ToList();
-        return new ChatReply(text.Trim(), serialized.Clone(), proposed.Count > 0 ? proposed : null, turn.ClearsContext, turn.Choices);
+        return new ChatReply(text.Trim(), serialized.Clone(), proposed.Count > 0 ? proposed : null, turn.ClearsContext, turn.Choices,
+            turn.MemoryNotices.Count > 0 ? turn.MemoryNotices.ToList() : null);
     }
 
     // The same run, read update by update: the text so far goes to the reader as a draft. The answer itself is still one message, sent by the caller.
@@ -96,12 +98,16 @@ public sealed class ChatAgent(
         }
     }
 
-    // The chat prompt with the owner's edits, and what the owner wrote about themselves as data. Built for every question: a profile edit applies at once, a prompt edit within the cache time of the provider.
+    // The chat prompt with the owner's edits, and the reader memory of this chat as data, each note under its file name so that the agent can update or forget it.
+    // Built for every question: a memory change applies to the next question, a prompt edit within the cache time of the provider.
     private async Task<string> InstructionsAsync(long chatId, CancellationToken ct)
     {
         var instructions = await prompts.GetAsync("chat.md", ct);
-        var about = (await profile.LoadAsync(chatId, ct))?.Text;
-        return string.IsNullOrWhiteSpace(about) ? instructions : instructions + "\n\n## About the reader\n" + DataBlock.Wrap("about_me", about.Trim());
+        var notes = await memory.ListAsync(chatId, ct);
+        var listed = notes.Count == 0
+            ? "(empty)"
+            : string.Join("\n\n", notes.Select(n => $"=== {n.Note.FileName}\n{n.Note.Text.Trim()}"));
+        return instructions + $"\n\n## Reader memory ({notes.Count}/{MemoryNoteFormat.MaxNotes} notes)\n" + DataBlock.Wrap("reader_memory", listed);
     }
 
     private AIAgent CreateAgent(AgentOptions settings, IReadOnlyList<AIFunction> functions, string instructions)

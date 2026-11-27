@@ -4,6 +4,7 @@ using PostAgent.Chat.Agent.Tools;
 using PostAgent.Chat.Answering;
 using PostAgent.Chat.Infrastructure;
 using PostAgent.Chat.Intake;
+using PostAgent.Chat.Memory;
 using PostAgent.Shared.Chat;
 using PostAgent.Shared.Notifications;
 
@@ -14,6 +15,8 @@ public static class ChatServices
     public static IServiceCollection AddChat(this IServiceCollection services) =>
         services
             .AddSingleton<IChatStateStore, BlobChatStateStore>()
+            .AddSingleton<IReaderMemoryStore, BlobReaderMemoryStore>()
+            .AddSingleton<ReaderMemory>()
             .AddChatTools()
             .AddChatDrafts()
             .AddSingleton<ChatToolFactory>()

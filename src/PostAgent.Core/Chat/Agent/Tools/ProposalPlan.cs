@@ -11,7 +11,7 @@ public sealed class ProposalPlan(SettingsProposals proposals, SettingsEditor edi
     public const string Proposed =
         "Added to the plan. Nothing is changed yet: the system will show the plan with a confirm button. Do not say it is applied.";
 
-    // The chat that asked: the reader profile and the confirmation belong to it.
+    // The chat that asked: the confirmation belongs to it.
     public long ChatId => chatId;
 
     public IReadOnlyList<SettingChange> Changes => draft;
@@ -20,7 +20,7 @@ public sealed class ProposalPlan(SettingsProposals proposals, SettingsEditor edi
     public async Task<string> AddAsync(SettingChange change, CancellationToken ct)
     {
         // Text edits are steps of their own and are applied in order; any other change replaces an earlier one for the same target.
-        var textEdit = change.Kind is SettingChangeKind.EditPrompt or SettingChangeKind.EditProfile;
+        var textEdit = change.Kind == SettingChangeKind.EditPrompt;
         var plan = (textEdit ? draft : draft.Where(c => c.Kind != change.Kind || c.Target != change.Target)).Append(change).ToList();
         if (plan.Count > SettingsProposal.MaxChanges)
         {

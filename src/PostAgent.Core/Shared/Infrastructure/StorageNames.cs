@@ -29,8 +29,11 @@ public static class StorageNames
     public const string DailyStatsPrefix = "stats/daily/";
     public const string UsageBlob = "stats/usage.json";
 
-    // What one chat's reader wrote about themselves: a chat never reads another chat's profile.
-    public static string ProfileBlobName(long chatId) => $"profile/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.txt";
+    // What the chat agent keeps about one chat's reader (ADR-0022): one Markdown blob per note; a chat never reads another chat's notes.
+    public static string ReaderMemoryPrefix(long chatId) => $"reader-memory/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}/";
+
+    // The reader profile of ADR-0015, replaced by the reader memory: only read once to be moved into a note, then deleted.
+    public static string LegacyProfileBlobName(long chatId) => $"profile/{chatId.ToString(System.Globalization.CultureInfo.InvariantCulture)}.txt";
     public const string SessionBlob = "wtelegram.session";
     public const string CollectionLockBlob = "collect.lock";
     // The sign-in from the bot that is in progress (ADR-0016); it may hold a login code for a few minutes.

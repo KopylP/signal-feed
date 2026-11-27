@@ -1,6 +1,6 @@
 # Edit prompt sections and keep a reader profile through the chat
 
-- Status: Accepted
+- Status: Accepted (the reader profile part is superseded by ADR-0022)
 - Date: 2026-11-25
 - Deciders: Maintainer
 
@@ -38,3 +38,5 @@ The profile is personal data in a blob (never in the repository). Revisit if the
 ## Updates
 
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
+
+2026-11-27: the reader profile is superseded by [ADR-0022](0022-keep-a-reader-memory-the-chat-agent-manages-itself.md): a reader memory of up to 10 Markdown notes that the agent writes itself, without a confirmation. The editable prompt sections stay as decided here.

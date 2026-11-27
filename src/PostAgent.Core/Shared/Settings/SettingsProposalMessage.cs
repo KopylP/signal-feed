@@ -67,9 +67,6 @@ public static class SettingsProposalMessage
             case SettingChangeKind.ClearContext:
                 return "Очистити контекст розмови: питання й відповіді буде забуто, дайджест лишається";
 
-            case SettingChangeKind.EditProfile:
-                return $"Профіль «про мене»:\n{Diff(change)}";
-
             default:
                 return target;
         }

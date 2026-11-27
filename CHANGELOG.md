@@ -8,6 +8,21 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [spruce] - 2026-11-27
+
+### Contract changes
+- **The «про мене» profile is replaced by a reader memory the agent keeps itself** (compatible)
+  - Before: one plain-text profile per chat (`settings/profile/<chat id>.txt`), changed only through a proposal with the «✅ Застосувати» button (`get_profile`, `propose_profile_edit`)
+  - After: up to 10 Markdown notes per chat, `settings/reader-memory/<chat id>/<yyyy-MM-dd>-<keywords>.md`, written and removed by the agent at once, without a button; a line under the answer tells you what changed: «🧠 Запам'ятав: …», «🧠 Оновив нотатку: …», «🧠 Забув: …»
+  - Affects: a profile edit still waiting for its button is refused as unknown (ask the agent again); nothing else
+  - Migration: none; an existing profile becomes the first note, «Про мене», on the chat's first question after the deploy, and the old blob is deleted
+
+### Added
+- **Reader memory**: the agent remembers lasting facts you tell it about yourself (work, projects, goals, interests, how you like answers) and uses them in every answer; it corrects or forgets a note when you ask or when a fact is no longer true ([configuration](docs/user-guide/configuration.md#reader-memory), ADR-0022)
+  - Enable: on by default
+  - Settings: none
+  - Limits: at most 10 notes per chat, one topic each, at most 50 lines; only what you said yourself, never text from posts; per chat, not cleared by «Скинути все» or `/clear`; used by the chat only, not by scoring or the digest
+
 ## [v2026.11.26.126-breeze] - 2026-11-26
 
 ### Added
