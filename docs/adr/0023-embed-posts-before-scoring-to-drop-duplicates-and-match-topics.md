@@ -15,7 +15,7 @@ with a standing cost may be added (`infra/CLAUDE.md`).
 
 We add an embedding stage to the pipeline: `CollectorFunction` → queue `posts-collected` → `EmbeddingFunction` → queue `to-score` → `ScorerFunction`.
 The stage (`Embedding/PostEmbedder`) embeds the new posts with `text-embedding-3-small` cut to 512 dimensions (`PostVectors`) and stores each vector on its row of `Posts`
-(`Embedding`, 2 KB). A single message whose vector is at least `DuplicateSimilarityThreshold` (0.9) alike to an earlier single message of the last 26 hours gets
+(`Embedding`, 2 KB). A single message whose vector is at least `DuplicateSimilarityThreshold` (0.9) alike to a single message of the last 26 hours that the stage already handled (inside one batch, to an earlier one) gets
 `DuplicateOf` and the status `Scored` without a score, and is never sent to the model. The alert job embeds the followed topics on every run and a post matches
 a topic when its vector is at least `WatchSimilarityThreshold` (0.45) alike, or when the words match as before. Bundles of group messages are not deduplicated.
 Group bundling stays inside the collector.
@@ -37,7 +37,8 @@ Scoring no longer depends on the embedding call: when it fails, the posts go on 
 The thresholds are App Settings, to be tuned on real posts; 1 turns a check almost off. A duplicate has no score, so it is counted among the skipped posts of the digest
 and as a duplicate in the daily summary, but not as scored. The new queue must exist before the code deploys (Terraform, `infra/storage.tf`).
 Changing the embedding model makes the stored vectors incomparable until they age out (`RetentionDays`); it is a constant in `PostVectors` for that reason.
-Embedding calls are not counted in `/stats` (cents a month). Revisit when the vectors are wanted for search in the chat, or the volume outgrows in-memory comparison.
+Embedding calls are not counted in `/stats` (cents a month). Two queue messages handled at the same moment do not see each other's vectors, so a repeat can slip through; accepted at this volume.
+Revisit when the vectors are wanted for search in the chat, or the volume outgrows in-memory comparison.
 
 ## Updates
 

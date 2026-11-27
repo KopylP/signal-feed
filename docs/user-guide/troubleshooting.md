@@ -44,7 +44,7 @@
 | «👀 Стеження за темою» brings posts that are not about the topic, or misses ones that are | `WatchSimilarityThreshold` is too low or too high for your topics (the default is a first guess) | Raise it (for example to 0.5) for fewer matches, lower it for more; `1` falls back to the word match. A word match always counts |
 | Different news are missing as if they were duplicates, or the same news comes twice from two channels | `DuplicateSimilarityThreshold` is too low or too high | Raise it (for example to 0.93) to drop fewer posts, lower it to drop more; `1` keeps only exact copies out. Look for «Embedding stage» in Application Insights for the counts |
 | Duplicates are no longer dropped and followed topics match only by words | The embedding call fails (log «Embedding N posts failed» or «The followed topics could not be embedded»), most often the OpenAI key or quota | Fix the key or the quota; nothing is lost meanwhile, posts are scored without the check |
-| «⚠️ Не оцінено N постів» arrives with the digest | Scoring failed 5 times and the message went to the `to-score-poison` queue (most often the OpenAI key, quota or model) | Find the cause in Application Insights (`ScorerFunction` errors), and fix it. The posts already in `to-score-poison` are not retried; new posts are scored again once the cause is fixed |
+| «⚠️ Не оцінено N постів» arrives with the digest | Scoring failed 5 times and the message went to the `to-score-poison` queue (most often the OpenAI key, quota or model), or the embedding stage failed 5 times on storage and its message went to `posts-collected-poison` | Find the cause in Application Insights (`ScorerFunction` and `EmbeddingFunction` errors), and fix it. The posts already in a poison queue are not retried; new posts are scored again once the cause is fixed |
 | The log shows `Collection skipped: another collection or a sign-in is using the Telegram session` | A manual `collect` overlapped another collection (usually the hourly timer), or a `/login` was running | Nothing to do: the next run reads the messages. Start a manual `collect` away from the collector schedule |
 
 ## Known limitations
@@ -54,12 +54,12 @@ These are deliberate trade-offs or open edges, not bugs to report.
 - **Duplicate messages after a failed send.** A single Telegram send is never repeated automatically, because after a timeout the message may already be delivered. If a send fails, the job fails, its posts stay unsent
   and the next run sends them again, so a digest or alert can arrive twice. We prefer a duplicate to a lost message. A long digest is sent as several messages, and the posts are marked as sent only after the last one,
   so if a later message fails, the next run sends the whole digest again. A send gets 30 seconds; the log line `Telegram send failed: N chars after M ms` shows how long it took.
-- **Unscored posts stay `New`.** After 5 failed attempts a message lands in `to-score-poison`, and its posts stay `New` until cleanup removes them. The digest reports how many there are, but nothing retries them.
+- **Unscored posts stay `New`.** After 5 failed attempts a message lands in `to-score-poison` (or `posts-collected-poison`, when the embedding stage failed on storage), and its posts stay `New` until cleanup removes them. The digest reports how many there are, but nothing retries them.
 - **Posts in two bundles.** If a collection run broke off between writing the posts and moving the read position, and new messages arrived meanwhile, the same group messages can land in two bundles.
 - **First-run flood waits.** See the symptom table above.
 - **Fresh messages have no reactions yet,** so the prominence order inside a bundle is approximate at first.
 - **A repeated alert.** If an alert went out but saving its "sent" mark failed, the next run can repeat it.
-- **Duplicates only among single posts of the last day.** Bundles of group messages are never dropped as duplicates, and a post is compared only with posts published in the 26 hours before it.
+- **Duplicates only among single posts of the last day.** Bundles of group messages are never dropped as duplicates, and a post is compared only with posts of the last 26 hours. Two queue messages handled at the same moment do not see each other, so a repeat can still slip through now and then.
 - **Storage code is tested by hand.** The storage repository is checked manually on Azurite, not by `dotnet test`.
 
 ## Still stuck

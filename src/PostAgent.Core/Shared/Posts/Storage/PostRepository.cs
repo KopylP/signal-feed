@@ -65,7 +65,7 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
             }
             catch (RequestFailedException ex) when (ex.Status == 412)
             {
-                // Scored meanwhile by an earlier delivery of the same message: its result stands.
+                // Written meanwhile by another delivery of the same posts: that result stands, and the post is either queued by it or marked Scored.
             }
         }, ct);
 

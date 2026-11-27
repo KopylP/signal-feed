@@ -22,6 +22,11 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
   - After: `CollectorFunction` → `posts-collected` → `EmbeddingFunction` → `to-score` → `ScorerFunction`; the message body (a list of `PartitionKey`/`RowKey`) is the same in both queues
   - Affects: a message already in `to-score` at the deploy is scored as before; nothing else
   - Migration: none
+- **Telegram: the «⚠️ Не оцінено N постів» message names both poison queues** (compatible)
+  - Before: «Перевірте чергу to-score-poison і Application Insights.»
+  - After: «Перевірте черги posts-collected-poison і to-score-poison та Application Insights.»
+  - Affects: nothing
+  - Migration: none
 - **`Posts`: a new column `Embedding`** (compatible)
   - Before: no vector
   - After: 512 floats as bytes (2 KB) on every post the embedding stage handled; an embedding-stage duplicate has `DuplicateOf`, the status `Scored` and no `Score`
@@ -31,7 +36,7 @@ Categories, in order: Setup required, Contract changes, Added, Logic, Improved, 
 ### Logic
 - **Duplicates: the same news from another channel or another run is not scored again** (ADR-0023)
   - Before: near-duplicates were found only inside one scoring batch of 10 posts, by the model
-  - After: a single post at least 0.9 alike in meaning (`DuplicateSimilarityThreshold`, cosine of the embeddings) to a single post of the 26 hours before it is marked as its duplicate and never sent to the model; group bundles are never dropped; the model's own check inside a batch stays
+  - After: a single post at least 0.9 alike in meaning (`DuplicateSimilarityThreshold`, cosine of the embeddings) to a single post of the last 26 hours that was handled before it is marked as its duplicate and never sent to the model; group bundles are never dropped; the model's own check inside a batch stays
   - Effect: fewer repeats in the digest and alerts, fewer scoring tokens; such posts are counted in «📌 Можна пропустити»; if the embedding call fails, posts are scored as before
 - **Followed topics: a post matches by meaning, not only by words**
   - Before: a post matched only when it had every word of the phrase

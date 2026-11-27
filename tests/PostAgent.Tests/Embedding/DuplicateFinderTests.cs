@@ -47,6 +47,18 @@ public class DuplicateFinderTests
     }
 
     [Fact]
+    public void A_stored_post_with_a_vector_is_the_original_even_when_published_later()
+    {
+        var repost = WithVector("repost", hoursAgo: 1, [1, 0]);
+        var original = WithVector("original", hoursAgo: 2, [1, 0]);
+
+        var duplicates = DuplicateFinder.Mark([original], [repost, original], threshold: 0.9);
+
+        Assert.Same(original, Assert.Single(duplicates));
+        Assert.Equal("repost", original.DuplicateOf);
+    }
+
+    [Fact]
     public void Keeps_the_earlier_of_two_alike_posts_of_one_batch()
     {
         var first = WithVector("a", hoursAgo: 3, [1, 0]);

@@ -8,7 +8,7 @@ Setting names (in `code`) are explained in [Configuration](configuration.md). Th
 ![The life of a post: Telegram, collect, score with AI, then an instant alert or the daily digest to you in Telegram](images/life-of-a-post.drawio.svg)
 
 1. **Collect.** Every hour the agent reads new messages from your sources. The first time it sees a source, it reads the last 24 hours.
-2. **Drop repeats.** Each post gets an embedding (a list of numbers that stands for its meaning). A single post that says almost the same as another post of the last day,
+2. **Drop repeats.** Each post gets an embedding (a list of numbers that stands for its meaning). A single post that says almost the same as another post of the last day that was already handled,
    from any channel, is marked as its duplicate and is not scored, so the model does not pay for it twice. Group bundles are never treated as duplicates. If the embedding fails, the posts go on to scoring as before.
 3. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.
 4. **Deliver.** Once a day the best posts become the digest. Alerts for groups go out sooner, within the hour.

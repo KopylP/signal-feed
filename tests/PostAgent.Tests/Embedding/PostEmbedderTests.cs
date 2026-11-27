@@ -71,6 +71,42 @@ public class PostEmbedderTests
     }
 
     [Fact]
+    public async Task A_retry_after_a_failed_queue_send_queues_again_without_a_second_embedding_call()
+    {
+        _embeddings.With("Google started the core update", 1, 0);
+        var earlier = New("first", "Google rolls out the core update", hoursAgo: 3);
+        earlier.Status = PostStatus.Scored;
+        earlier.Embedding = PostVectors.ToBytes((float[])[1, 0, .. new float[510]]);
+        var repeat = New("second", "Google started the core update");
+        var other = New("third", "Bing adds AI answers");
+        var repo = new InMemoryPostRepository(earlier, repeat, other) { CopyOnRead = true };
+        _scoring.Failure = new InvalidOperationException("queue down");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Embedder(repo).EmbedAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None));
+        _scoring.Failure = null;
+        await Embedder(repo).EmbedAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None);
+
+        Assert.Single(_embeddings.Calls);
+        Assert.Equal([other.ToRef()], _scoring.Enqueued);
+        Assert.Equal("first", repeat.DuplicateOf);
+    }
+
+    [Fact]
+    public async Task A_post_handled_after_its_repost_is_the_one_dropped_even_if_published_first()
+    {
+        _embeddings.With("Repost: Google core update", 1, 0).With("Google core update", 0.99f, 0.05f);
+        var original = New("a", "Google core update", hoursAgo: 2);
+        var repost = New("b", "Repost: Google core update", hoursAgo: 1);
+        var repo = new InMemoryPostRepository(original, repost) { CopyOnRead = true };
+
+        await Embedder(repo).EmbedAsync([repost.ToRef()], CancellationToken.None);
+        await Embedder(repo).EmbedAsync([original.ToRef()], CancellationToken.None);
+
+        Assert.Equal([repost.ToRef()], _scoring.Enqueued);
+        Assert.Equal("b", original.DuplicateOf);
+    }
+
+    [Fact]
     public async Task Skips_posts_that_are_already_scored_so_a_repeated_message_is_harmless()
     {
         var scored = Post("a", score: 8);

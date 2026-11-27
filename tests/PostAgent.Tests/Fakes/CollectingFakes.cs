@@ -48,7 +48,7 @@ internal sealed class FakePostQueue : IPostQueue
 {
     public List<PostRef> Enqueued { get; } = [];
     public int? BatchSize { get; private set; }
-    public Exception? Failure { get; init; }
+    public Exception? Failure { get; set; }
 
     public Task EnqueueAsync(IReadOnlyList<PostRef> refs, int batchSize, CancellationToken ct)
     {

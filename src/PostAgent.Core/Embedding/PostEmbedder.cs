@@ -6,7 +6,7 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Embedding;
 
-// The stage between collection and scoring (ADR-0023): embeds the new posts, drops the near-duplicates of earlier posts so the model
+// The stage between collection and scoring (ADR-0023): embeds the new posts, drops the near-duplicates of posts handled before so the model
 // never scores them, and queues the rest for scoring. A failed embedding call never holds scoring back: the posts go on without vectors.
 public sealed class PostEmbedder(
     IPostRepository posts,
@@ -16,7 +16,7 @@ public sealed class PostEmbedder(
     TimeProvider time,
     ILogger<PostEmbedder> log)
 {
-    // An earlier post is looked for among about the last day, the window of the digest.
+    // The original is looked for among about the last day, the window of the digest.
     public static readonly TimeSpan DuplicateWindow = TimeSpan.FromHours(26);
 
     public async Task EmbedAsync(IReadOnlyList<PostRef> refs, CancellationToken ct)
