@@ -8,7 +8,7 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
-## [lotus] - 2026-11-28
+## [v2026.11.28.133-lotus] - 2026-11-28
 
 ### Setup required
 - **Queues `to-deduplicate`, `topics-to-follow`, `to-alert`**: required
