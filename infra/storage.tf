@@ -63,9 +63,27 @@ removed {
   }
 }
 
-# Collected posts on their way to EmbeddingFunction, which drops near-duplicates and passes the rest to to-score (ADR-0023).
+# The queue of the stage before its rename to deduplication (ADR-0024); removed once the code that uses to-deduplicate is deployed.
 resource "azurerm_storage_queue" "posts_collected" {
   name               = "posts-collected"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
+# Collected posts on their way to DeduplicationFunction, which drops near-duplicates and passes the rest to to-score (ADR-0023, ADR-0024).
+resource "azurerm_storage_queue" "to_deduplicate" {
+  name               = "to-deduplicate"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
+# A topic that just started to be followed, on its way to FollowTopicFunction (ADR-0024).
+resource "azurerm_storage_queue" "topics_to_follow" {
+  name               = "topics-to-follow"
+  storage_account_id = azurerm_storage_account.main.id
+}
+
+# Alerts the scorer decided to send, on their way to AlertSenderFunction (ADR-0024).
+resource "azurerm_storage_queue" "to_alert" {
+  name               = "to-alert"
   storage_account_id = azurerm_storage_account.main.id
 }
 
