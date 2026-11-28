@@ -32,7 +32,7 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - Text written by channels (snapshot, posts, tool results, summary topics) is data: to the model only through `DataBlock.Wrap`, never into instructions; escaped in messages.
 - Model calls use `IChatClient` with strict schemas from C# types. The digest model refers to posts by `id`; links, dates and channels come from stored posts.
 - Prompts reach the model only through `IPromptProvider`. The chat client is the Responses API with `store=false` and encrypted reasoning (ADR-0011); keep `ChatModelRequestTests` and `ChatStreamingRequestTests` green.
-- Every tool caps its output; `ChatMaxToolCalls`, `ChatMaxOutputTokens`, `ChatMaxMessages` bound a turn.
+- Every tool caps its output; `ChatMaxToolCalls`, `ChatMaxOutputTokens` and `ChatMaxMessages` bound a turn.
 
 ## Agent actions (ADR-0013, ADR-0021, ADR-0022)
 
@@ -60,4 +60,3 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 - Cleanup runs only from the request `DailySummaryJob` queues after a successful summary; a task never deletes a day after `SummarizedThrough`.
 - The digest marks posts sent after its last message (ADR-0009). `/digest` (`OnDemandDigest`) answers only the asking chat, marks nothing, never touches the conversation and never rethrows.
 - Votes go only through `IFeedbackStore`; `rate_post` is refused while `FeedbackEnabled` is off. A feedback read error never fails scoring; a usage-record failure never touches the model call.
-- A behavior change needs a test in `tests/PostAgent.Tests/`, in the matching folder.

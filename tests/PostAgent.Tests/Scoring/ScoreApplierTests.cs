@@ -65,7 +65,7 @@ public class ScoreApplierTests
     {
         var post = Unscored("src_2");
 
-        ScoreApplier.Apply([post], TwoScores); // src_2 дублює src_1, якого в пачці немає
+        ScoreApplier.Apply([post], TwoScores); // src_2 duplicates src_1, which is not in the bundle
 
         Assert.Null(post.DuplicateOf);
     }

@@ -19,7 +19,7 @@ public class TextExtensionsTests
     [Fact]
     public void Surrogate_pair_is_never_split()
     {
-        var text = "ab😀cd"; // 😀 займає дві позиції: індекси 2 і 3
+        var text = "ab😀cd"; // 😀 takes two positions: indexes 2 and 3
 
         var result = text.Truncate(3);
 

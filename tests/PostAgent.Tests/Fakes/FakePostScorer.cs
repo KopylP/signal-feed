@@ -3,7 +3,7 @@ using PostAgent.Shared.Posts;
 
 namespace PostAgent.Tests.Fakes;
 
-// Оцінює всі пости, окрім заданих id: їх «модель пропустила».
+// Scores all posts except the given ids: the "model skipped" them.
 internal sealed class FakePostScorer(params string[] skippedIds) : IPostScorer
 {
     public int Calls { get; private set; }

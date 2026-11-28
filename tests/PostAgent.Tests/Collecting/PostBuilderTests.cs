@@ -148,7 +148,7 @@ public class PostBuilderTests
     {
         var messages = Enumerable.Range(1, 6).Select(i => Message(i)).Append(Message(7, "коротко"));
 
-        var posts = PostBuilder.Build(Group, messages, Options(o => o.MaxItemsPerGroup = 5)); // чанки: 2, 2, 2, 1
+        var posts = PostBuilder.Build(Group, messages, Options(o => o.MaxItemsPerGroup = 5)); // chunks: 2, 2, 2, 1
 
         Assert.Equal(3, posts.Count);
         Assert.All(posts, p => Assert.Equal(2, p.MessageCount));

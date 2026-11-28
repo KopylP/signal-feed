@@ -4,7 +4,7 @@ using PostAgent.Shared.TelegramSession;
 
 namespace PostAgent.Tests.Fakes;
 
-// Читач джерел: для кожного username задається результат або помилка.
+// A source reader: a result or an error is set for every username.
 internal sealed class FakeSourceReader(Dictionary<string, Func<int, SourceBatch>> sources) : ISourceReader
 {
     public List<(string Username, int LastPostId)> Reads { get; } = [];

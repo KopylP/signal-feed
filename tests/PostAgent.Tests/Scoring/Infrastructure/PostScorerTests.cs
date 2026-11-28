@@ -110,7 +110,7 @@ public class PostScorerTests
         Assert.Equal([ChatRole.System, ChatRole.User], chat.Messages.Select(m => m.Role));
         Assert.Contains("## Scale", chat.Messages[0].Text);
         Assert.Contains("src_1", chat.Messages[1].Text);
-        Assert.Contains("Текст посту", chat.Messages[1].Text); // кирилиця без \uXXXX
+        Assert.Contains("Текст посту", chat.Messages[1].Text); // Cyrillic without \uXXXX
         Assert.Equal(true, chat.Options!.AdditionalProperties!["strict"]);
         Assert.NotNull(chat.Options.ResponseFormat);
     }

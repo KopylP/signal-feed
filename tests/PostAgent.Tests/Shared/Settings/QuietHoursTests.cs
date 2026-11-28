@@ -6,7 +6,7 @@ public class QuietHoursTests
 {
     private const string Kyiv = "Europe/Kyiv";
 
-    // 24 листопада Київ живе за UTC+2.
+    // On 24 November Kyiv lives on UTC+2.
     private static DateTimeOffset Utc(int hour, int minute = 0) => new(2026, 11, 24, hour, minute, 0, TimeSpan.Zero);
 
     [Theory]
@@ -18,10 +18,10 @@ public class QuietHoursTests
     }
 
     [Theory]
-    [InlineData(21, 0, true)]   // 23:00 за Києвом
+    [InlineData(21, 0, true)]   // 23:00 in Kyiv
     [InlineData(23, 30, true)]  // 01:30
     [InlineData(4, 59, true)]   // 06:59
-    [InlineData(5, 0, false)]   // 07:00, кінець інтервалу не входить
+    [InlineData(5, 0, false)]   // 07:00, the end of the interval is not included
     [InlineData(12, 0, false)]
     [InlineData(20, 59, false)] // 22:59
     public void Interval_across_midnight(int utcHour, int utcMinute, bool expected)
@@ -44,7 +44,7 @@ public class QuietHoursTests
     }
 
     [Theory]
-    [InlineData(19, 59, false)] // 22:59 за літнім часом (UTC+3)
+    [InlineData(19, 59, false)] // 22:59 in summer time (UTC+3)
     [InlineData(20, 0, true)]   // 23:00
     [InlineData(3, 59, true)]   // 06:59
     [InlineData(4, 0, false)]   // 07:00

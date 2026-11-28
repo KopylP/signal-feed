@@ -3,7 +3,7 @@ using TL;
 
 namespace PostAgent.Collecting.Infrastructure.Telegram;
 
-// Перетворює повідомлення бібліотеки WTelegramClient на наш TgMessage.
+// Turns a WTelegramClient library message into our TgMessage.
 public static class TgMessageMapper
 {
     public static TgMessage Map(MessageBase message, Messages_MessagesBase page, SourceType type)
@@ -18,7 +18,7 @@ public static class TgMessageMapper
         return new TgMessage(m.id, date, m.message, author, Engagement(m), IsService: false);
     }
 
-    // Реакції + 2 × пересилання + відповіді: чим більше, тим помітніше повідомлення.
+    // Reactions + 2 x forwards + replies: the higher, the more prominent the message.
     private static int Engagement(Message m) =>
         (m.reactions?.results?.Sum(r => r.count) ?? 0) + 2 * m.forwards + (m.replies?.replies ?? 0);
 

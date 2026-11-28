@@ -63,7 +63,7 @@ public class CompositionTests
         Assert.Equal(["chat"], options.AlertSourceSet);
         Assert.Equal(-1001234567890, options.TelegramChatId);
         Assert.Equal(6, options.DigestSize);
-        Assert.Equal(5, options.MaxItemsPerGroup); // значення за замовчуванням із коду
+        Assert.Equal(5, options.MaxItemsPerGroup); // the default value from the code
     }
 
     [Fact]

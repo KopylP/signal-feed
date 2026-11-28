@@ -4,10 +4,10 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Collecting;
 
-// Перетворює повідомлення джерела на пости (чиста функція, без Telegram і сховища).
-// Канали: кожне повідомлення — окремий пост.
-// Групи: до MaxItemsPerGroup повідомлень лишаються окремими постами,
-// більше — діляться на MaxItemsPerGroup послідовних пачок приблизно рівного розміру.
+// Turns source messages into posts (a pure function, no Telegram and no storage).
+// Channels: every message is a post of its own.
+// Groups: up to MaxItemsPerGroup messages stay separate posts,
+// more are split into MaxItemsPerGroup consecutive bundles of about equal size.
 public static class PostBuilder
 {
     private sealed record Item(TgMessage Message, string Text);
@@ -39,7 +39,7 @@ public static class PostBuilder
             .OfType<Item>()
             .ToList();
 
-    // Окремий пост. Повертає null для занадто короткого повідомлення.
+    // A single post. Returns null for a message that is too short.
     private static PostEntity? ToPost(SourceInfo source, Item item, AgentOptions options)
     {
         if (item.Text.Length < options.MinPostChars)
@@ -85,7 +85,7 @@ public static class PostBuilder
         };
     }
 
-    // Рядки «автор: текст», найпомітніші першими, у межах MaxBundleChars.
+    // "author: text" lines, the most prominent first, within MaxBundleChars.
     private static string BundleText(IEnumerable<Item> rankedItems, AgentOptions options)
     {
         var lines = new List<string>();

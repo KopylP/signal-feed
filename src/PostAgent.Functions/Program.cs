@@ -11,8 +11,8 @@ builder.Services
     .ConfigureFunctionsApplicationInsights()
     .AddPostAgent(builder.Configuration);
 
-// За замовчуванням Application Insights пропускає логи нижче Warning. Прибираємо це правило,
-// щоб діяли рівні з host.json.
+// By default Application Insights drops logs below Warning. We remove that rule
+// so the levels from host.json apply.
 builder.Logging.Services.Configure<LoggerFilterOptions>(filter =>
 {
     var rule = filter.Rules.FirstOrDefault(r =>
@@ -28,7 +28,7 @@ builder.Logging.AddFilter("WTelegram", LogLevel.Warning);
 
 var app = builder.Build();
 
-// Логи WTelegramClient (статичний хук бібліотеки) йдуть у загальний ILogger.
+// WTelegramClient logs (a static hook of the library) go to the common ILogger.
 var wtelegramLog = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WTelegram");
 WTelegram.Helpers.Log = (level, text) => wtelegramLog.Log((LogLevel)level, "{Text}", text);
 

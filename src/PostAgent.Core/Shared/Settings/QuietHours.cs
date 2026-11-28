@@ -19,7 +19,7 @@ public static class QuietHours
         var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
         var local = TimeOnly.FromTimeSpan(TimeZoneInfo.ConvertTime(now, zone).TimeOfDay);
 
-        // Інтервал може переходити через північ.
+        // The interval may cross midnight.
         return range.Start <= range.End
             ? local >= range.Start && local < range.End
             : local >= range.Start || local < range.End;

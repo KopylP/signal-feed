@@ -1,10 +1,10 @@
-// Одноразовий інтерактивний вхід у Telegram (телефон, код, 2FA) і завантаження сесії в Blob Storage.
+// A one-off interactive Telegram sign-in (phone, code, 2FA) that uploads the session to Blob Storage.
 //
 //   dotnet run --project src/TgLogin -- <storage-account-name | connection-string> [container]
 //
-// Дані акаунта беруться зі змінних TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE,
-// а якщо їх немає, програма запитає їх у консолі. У Azure доступ до Blob іде через
-// DefaultAzureCredential (az login), для Azurite передайте рядок підключення.
+// The account data comes from the TELEGRAM_API_ID, TELEGRAM_API_HASH and TELEGRAM_PHONE variables;
+// when they are missing, the program asks for them in the console. In Azure, Blob access goes through
+// DefaultAzureCredential (az login); for Azurite pass a connection string.
 // In Azure the session is encrypted with the Key Vault key from SESSION_KEY_ID (terraform output session_key_id, ADR-0017);
 // against Azurite it may stay in clear.
 

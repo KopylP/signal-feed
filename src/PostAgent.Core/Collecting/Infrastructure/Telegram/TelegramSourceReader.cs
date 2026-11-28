@@ -54,7 +54,7 @@ public sealed class TelegramSourceReader(
     private async Task<List<TgMessage>> ReadNewMessagesAsync(
         Client client, Channel channel, SourceType type, int lastPostId, CancellationToken ct)
     {
-        // Перший запуск: min_id = 0 означав би всю історію, тому беремо лише останні години.
+        // First run: min_id = 0 would mean the whole history, so only the last hours are taken.
         DateTime? cutoff = lastPostId == 0
             ? time.GetUtcNow().UtcDateTime.AddHours(-options.Value.FirstRunLookbackHours)
             : null;

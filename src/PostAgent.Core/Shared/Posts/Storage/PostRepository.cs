@@ -128,7 +128,7 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                // Пост уже видалив Cleanup (дайджест чи алерт перетнув межу доби): позначати нічого.
+                // Cleanup already deleted the post (a digest or an alert crossed the day boundary): nothing to mark.
             }
         }, ct);
 
@@ -163,7 +163,7 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
                 cancellationToken: ct)
             .ToListAsync(ct);
 
-        // Транзакція Table Storage працює в межах однієї партиції й до 100 операцій.
+        // A Table Storage transaction works within one partition and up to 100 operations.
         foreach (var batch in old.GroupBy(e => e.PartitionKey).SelectMany(g => g.Chunk(MaxTransactionSize)))
         {
             await _posts.SubmitTransactionAsync(

@@ -5,8 +5,8 @@ using Microsoft.ApplicationInsights.Extensibility;
 
 namespace PostAgent.Shared.Notifications;
 
-// Токен бота входить у шлях запиту (/bot{token}/sendMessage), а Application Insights записує URL залежностей.
-// Цей ініціалізатор замінює токен на *** до того, як телеметрія піде з застосунку.
+// The bot token is part of the request path (/bot{token}/sendMessage), and Application Insights records dependency URLs.
+// This initializer replaces the token with *** before the telemetry leaves the app.
 public sealed partial class TelegramTokenRedactor : ITelemetryInitializer
 {
     private const string TelegramHost = "api.telegram.org";

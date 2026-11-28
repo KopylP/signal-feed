@@ -7,7 +7,7 @@ public static class PromptJson
 {
     private static readonly JsonSerializerOptions Options = new()
     {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // кирилиця без \uXXXX, менше токенів
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // Cyrillic without \uXXXX, fewer tokens
     };
 
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Options);

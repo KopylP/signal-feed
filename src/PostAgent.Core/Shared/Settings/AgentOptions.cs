@@ -8,22 +8,22 @@ namespace PostAgent.Shared.Settings;
 // the [TimerTrigger("%...%")] attributes read them straight from the App Settings.
 public sealed class AgentOptions
 {
-    // Скільки записів вміщує одне повідомлення алерта (ліміт Telegram 4096 символів). Запис не перевищує ~450
-    // символів (тема 60, пояснення 200, джерело й посилання), тож 8 записів вкладаються.
+    // How many entries one alert message holds (the Telegram limit is 4096 characters). An entry is at most ~450
+    // characters (topic 60, explanation 200, source and link), so 8 entries fit.
     public const int MaxItemsPerMessage = 8;
 
-    // Дайджест ділиться на кілька повідомлень, тож його розмір не обмежений одним повідомленням,
-    // а лише тим, скільки постів модель встигає осмислено підсумувати (ADR-0009).
+    // The digest is split into several messages, so its size is not bounded by one message,
+    // only by how many posts the model can summarize meaningfully (ADR-0009).
     public const int MaxDigestItems = 12;
 
-    // Джерела
+    // Sources
     public string Sources { get; set; } = string.Empty;
 
-    // Дайджест
+    // Digest
     [Range(1, MaxDigestItems)] public int DigestSize { get; set; } = 7;
     [Range(0, 10)] public int InterestingThreshold { get; set; } = 7;
 
-    // Збір і оцінювання
+    // Collecting and scoring
     [Range(1, 100)] public int ScoringBatchSize { get; set; } = 10;
     [Range(1, 4000)] public int MaxPostChars { get; set; } = 1500;
     [Range(0, 4000)] public int MinPostChars { get; set; } = 80;
@@ -40,11 +40,11 @@ public sealed class AgentOptions
     [Range(1, 48)] public int DuplicateWindowHours { get; set; } = 3;
     [Range(0.0, 1.0)] public double WatchSimilarityThreshold { get; set; } = 0.45;
 
-    // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки
+    // Groups: at most this many posts per group per run, the rest is squeezed into bundles
     [Range(1, 50)] public int MaxItemsPerGroup { get; set; } = 5;
     [Range(1, 20000)] public int MaxBundleChars { get; set; } = 3000;
 
-    // Алерти (лише для груп зі списку AlertSources)
+    // Alerts (only for the groups in AlertSources)
     public string AlertSources { get; set; } = string.Empty;
 
     // Topics to follow, separated by ";" (WatchPhrases): a new scored post that has every word of one, or is about it by meaning
@@ -87,7 +87,7 @@ public sealed class AgentOptions
 
     // Telegram
     [Required] public string TelegramBotToken { get; set; } = string.Empty;
-    // Необов'язковий: якщо не задано, чат береться з прив'язки (/start <TelegramPairingKey>).
+    // Optional: when not set, the chat comes from the binding (/start <TelegramPairingKey>).
     public long TelegramChatId { get; set; }
     [Required] public string TelegramPairingKey { get; set; } = string.Empty;
     // How many chats can be paired at once (ADR-0014). Every bound chat gets the digest and alerts.

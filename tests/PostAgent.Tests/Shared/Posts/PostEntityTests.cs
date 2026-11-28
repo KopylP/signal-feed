@@ -9,7 +9,7 @@ public class PostEntityTests
     [Fact]
     public void Partition_is_the_utc_date_of_publication()
     {
-        var lateEvening = new DateTimeOffset(2026, 11, 24, 1, 30, 0, TimeSpan.FromHours(3)); // 23 листопада за UTC
+        var lateEvening = new DateTimeOffset(2026, 11, 24, 1, 30, 0, TimeSpan.FromHours(3)); // 23 November in UTC
 
         Assert.Equal("2026-11-23", PostEntity.PartitionFor(lateEvening));
     }
@@ -20,8 +20,8 @@ public class PostEntityTests
         var cutoffPartition = PostEntity.PartitionFor(Now.AddDays(-1));
 
         Assert.Equal("2026-11-23", cutoffPartition);
-        Assert.True(string.CompareOrdinal(PostEntity.PartitionFor(Now.AddDays(-2)), cutoffPartition) < 0); // видаляється
-        Assert.False(string.CompareOrdinal(PostEntity.PartitionFor(Now.AddHours(-20)), cutoffPartition) < 0); // лишається
+        Assert.True(string.CompareOrdinal(PostEntity.PartitionFor(Now.AddDays(-2)), cutoffPartition) < 0); // gets deleted
+        Assert.False(string.CompareOrdinal(PostEntity.PartitionFor(Now.AddHours(-20)), cutoffPartition) < 0); // stays
     }
 
     private static readonly IReadOnlySet<string> Batch = new HashSet<string> { "src_1", "src_2" };
@@ -38,9 +38,9 @@ public class PostEntityTests
     }
 
     [Theory]
-    [InlineData("src_2", "src_2")]   // інший пост із пачки
-    [InlineData("src_1", null)]      // посилання на себе
-    [InlineData("вигаданий", null)]  // id, якого немає в пачці
+    [InlineData("src_2", "src_2")]   // another post of the bundle
+    [InlineData("src_1", null)]      // a reference to itself
+    [InlineData("вигаданий", null)]  // an id that is not in the bundle
     [InlineData("", null)]
     [InlineData(null, null)]
     public void ApplyScore_keeps_DuplicateOf_only_when_it_points_to_another_post_of_the_batch(string? duplicateOf, string? expected)

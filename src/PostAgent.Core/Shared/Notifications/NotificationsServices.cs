@@ -12,7 +12,7 @@ public static class NotificationsServices
         services.AddSingleton<IChatBindingStore, ChatBindingStore>();
         services.AddSingleton<ChatResolver>();
 
-        // RemoveAllLoggers: токен бота входить в URL запиту, у логи він потрапити не повинен.
+        // RemoveAllLoggers: the bot token is part of the request URL and must not reach the logs.
         services
             .AddHttpClient<ITelegramNotifier, TelegramNotifier>()
             .RemoveAllLoggers()

@@ -26,13 +26,13 @@ namespace PostAgent;
 
 public static class ServiceCollectionExtensions
 {
-    // Окремий метод, щоб тест міг зібрати той самий граф залежностей, що й Program.cs.
+    // A separate method, so a test can build the same dependency graph as Program.cs.
     public static IServiceCollection AddPostAgent(this IServiceCollection services, IConfiguration config)
     {
         services.AddOptions<AgentOptions>()
             .Bind(config)
             .ValidateDataAnnotations()
-            .ValidateOnStart(); // помилка в налаштуваннях зупиняє запуск зрозумілим повідомленням
+            .ValidateOnStart(); // a settings error stops the start with a clear message
         services.AddSingleton<IValidateOptions<AgentOptions>, AgentOptionsValidator>();
         services.AddSingleton(TimeProvider.System);
 

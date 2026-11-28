@@ -4,6 +4,6 @@ namespace PostAgent.Scoring;
 
 public interface IPostScorer
 {
-    // Повертає id постів, для яких модель оцінки не дала.
+    // Returns the ids of the posts the scoring model gave no score for.
     Task<IReadOnlyList<string>> ScoreAsync(IReadOnlyList<PostEntity> posts, CancellationToken ct);
 }

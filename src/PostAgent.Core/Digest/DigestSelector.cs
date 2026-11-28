@@ -3,18 +3,18 @@ using PostAgent.Shared.Settings;
 
 namespace PostAgent.Digest;
 
-// Вибирає пости для денного дайджесту (чиста функція).
+// Picks the posts for the daily digest (a pure function).
 public static class DigestSelector
 {
-    // Доба плюс 2 години запасу: пост, опублікований в останню годину перед минулим дайджестом,
-    // на той момент ще не був оцінений. Повторів немає, бо надіслані пости мають статус Sent.
+    // A day plus 2 hours of slack: a post published in the hour before the previous digest
+    // had not been scored yet at that time. No repeats, because sent posts have the status Sent.
     private static readonly TimeSpan Window = TimeSpan.FromHours(26);
     private static readonly TimeSpan FallbackWindow = TimeSpan.FromHours(48);
 
     // Collection runs hourly and scoring takes minutes, so a post still unscored after this has failed scoring.
     private static readonly TimeSpan ScoringGrace = TimeSpan.FromHours(2);
 
-    // З якого моменту читати пости для дайджесту.
+    // The moment from which posts are read for the digest.
     public static DateTimeOffset QueryStart(DateTimeOffset now) => now - FallbackWindow;
 
     public static IReadOnlyList<DigestItem> Build(IEnumerable<PostEntity> posts, AgentOptions options, DateTimeOffset now) =>
