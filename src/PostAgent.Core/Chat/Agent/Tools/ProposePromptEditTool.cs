@@ -16,7 +16,7 @@ public sealed class ProposePromptEditTool(PromptLibrary prompts) : IChatTool
         new AIFunctionFactoryOptions
         {
             Name = "propose_prompt_edit",
-            Description = "Plan to replace one fragment of an editable prompt section with another. old_text must be copied exactly from the section (get_prompt) and appear once; empty old_text adds new_text at the end; empty new_text removes the fragment. At most 500 characters each.",
+            Description = $"Plan to replace one fragment of an editable prompt section with another. old_text must be copied exactly from the section (get_prompt) and appear once; empty old_text adds new_text at the end; empty new_text removes the fragment. At most {TextEdit.MaxSnippet} characters each.",
         });
 
     private Task<string> RunAsync(ProposalPlan plan, string section, string oldText, string newText, CancellationToken ct) =>

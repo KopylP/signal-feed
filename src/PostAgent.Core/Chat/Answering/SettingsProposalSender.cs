@@ -8,6 +8,7 @@ namespace PostAgent.Chat.Answering;
 public sealed class SettingsProposalSender(
     SettingsProposals proposals,
     IEffectiveOptions effective,
+    IOverridesStore overrides,
     ITelegramPanel panel,
     TimeProvider time,
     ILogger<SettingsProposalSender> log)
@@ -22,6 +23,12 @@ public sealed class SettingsProposalSender(
             {
                 await panel.SendAsync(chatId, SettingsProposalMessage.NotSaved(saved.Error), InlineKeyboard.Empty, ct);
                 return;
+            }
+
+            // A rewrite is shown before the button, as the lines it changes against what the prompt has now.
+            foreach (var diff in SettingsProposalMessage.RewriteDiffs(proposal, (await overrides.LoadAsync(ct))?.Value.PromptSections))
+            {
+                await panel.SendAsync(chatId, diff, InlineKeyboard.Empty, ct);
             }
 
             var html = SettingsProposalMessage.Proposed(proposal, await effective.GetFreshAsync(ct));

@@ -76,4 +76,23 @@ public class PromptToolsTests
 
         Assert.Equal([new SettingChange(SettingChangeKind.ResetPrompt, "scoring-work")], _draft);
     }
+
+    [Fact]
+    public async Task A_prompt_rewrite_goes_into_the_plan_with_the_whole_text()
+    {
+        var answer = await Tools().ProposePromptRewrite("scoring-interests", "1. Only Google updates.\n2. Link building.", CancellationToken.None);
+
+        Assert.Contains("Nothing is changed yet", answer);
+        Assert.Equal([new SettingChange(SettingChangeKind.RewritePrompt, "scoring-interests", "1. Only Google updates.\n2. Link building.")], _draft);
+        Assert.Null(_h.Store.Current?.PromptSections);
+    }
+
+    [Fact]
+    public async Task A_rewrite_of_a_fixed_part_is_refused()
+    {
+        var answer = await Tools().ProposePromptRewrite("scoring-fields", "x", CancellationToken.None);
+
+        Assert.StartsWith("Unknown section", answer);
+        Assert.Empty(_draft);
+    }
 }

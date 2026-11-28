@@ -2,7 +2,9 @@
 
 Prompts for the model: `scoring.md` (scoring posts), `digest.md` (digest summary) and `chat.md` (chat about the digest and about changing settings: free text, no schema, in Ukrainian and plain text, because Telegram shows it literally; tool names in it must match the tools in `Chat/Agent/Tools/`). They are copied into the build, so a change of the files needs a new deploy.
 
-- Editable sections (ADR-0015): wrap a part the owner may tune from the bot in `<!-- editable: id | label -->` ... `<!-- /editable -->` after its heading. Put in a section only wording and taste (interests, scale, style); output fields, limits, tool names and the data rules stay outside. `PromptTemplateTests` checks it. The owner's text replaces the section, so write the default as a complete text.
+- Editable sections (ADR-0015, ADR-0025): wrap a part the owner may tune from the bot in `<!-- editable: id | label -->` ... `<!-- /editable -->` after its heading. Put in sections everything that is wording and taste: the role and goal, interests, scale, style, how to judge a post, the behavior notes for the tools.
+  Keep outside every section the technical contract: output fields and limits, the input format, tool names and signatures, the rules that treat text as data, and the guards that forbid the agent to act on its own. `PromptTemplateTests` pins them.
+  The owner's text replaces a section (as one edited fragment or a whole rewrite), so write the default as a complete text, and do not name a pinned tool or field inside a section. Keep a section under `TextEdit.MaxText`. Keep the ids: an id is the key of the owner's stored text.
 
 - The prompts are written in English, but the text the model returns (`topic`, `reason`, and the digest texts) goes to the end user, so each prompt says it must be Ukrainian.
   Structure: role, what to return, rules, limits.

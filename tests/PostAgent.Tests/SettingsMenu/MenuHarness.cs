@@ -67,7 +67,7 @@ internal sealed class MenuHarness
     // The reader memory the agent reads and remember / forget write, over the in-memory notes.
     public ReaderMemory ReaderMemory => new(Memory, Effective, Time, NullLogger<ReaderMemory>.Instance);
 
-    public SettingsProposalSender ProposalSender => new(Proposals, Effective, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
+    public SettingsProposalSender ProposalSender => new(Proposals, Effective, Store, Panel, Time, NullLogger<SettingsProposalSender>.Instance);
 
     public MenuHarness(Action<AgentOptions>? configure = null, long? bound = BoundChat)
     {

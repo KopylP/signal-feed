@@ -11,7 +11,7 @@ public sealed class OverridesChanges(IOptions<AgentOptions> app, PromptLibrary p
     {
         updated = current;
         error = null;
-        if (changes.Count(c => c.Kind == SettingChangeKind.EditPrompt) > TextEdit.MaxEditsPerPlan)
+        if (changes.Count(c => c.Kind is SettingChangeKind.EditPrompt or SettingChangeKind.RewritePrompt) > TextEdit.MaxEditsPerPlan)
         {
             error = $"Забагато правок тексту в одному плані (до {TextEdit.MaxEditsPerPlan}).";
             return false;
@@ -87,6 +87,9 @@ public sealed class OverridesChanges(IOptions<AgentOptions> app, PromptLibrary p
             case SettingChangeKind.EditPrompt:
                 return EditPrompt(o, change, out error);
 
+            case SettingChangeKind.RewritePrompt:
+                return RewritePrompt(o, change, out error);
+
             case SettingChangeKind.ResetPrompt:
                 return o.PromptSections is { } sections && sections.ContainsKey(change.Target)
                     ? o with { PromptSections = WithoutEmpty(sections.Where(s => s.Key != change.Target).ToDictionary()) }
@@ -115,14 +118,37 @@ public sealed class OverridesChanges(IOptions<AgentOptions> app, PromptLibrary p
             return o;
         }
 
-        if (!TextEdit.TryApply(prompts.Text(section.Id, o.PromptSections), change.Before, change.Value, out var text, out error))
+        return TextEdit.TryApply(prompts.Text(section.Id, o.PromptSections), change.Before, change.Value, out var text, out error)
+            ? StoreSection(o, section, text, out error)
+            : o;
+    }
+
+    // The whole text of a section replaced at once; the owner saw the line diff of it before the tap.
+    private SettingsOverrides RewritePrompt(SettingsOverrides o, SettingChange change, out string? error)
+    {
+        error = null;
+        if (prompts.FindSection(change.Target) is not { } section)
         {
+            error = "Невідома секція промпта.";
             return o;
         }
 
-        if (TextEdit.CheckSection(text) is { } problem)
+        var text = TextEdit.Normalize(change.Value);
+        if (text.Length > TextEdit.MaxText)
         {
-            error = problem;
+            error = $"Текст секції задовгий (до {TextEdit.MaxText} символів).";
+            return o;
+        }
+
+        return StoreSection(o, section, text, out error);
+    }
+
+    // A section keeps its place in the prompt (no headings, no markers, never empty); a text equal to the default is not stored.
+    private static SettingsOverrides StoreSection(SettingsOverrides o, PromptSection section, string text, out string? error)
+    {
+        error = TextEdit.CheckSection(text);
+        if (error is not null)
+        {
             return o;
         }
 

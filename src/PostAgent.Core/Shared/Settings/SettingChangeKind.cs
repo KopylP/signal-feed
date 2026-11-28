@@ -16,4 +16,5 @@ public enum SettingChangeKind
 
     // 10 was the reader profile edit (ADR-0015), replaced by the reader memory (ADR-0022); a stored step with it is refused as unknown.
     ClearContext = 11,
+    RewritePrompt = 12,
 }

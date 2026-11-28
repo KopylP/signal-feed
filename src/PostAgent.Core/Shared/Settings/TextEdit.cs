@@ -4,9 +4,13 @@ namespace PostAgent.Shared.Settings;
 // so the fragment must be found as it is written, once; the model never rewrites a whole text.
 public static class TextEdit
 {
-    public const int MaxSnippet = 500;
-    public const int MaxText = 2000;
-    public const int MaxEditsPerPlan = 3;
+    public const int MaxSnippet = 1500;
+
+    // A whole section, so a rewrite can be as long as the longest shipped one with room to grow.
+    public const int MaxText = 6000;
+
+    // Edits and rewrites together: each one is shown to the owner as its own before and after.
+    public const int MaxEditsPerPlan = 6;
 
     // before empty: after is added at the end. after empty: the fragment is removed.
     public static bool TryApply(string current, string? before, string? after, out string result, out string? error)
@@ -58,6 +62,9 @@ public static class TextEdit
 
         return true;
     }
+
+    // The text of a section as it is stored and compared: LF line ends, no leading or trailing blank space.
+    public static string Normalize(string? text) => (text ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
 
     // A section keeps its place in the prompt: no new headings, no markers, never empty (reset it instead).
     public static string? CheckSection(string text)

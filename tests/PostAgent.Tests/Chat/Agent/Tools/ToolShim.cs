@@ -47,6 +47,9 @@ public sealed class ToolShim(IReadOnlyList<AIFunction> tools)
     public Task<string> ProposePromptEdit(string section, string oldText, string newText, CancellationToken ct) =>
         Call("propose_prompt_edit", ct, ("section", section), ("old_text", oldText), ("new_text", newText));
 
+    public Task<string> ProposePromptRewrite(string section, string newText, CancellationToken ct) =>
+        Call("propose_prompt_rewrite", ct, ("section", section), ("new_text", newText));
+
     public Task<string> ProposePromptReset(string section, CancellationToken ct) => Call("propose_prompt_reset", ct, ("section", section));
 
     public Task<string> SaveMemory(string? note, string title, string[] keywords, string[] facts, CancellationToken ct) =>

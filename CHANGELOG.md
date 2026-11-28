@@ -8,6 +8,35 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [marble] - 2026-11-28
+
+### Contract changes
+- **Prompt files: more editable sections** (compatible)
+  - Before: 5 editable sections (`scoring-work`, `scoring-interests`, `scoring-scale`, `digest-about`, `chat-style`)
+  - After: also `scoring-role`, `scoring-judging`, `digest-role`, `digest-judging`, `chat-role`, `chat-lookup`, `chat-choices`, `chat-actions`, `chat-settings-dialog`, `chat-memory`; the ids that existed keep their meaning and any text you set for them
+  - Affects: nothing; a section you did not edit follows the shipped file
+  - Migration: none
+- **Storage: a new step kind in the waiting proposals of `settings/overrides.json`** (compatible)
+  - Before: prompt steps are `EditPrompt` (8) and `ResetPrompt` (9)
+  - After: also `RewritePrompt` (12)
+  - Affects: rolling the app back to an earlier release while a rewrite waits for its tap: that plan is refused as unknown (asking the agent again fixes it)
+  - Migration: none
+
+### Added
+- **Rewrite a whole prompt section from the chat**: ask the agent to rewrite or shorten a section as a whole («скороти промпт чату вдвічі»); the bot sends the lines that change (− removed, + added) and the length before and after, then the confirm button ([configuration](docs/user-guide/configuration.md#prompts-from-the-chat), ADR-0025)
+  - Enable: on by default
+  - Settings: none
+  - Limits: only editable sections; the output fields and limits, the tool names and the data rules stay fixed
+
+### Logic
+- **Prompt edits: limits**
+  - Before: at most 3 text edits per plan, a fragment up to 500 characters, a section up to 2000
+  - After: at most 6 text steps (edits and rewrites) per plan, a fragment up to 1500 characters, a section up to 6000
+  - Effect: a long section can now be cut or reworked from the bot
+
+### Improved
+- The chat prompt is about 11% shorter: the tool descriptions it repeated are left to the tools themselves, and much more of it is editable (about 3.9 of 9.5 thousand characters instead of 190 of 10.7).
+
 ## [v2026.11.28.134-anchor] - 2026-11-28
 
 ### Removed / Deprecated

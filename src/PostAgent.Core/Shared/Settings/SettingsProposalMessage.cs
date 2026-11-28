@@ -10,6 +10,69 @@ public static class SettingsProposalMessage
     public static string Proposed(SettingsProposal proposal, AgentOptions current) =>
         "⚙️ <b>Агент пропонує змінити налаштування</b>\n\n" + Lines(proposal, current) + "\n\nЗастосувати?";
 
+    // The lines each rewrite in the plan changes, as messages sent before the confirmation: a rewrite is far longer than the 4096 characters of one message.
+    // promptSections: what is in force now, so the owner sees the change against the text the prompt really has.
+    public static IReadOnlyList<string> RewriteDiffs(SettingsProposal proposal, IReadOnlyDictionary<string, string>? promptSections)
+    {
+        var messages = new List<string>();
+        foreach (var change in proposal.Changes.Where(c => c.Kind == SettingChangeKind.RewritePrompt))
+        {
+            var label = Shipped.Value.FindSection(change.Target)?.Label ?? change.Target;
+            var before = Shipped.Value.Text(change.Target, promptSections);
+            var after = TextEdit.Normalize(change.Value);
+            var changes = LineDiff.Compare(before, after);
+            var header = $"📝 <b>Промпт «{TelegramHtml.Escape(label)}»</b>: {before.Length} → {after.Length} символів" + (changes.Count == 0 ? ", без змін" : string.Empty);
+            messages.AddRange(Pack(header, changes.SelectMany(Render)));
+        }
+
+        return messages;
+    }
+
+    private static IEnumerable<string> Render((LineDiff.Mark Mark, string Line) change)
+    {
+        if (change.Mark == LineDiff.Mark.Gap)
+        {
+            yield return "…";
+            yield break;
+        }
+
+        var sign = change.Mark == LineDiff.Mark.Removed ? "−" : "+";
+        if (change.Line.Length == 0)
+        {
+            yield return $"{sign} <i>(порожній рядок)</i>";
+            yield break;
+        }
+
+        // A long line is cut so that no message ends inside a tag and each piece is a small message of its own.
+        foreach (var piece in change.Line.Chunk(MaxLineChars))
+        {
+            yield return $"{sign} <code>{TelegramHtml.Escape(new string(piece))}</code>";
+        }
+    }
+
+    private static IEnumerable<string> Pack(string header, IEnumerable<string> lines)
+    {
+        var message = new System.Text.StringBuilder(header);
+        foreach (var line in lines)
+        {
+            if (message.Length + line.Length + 1 > MaxMessageChars)
+            {
+                yield return message.ToString();
+                message.Clear();
+                message.Append(line);
+                continue;
+            }
+
+            message.Append('\n').Append(line);
+        }
+
+        yield return message.ToString();
+    }
+
+    // Under Telegram's 4096 with room for the escaping of "<", ">" and "&" that the cut text still gets.
+    private const int MaxMessageChars = 3000;
+    private const int MaxLineChars = 600;
+
     public static InlineKeyboard Keyboard(SettingsProposal proposal) =>
         new([[new KeyboardButton("✅ Застосувати", MenuCallbacks.ApplyProposal(proposal.Id), ButtonStyle.Success), new KeyboardButton("✖ Скасувати", MenuCallbacks.DeclineProposal(proposal.Id), ButtonStyle.Danger)]]);
 
@@ -60,6 +123,11 @@ public static class SettingsProposalMessage
             case SettingChangeKind.EditPrompt:
                 var label = Shipped.Value.FindSection(change.Target)?.Label ?? change.Target;
                 return $"Промпт «{TelegramHtml.Escape(label)}»:\n{Diff(change)}";
+
+            case SettingChangeKind.RewritePrompt:
+                var rewritten = Shipped.Value.FindSection(change.Target)?.Label ?? change.Target;
+                var length = TextEdit.Normalize(change.Value).Length;
+                return $"Промпт «{TelegramHtml.Escape(rewritten)}»: " + (current is null ? $"секцію переписано ({length} символів)" : $"переписати секцію повністю ({length} символів), зміни вище");
 
             case SettingChangeKind.ResetPrompt:
                 return $"Промпт «{TelegramHtml.Escape(Shipped.Value.FindSection(change.Target)?.Label ?? change.Target)}»: повернути стандартний текст";

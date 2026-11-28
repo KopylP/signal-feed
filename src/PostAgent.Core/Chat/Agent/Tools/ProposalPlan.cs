@@ -19,8 +19,8 @@ public sealed class ProposalPlan(SettingsProposals proposals, SettingsEditor edi
     // The whole plan is checked again with the new step, so the model hears about a problem now and can correct it.
     public async Task<string> AddAsync(SettingChange change, CancellationToken ct)
     {
-        // Text edits are steps of their own and are applied in order; any other change replaces an earlier one for the same target.
-        var textEdit = change.Kind == SettingChangeKind.EditPrompt;
+        // Text edits and rewrites are steps of their own and are applied in order; any other change replaces an earlier one for the same target.
+        var textEdit = change.Kind is SettingChangeKind.EditPrompt or SettingChangeKind.RewritePrompt;
         var plan = (textEdit ? draft : draft.Where(c => c.Kind != change.Kind || c.Target != change.Target)).Append(change).ToList();
         if (plan.Count > SettingsProposal.MaxChanges)
         {

@@ -40,3 +40,5 @@ The profile is personal data in a blob (never in the repository). Revisit if the
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
 
 2026-11-27: the reader profile is superseded by [ADR-0022](0022-keep-a-reader-memory-the-chat-agent-manages-itself.md): a reader memory of up to 10 Markdown notes that the agent writes itself, without a confirmation. The editable prompt sections stay as decided here.
+
+2026-11-28: extended by [ADR-0025](0025-let-the-chat-agent-rewrite-whole-prompt-sections.md): more editable sections, a whole-section rewrite with a line diff, and larger limits (6 text steps per plan, fragments up to 1500 characters, sections up to 6000). The model of fixed text, marked sections and the owner's tap stays as decided here.

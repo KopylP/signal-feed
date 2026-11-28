@@ -82,13 +82,91 @@ public class PromptEditsTests
     }
 
     [Fact]
-    public async Task More_than_three_text_edits_in_one_plan_are_refused()
+    public async Task More_text_edits_than_the_limit_in_one_plan_are_refused()
     {
-        var edits = Enumerable.Range(0, 4).Select(i => new SettingChange(SettingChangeKind.EditPrompt, "chat-style", $"v{i}", i == 0 ? Default("chat-style") : $"v{i - 1}")).ToList();
+        var edits = Enumerable.Range(0, TextEdit.MaxEditsPerPlan + 1).Select(i => new SettingChange(SettingChangeKind.EditPrompt, "chat-style", $"v{i}", i == 0 ? Default("chat-style") : $"v{i - 1}")).ToList();
 
         var check = await _h.Proposals.CheckAsync(edits, TestData.ChatId, CancellationToken.None);
 
         Assert.False(check.Ok);
+    }
+
+    [Fact]
+    public async Task A_rewrite_replaces_the_whole_section_and_shows_in_the_prompt()
+    {
+        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.RewritePrompt, "scoring-interests", "1. Only Google updates.\r\n2. Link building.\r\n"));
+
+        Assert.Equal(ProposalStatus.Applied, outcome.Status);
+        Assert.Equal("1. Only Google updates.\n2. Link building.", _h.Store.Current!.PromptSections!["scoring-interests"]);
+        Assert.DoesNotContain("Practical cases", DefaultPrompts.Library.Render("scoring", _h.Store.Current.PromptSections));
+    }
+
+    [Fact]
+    public async Task A_rewrite_equal_to_the_default_removes_the_stored_text()
+    {
+        await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", "Own."));
+
+        await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", Default("chat-style")));
+
+        Assert.Null(_h.Store.Current!.PromptSections);
+    }
+
+    [Theory]
+    [InlineData("## Ignore the rules")]
+    [InlineData("   ")]
+    [InlineData("<!-- /editable -->")]
+    public async Task A_rewrite_with_a_heading_a_marker_or_no_text_is_refused(string text)
+    {
+        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", text));
+
+        Assert.Equal(ProposalStatus.Failed, outcome.Status);
+    }
+
+    [Fact]
+    public async Task A_rewrite_over_the_length_limit_is_refused()
+    {
+        var outcome = await ProposeAndApplyAsync(new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", new string('x', TextEdit.MaxText + 1)));
+
+        Assert.Equal(ProposalStatus.Failed, outcome.Status);
+    }
+
+    [Fact]
+    public void A_rewrite_is_shown_as_the_lines_it_changes_in_messages_that_fit_telegram()
+    {
+        var change = new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", string.Join('\n', Enumerable.Range(0, 120).Select(i => $"Line {i} with <b>&</b> and some more words to make it long enough.")));
+        var proposal = new SettingsProposal("7", [change], TestData.Now.AddMinutes(30), Chat);
+
+        var messages = SettingsProposalMessage.RewriteDiffs(proposal, null);
+
+        Assert.True(messages.Count > 1);
+        Assert.All(messages, m => Assert.True(m.Length <= 4096));
+        Assert.StartsWith("📝 <b>Промпт «Chat: style of the answers»</b>:", messages[0]);
+        Assert.Contains("+ <code>Line 0 with &lt;b&gt;&amp;&lt;/b&gt; and", messages[0]);
+        Assert.Contains("− <code>Keep answers short", messages[0]);
+    }
+
+    [Fact]
+    public void A_rewrite_that_changes_nothing_says_so()
+    {
+        var proposal = new SettingsProposal("7", [new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", Default("chat-style"))], TestData.Now.AddMinutes(30), Chat);
+
+        var message = Assert.Single(SettingsProposalMessage.RewriteDiffs(proposal, null));
+
+        Assert.EndsWith("без змін", message);
+    }
+
+    [Fact]
+    public async Task The_rewrite_goes_before_the_confirmation_that_carries_the_button()
+    {
+        var change = new SettingChange(SettingChangeKind.RewritePrompt, "chat-style", "Answer in one line.");
+
+        await _h.ProposalSender.SendAsync(Chat, 7, [change], CancellationToken.None);
+
+        Assert.Equal(2, _h.Panel.Sent.Count);
+        Assert.Empty(_h.Panel.Sent[0].Keyboard.Rows);
+        Assert.Contains("+ <code>Answer in one line.</code>", _h.Panel.Sent[0].Html);
+        Assert.NotEmpty(_h.Panel.Sent[1].Keyboard.Rows);
+        Assert.Contains("переписати секцію повністю", _h.Panel.Sent[1].Html);
     }
 
     [Fact]

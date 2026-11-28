@@ -129,13 +129,20 @@ A job that fails is logged and not retried, like a scheduled run. Access to the 
 
 ### Prompts from the chat
 
-Parts of the prompts can be tuned by asking the agent, without a deploy. The editable sections are: *scoring*: my work, my interests, the scale; *digest*: about me; *chat*: the style of the answers.
-Everything else (the output fields and limits, the rules that treat post text as data, the tool names) is fixed in the files and cannot be changed from the bot.
+Most of the prompts can be tuned by asking the agent, without a deploy ([ADR-0025](../adr/0025-let-the-chat-agent-rewrite-whole-prompt-sections.md)). Only the technical part is fixed: the output fields and their limits, the format of the input, the tool names, and the rules that treat post text as data or forbid the agent to change anything on its own.
+The editable sections are:
+
+- *scoring*: the role and the goal, my work, my interests, the scale, how to judge a post;
+- *digest*: the role and the length, about me, how to judge and select;
+- *chat*: the role, the style of the answers, how to look things up, offering buttons, when to act at once, how to talk about settings, how to keep notes.
 
 - Ask what is in a prompt: «що в мене в промпті оцінювання?». The agent reads it (`get_prompt`) and tells you, naming the sections you can change.
-- Ask for a change: «додай у мої інтереси Bing та Yandex». The agent finds the section and proposes **one fragment replaced by another**. The bot then sends «⚙️ Агент пропонує змінити налаштування» with the exact old text (−) and the new text (+) and the buttons «✅ Застосувати» / «✖ Скасувати». Nothing changes until you tap.
-- A plan holds at most 3 text edits, each fragment up to 500 characters, a section up to 2000. A section cannot get headings and cannot be empty; to go back, ask «поверни стандартний промпт секції …» (a reset).
+- Ask for a small change: «додай у мої інтереси Bing та Yandex». The agent proposes **one fragment replaced by another**.
+- Ask for a big one: «скороти промпт чату вдвічі», «перепиши секцію про стиль коротше». The agent proposes a **whole rewrite** of the section (`propose_prompt_rewrite`).
+- The bot sends «⚙️ Агент пропонує змінити налаштування» and the buttons «✅ Застосувати» / «✖ Скасувати». For a small change the message has the exact old text (−) and new text (+). For a rewrite the changed lines come in the messages just before it (− removed, + added, … for lines that stay), with the length before and after. Nothing changes until you tap.
+- A plan holds at most 6 text steps (edits and rewrites together), a fragment is up to 1500 characters, a section up to 6000. A section cannot get headings and cannot be empty; to go back, ask «поверни стандартний промпт секції …» (a reset).
 - The change applies within about 10 seconds. «Скинути все» in `/settings` returns the prompts to the shipped text.
+- A section you rewrote keeps your text when a later release improves the shipped one; a reset of that section brings the new shipped text.
 
 ### Reader memory
 
