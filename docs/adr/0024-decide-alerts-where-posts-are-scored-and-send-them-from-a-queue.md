@@ -24,8 +24,8 @@ stay (an important group post, a burst in a group, a followed topic), the messag
 - **The sender only sends.** `AlertSenderFunction` (queue `to-alert`) formats the message, sends it and marks the posts `Sent`. The timer, `AlertJob` and
   `AlertSchedule` are removed.
 - **Topics are embedded once, by their own stage.** When a change of the settings adds a topic (`SettingsEditor` compares the topics before and after the save),
-  the phrase is published to `topics-to-follow`. `FollowTopicFunction` (`TopicFollower`) embeds it if it has no vector yet, keeps the vectors of the current
-  topics in `settings/followed-topics.json`, and lets `AlertDecider` announce the matching posts of the last 26 hours. Nothing else calls OpenAI for topics.
+  the phrase is published to `topics-to-follow`. `FollowTopicFunction` (`TopicFollower`) embeds it if it has no vector yet, stores its vector in
+  `settings/followed-topics.json` (vectors of removed topics stay, unused, so two topics added at once never drop each other), and lets `AlertDecider` announce the matching posts of the last 26 hours. Nothing else calls OpenAI for topics.
 - **The deduplication stage is named for its work.** `EmbeddingFunction` becomes `DeduplicationFunction` (`PostDeduplicator`), its queue `posts-collected`
   becomes `to-deduplicate` and its lock `deduplication.lock`. A post is compared with the single posts published within `DuplicateWindowHours` (3) of it.
 
