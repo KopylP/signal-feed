@@ -21,6 +21,7 @@ public static class DigestMessage
     private const int MaxTextChars = 700;
     private const int MaxWhyChars = 350;
     private const int MaxVerificationChars = 250;
+    private const int MaxSkippedNoteChars = 400;
 
     public static IReadOnlyList<string> Format(DigestReport report, TimeZoneInfo? zone = null)
     {
@@ -39,7 +40,7 @@ public static class DigestMessage
         writer.Section("👀 <b>Варто звернути увагу</b>", report.Notable.Select(e => Entry(e, zone)));
         writer.Section("📖 <b>Рекомендую прочитати</b>", report.Recommended.Select(e => Entry(e, zone)));
         writer.Section("⚠️ <b>Потребує перевірки</b>", report.NeedsVerification.Count == 0 ? [] : [Verification(report.NeedsVerification)]);
-        writer.Section("📌 <b>Можна пропустити</b>", report.Skipped.Total == 0 ? [] : [SkippedLine(report.Skipped)]);
+        writer.Section("📌 <b>Можна пропустити</b>", Skipped(report.Skipped));
 
         return writer.Build();
     }
@@ -94,7 +95,24 @@ public static class DigestMessage
         return block.ToString();
     }
 
-    private static string SkippedLine(DigestSkipped skipped)
+    // The model's note first (its style is set in the prompt), then the count from code, which also covers posts the model never saw.
+    private static IEnumerable<string> Skipped(DigestSkipped skipped)
+    {
+        var lines = new List<string>();
+        if (skipped.Note is not null)
+        {
+            lines.Add(TelegramHtml.Escape(skipped.Note.Truncate(MaxSkippedNoteChars, "…")));
+        }
+
+        if (skipped.Total > 0)
+        {
+            lines.Add(CountLine(skipped));
+        }
+
+        return lines.Count == 0 ? [] : [string.Join("\n", lines)];
+    }
+
+    private static string CountLine(DigestSkipped skipped)
     {
         var parts = new List<string>();
         if (skipped.Duplicates > 0)

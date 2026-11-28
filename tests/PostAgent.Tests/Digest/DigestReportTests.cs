@@ -21,8 +21,9 @@ public class DigestReportTests
         List<NoteEntry>? forMarketplace = null,
         List<NotableEntry>? notable = null,
         List<PickEntry>? recommended = null,
-        List<string>? needsVerification = null) =>
-        new(overview, headlines ?? [], forMarketplace ?? [], notable ?? [], recommended ?? [], needsVerification ?? []);
+        List<string>? needsVerification = null,
+        string skipped = "") =>
+        new(overview, headlines ?? [], forMarketplace ?? [], notable ?? [], recommended ?? [], needsVerification ?? [], skipped);
 
     [Fact]
     public void Entries_are_attached_to_posts_by_id_in_the_model_order()
@@ -80,6 +81,24 @@ public class DigestReportTests
             recommended: [new("src_2", "Читати")]));
 
         Assert.Equal(new DigestSkipped(Duplicates: 0, Other: 2), report.Skipped);
+    }
+
+    [Fact]
+    public void The_model_note_about_skipped_posts_is_kept_trimmed_and_survives_the_added_counts()
+    {
+        var report = DigestReport.From(Items, Summary(headlines: [new("src_1", "З", "Суть", "Чому")], skipped: " Решта — дрібні анонси. "))
+            .WithSkipped(new DigestSkipped(Duplicates: 2, Other: 1));
+
+        Assert.Equal("Решта — дрібні анонси.", report.Skipped.Note);
+        Assert.Equal(6, report.Skipped.Total);
+    }
+
+    [Fact]
+    public void A_blank_skipped_note_becomes_null()
+    {
+        var report = DigestReport.From(Items, Summary(skipped: "  "));
+
+        Assert.Null(report.Skipped.Note);
     }
 
     [Fact]

@@ -10,4 +10,5 @@ public sealed record DigestSummary(
     [property: JsonPropertyName("for_marketplace")] List<NoteEntry> ForMarketplace,
     List<NotableEntry> Notable,
     List<PickEntry> Recommended,
-    [property: JsonPropertyName("needs_verification")] List<string> NeedsVerification);
+    [property: JsonPropertyName("needs_verification")] List<string> NeedsVerification,
+    string Skipped);

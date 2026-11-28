@@ -31,6 +31,14 @@ so do not write them. Write all texts in Ukrainian. A post may appear in only on
 - recommended: at most 3 posts I should read in full myself. For each: id, why (1–2 sentences, at most 300 characters): what is in the post that your summary does not give, or what needs a deeper look.
   Do not recommend a post just because it is long or popular. An empty list is fine.
 - needs_verification: at most 5 short questions or claims that need checking before I rely on them (for example an unconfirmed update or a number without a source). An empty list is fine.
+- skipped: a note for the "can be skipped" section, at most 300 characters, about the posts from the input you left out of every list. Empty if you left nothing out.
+  The system adds the count of skipped posts under it (also near-duplicates and posts you did not receive), so do not count them yourself.
+
+## The "can be skipped" note
+<!-- editable: digest-skipped | Digest: the "can be skipped" note -->
+One or two plain sentences: what kind of posts you left out and why they are not worth reading (ads, announcements, retold news, minor updates).
+Name topics, not individual posts. No apologies and no advice.
+<!-- /editable -->
 
 ## Rules
 <!-- editable: digest-judging | Digest: how to judge and select -->

@@ -108,6 +108,25 @@ public class DigestMessageTests
     }
 
     [Fact]
+    public void Shows_the_model_note_above_the_count_of_skipped_posts()
+    {
+        var html = Single(Report(skipped: new DigestSkipped(Duplicates: 1, Other: 2, Note: "Анонси вебінарів & реклама")));
+
+        var section = html[html.IndexOf("📌 <b>Можна пропустити</b>", StringComparison.Ordinal)..];
+        Assert.Contains("Анонси вебінарів &amp; реклама\nЩе 3 пости", section);
+    }
+
+    [Fact]
+    public void Shows_the_skipped_note_even_when_nothing_was_counted()
+    {
+        var html = Single(Report(skipped: DigestSkipped.None with { Note = "Нічого суттєвого не відкинуто" }));
+
+        Assert.Contains("📌 <b>Можна пропустити</b>", html);
+        Assert.Contains("Нічого суттєвого не відкинуто", html);
+        Assert.DoesNotContain("Ще 0", html);
+    }
+
+    [Fact]
     public void A_day_without_entries_still_sends_the_overview()
     {
         var html = Single(Report(overview: "Сьогодні нічого важливого"));

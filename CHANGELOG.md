@@ -8,6 +8,31 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [bison] - 2026-11-28
+
+### Contract changes
+- **Model I/O: the digest schema has a `skipped` field** (compatible)
+  - Before: `overview`, `headlines`, `for_marketplace`, `notable`, `recommended`, `needs_verification`
+  - After: also `skipped`, a note of up to 300 characters about the posts the model left out
+  - Affects: nothing; an answer without it shows the count line only, as before
+  - Migration: none
+- **Telegram: the «📌 Можна пропустити» section** (compatible)
+  - Before: only «Ще 12 постів (повторів — 4, менш важливих — 8).»
+  - After: the model's note first, then the same count line under it; the section also appears when there is a note and no count
+  - Affects: nothing
+  - Migration: none
+- **Prompt files: a new editable section `digest-skipped`** (compatible)
+  - Before: the style of the "can be skipped" section could not be changed
+  - After: «Digest: the "can be skipped" note» sets what the note says and how, from the chat like the other sections
+  - Affects: nothing
+  - Migration: none
+
+### Added
+- **The "can be skipped" note follows the prompt**: the model writes what kind of posts it left out and why, and you can change its style by asking the agent («у секції можна пропустити перелічуй теми через кому») ([configuration](docs/user-guide/configuration.md#prompts-from-the-chat))
+  - Enable: on by default
+  - Settings: none
+  - Limits: the count line under it is written by code and stays fixed; the model sees only the posts selected for the digest (up to `DigestSize`)
+
 ## [v2026.11.28.138-marble] - 2026-11-28
 
 ### Contract changes

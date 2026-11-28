@@ -133,7 +133,7 @@ Most of the prompts can be tuned by asking the agent, without a deploy ([ADR-002
 The editable sections are:
 
 - *scoring*: the role and the goal, my work, my interests, the scale, how to judge a post;
-- *digest*: the role and the length, about me, how to judge and select;
+- *digest*: the role and the length, about me, the "can be skipped" note, how to judge and select;
 - *chat*: the role, the style of the answers, how to look things up, offering buttons, when to act at once, how to talk about settings, how to keep notes.
 
 - Ask what is in a prompt: «що в мене в промпті оцінювання?». The agent reads it (`get_prompt`) and tells you, naming the sections you can change.

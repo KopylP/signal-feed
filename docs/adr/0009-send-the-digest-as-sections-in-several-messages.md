@@ -36,3 +36,5 @@ Posts the model leaves out of every section are still marked as sent and counted
 ## Updates
 
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
+
+2026-11-28: the "can be skipped" section now opens with a note the model writes (`skipped` in the schema, its style in the editable `digest-skipped` section), so the owner can shape it from the chat. Code still adds the count line under it, because the model never sees the duplicates or the posts beyond `DigestSize`.

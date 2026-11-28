@@ -58,7 +58,7 @@ It arrives in sections (a section with nothing in it is left out):
 - **👀 Варто звернути увагу**: less obvious cases, tools, studies and opinions.
 - **📖 Рекомендую прочитати**: up to three posts worth reading in full.
 - **⚠️ Потребує перевірки**: claims to check before relying on them.
-- **📌 Можна пропустити**: how many posts were left out (near-duplicates, also those that were never scored, and less important ones).
+- **📌 Можна пропустити**: a short note from the model about what it left out and why (its style is an editable prompt section, «Digest: the "can be skipped" note»), then the count of posts left out (near-duplicates, also those that were never scored, and less important ones).
 
 The model never writes links, channels or dates: the agent adds them from the post data, so they cannot be invented. A long digest is split into several Telegram messages,
 and a section that continues in the next message repeats its header.

@@ -59,7 +59,7 @@ public sealed record DigestReport(
                 .Distinct()
                 .Take(MaxNeedsVerification)
                 .ToList(),
-            new DigestSkipped(Duplicates: 0, Other: notShown));
+            new DigestSkipped(Duplicates: 0, Other: notShown, NullIfBlank(summary.Skipped)));
     }
 
     public bool HasEntries => Headlines.Count + ForMarketplace.Count + Notable.Count + Recommended.Count > 0;
