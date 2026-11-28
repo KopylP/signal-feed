@@ -20,7 +20,6 @@ telegram_api_id = "1234567"
 # Schedules (CRON in UTC, six fields: second minute hour day month weekday). These are the defaults.
 # collector_schedule = "0 0 * * * *"
 # digest_schedule    = "0 0 8 * * *"
-# alert_schedule     = "0 30 * * * *"
 # daily_summary_schedule = "0 0 3 * * *"
 
 # Everything else: any parameter from src/PostAgent.Core/Shared/Settings/AgentOptions.cs.

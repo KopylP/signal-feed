@@ -8,6 +8,11 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [anchor] - 2026-11-28
+
+### Removed / Deprecated
+- Removed the `posts-collected` queue and the `AlertSchedule` setting (Terraform variable `alert_schedule`, GitHub Variable `TF_ALERT_SCHEDULE`), unused since the alerts are decided by the scorer (ADR-0024); run `infra` with apply, and delete the GitHub Variable if it is set
+
 ## [v2026.11.28.133-lotus] - 2026-11-28
 
 ### Setup required

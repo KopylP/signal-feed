@@ -87,12 +87,6 @@ variable "digest_schedule" {
   default     = "0 0 8 * * *"
 }
 
-variable "alert_schedule" {
-  description = "CRON for the alert check (UTC)."
-  type        = string
-  default     = "0 30 * * * *"
-}
-
 variable "daily_summary_schedule" {
   description = "CRON for the daily summary of the finished days (UTC); the cleanup of old data starts right after it."
   type        = string

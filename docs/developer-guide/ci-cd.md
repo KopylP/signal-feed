@@ -89,7 +89,7 @@ Settings → Secrets and variables → Actions → Variables, all non-secret:
 | `TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT` | state storage (`TFSTATE_CONTAINER`, default `tfstate`) |
 | `TF_DEPLOYER_OBJECT_ID` | `deployer_object_id` |
 | `TF_SOURCES` (optional), `TF_ALERT_SOURCES` | `sources` (default: the six SEO channels from `variables.tf`), `alert_sources` |
-| `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_ALERT_SCHEDULE`, `TF_DAILY_SUMMARY_SCHEDULE` (optional; was `TF_CLEANUP_SCHEDULE`) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
+| `TF_COLLECTOR_SCHEDULE`, `TF_DIGEST_SCHEDULE`, `TF_DAILY_SUMMARY_SCHEDULE` (optional; was `TF_CLEANUP_SCHEDULE`; `TF_ALERT_SCHEDULE` is no longer read) | CRON in UTC; default: the values in the settings table; `TF_APP_SETTINGS` overrides them |
 | `TF_LOCATION`, `TF_NAME_PREFIX` (optional) | default `westeurope` and `signalfeed` |
 | `TF_APP_SETTINGS` (optional) | JSON, for example `{"DigestSize":"6"}`; matches `app_settings` |
 

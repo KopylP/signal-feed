@@ -63,12 +63,6 @@ removed {
   }
 }
 
-# The queue of the stage before its rename to deduplication (ADR-0024); removed once the code that uses to-deduplicate is deployed.
-resource "azurerm_storage_queue" "posts_collected" {
-  name               = "posts-collected"
-  storage_account_id = azurerm_storage_account.main.id
-}
-
 # Collected posts on their way to DeduplicationFunction, which drops near-duplicates and passes the rest to to-score (ADR-0023, ADR-0024).
 resource "azurerm_storage_queue" "to_deduplicate" {
   name               = "to-deduplicate"

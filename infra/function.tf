@@ -4,7 +4,6 @@ locals {
   schedules = {
     CollectorSchedule    = var.collector_schedule
     DigestSchedule       = var.digest_schedule
-    AlertSchedule        = var.alert_schedule
     DailySummarySchedule = var.daily_summary_schedule
   }
 
