@@ -12,6 +12,7 @@ public sealed class PostEmbedder(
     IPostRepository posts,
     IEmbeddingGenerator<string, Embedding<float>> embeddings,
     [FromKeyedServices(StorageNames.ScoringQueue)] IPostQueue scoring,
+    IEmbeddingLock checkLock,
     IEffectiveOptions options,
     TimeProvider time,
     ILogger<PostEmbedder> log)
@@ -31,9 +32,14 @@ public sealed class PostEmbedder(
         IReadOnlyList<PostEntity> duplicates = [];
         if (await TryEmbedAsync(batch, ct))
         {
-            duplicates = await MarkDuplicatesAsync(batch, settings.DuplicateSimilarityThreshold, ct);
-            // Saved before the queue: a retry finds the vectors and the duplicates (no longer New) and only queues again.
-            await posts.SaveEmbeddingsAsync(batch, ct);
+            // The model call above runs in parallel; the check and the save run one message at a time, so a vector in the table always
+            // comes with its decision, and parallel messages see each other's posts.
+            await using (await checkLock.AcquireAsync(ct))
+            {
+                duplicates = await MarkDuplicatesAsync(batch, settings.DuplicateSimilarityThreshold, ct);
+                // Saved before the queue: a retry finds the vectors and the duplicates (no longer New) and only queues again.
+                await posts.SaveEmbeddingsAsync(batch, ct);
+            }
         }
 
         await scoring.EnqueueAsync(batch.Except(duplicates).Select(p => p.ToRef()).ToList(), settings.ScoringBatchSize, ct);

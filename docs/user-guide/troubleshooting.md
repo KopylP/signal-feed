@@ -59,7 +59,7 @@ These are deliberate trade-offs or open edges, not bugs to report.
 - **First-run flood waits.** See the symptom table above.
 - **Fresh messages have no reactions yet,** so the prominence order inside a bundle is approximate at first.
 - **A repeated alert.** If an alert went out but saving its "sent" mark failed, the next run can repeat it.
-- **Duplicates only among single posts of the last day.** Bundles of group messages are never dropped as duplicates, and a post is compared only with posts of the last 26 hours. Two queue messages handled at the same moment do not see each other, so a repeat can still slip through now and then.
+- **Duplicates only among single posts of the last day.** Bundles of group messages are never dropped as duplicates, and a post is compared only with posts of the last 26 hours.
 - **Storage code is tested by hand.** The storage repository is checked manually on Azurite, not by `dotnet test`.
 
 ## Still stuck

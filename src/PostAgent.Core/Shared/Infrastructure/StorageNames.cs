@@ -26,6 +26,9 @@ public static class StorageNames
     // The reader's likes and dislikes of posts (recorded by the chat agent), shared by every chat; the scoring reads it.
     public const string FeedbackBlob = "feedback.json";
 
+    // The lock of the embedding stage's duplicate check (ADR-0023), in the settings container: one queue message at a time.
+    public const string EmbeddingLockBlob = "locks/embedding.lock";
+
     // Long memory (ADR-0018): one small summary per day, and the tokens the models used. In the settings container, under a prefix.
     public static string DailyStatsBlobName(string day) => $"stats/daily/{day}.json";
     public const string DailyStatsPrefix = "stats/daily/";

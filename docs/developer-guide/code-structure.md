@@ -21,7 +21,8 @@ and `Shared/` never depends on a feature (an architecture test enforces this). T
 src/PostAgent.Core/                (the function classes of a feature, e.g. Chat/ChatFunction.cs, are in src/PostAgent.Functions/<same folder>/)
 ├── Collecting/            collecting posts from Telegram (CollectorFunction loops over sources, SourceCollector collects one)
 │   └── Infrastructure/    Telegram/ (channel and group reader, WTelegramClient, session in Blob), source read cursors
-├── Embedding/             the stage between collecting and scoring (ADR-0023): PostEmbedder (embed, drop near-duplicates, queue to to-score), DuplicateFinder (no I/O)
+├── Embedding/             the stage between collecting and scoring (ADR-0023): PostEmbedder (embed, drop near-duplicates, queue to to-score), DuplicateFinder (no I/O), IEmbeddingLock
+│   └── Infrastructure/    BlobEmbeddingLock (the lease of settings/locks/embedding.lock, waited for)
 ├── Scoring/               scoring posts
 │   └── Infrastructure/    model call
 ├── Digest/                daily digest and `/digest`: DigestInbox (a handler that only parses the period, DigestPeriod, and queues a DigestRequest), DigestRequestFunction and OnDemandDigest on the queue side (it keeps its report in IRatedDigestStore for its rating buttons)
@@ -54,7 +55,7 @@ src/PostAgent.Core/                (the function classes of a feature, e.g. Chat
 │   ├── Jobs/              IJob, the contract a timer function and RunNowFunction share
 │   ├── Settings/          AgentOptions, validator, parsers of settings (SourceNames, QuietHours); SettingsCatalog (what the bot may change), IEffectiveOptions and SettingsEditor over the overrides blob (the safe write), OverridesChanges (what a change does, no I/O), SettingsProposals, SettingsProposal and SettingsProposalMessage (the agent's plans, their lifecycle and text, ADR-0013)
 │   ├── TelegramSession/   ISessionLock (a renewed blob lease): a collection and a sign-in never use the session at once; ISessionCipher, EnvelopeCipher and SessionEnvelope: the session and the sign-in are encrypted with the Key Vault key (KeyVaultKeyWrapper, ADR-0017)
-│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource), ConditionalBlobAccess (read with the ETag, write or delete only that version)
+│   ├── Infrastructure/    Table, Queue and Blob clients, StorageNames (every storage resource), BlobLock and RenewedBlobLease (a lock shared by all instances: a renewed lease on an empty blob, one blob per protected resource), ConditionalBlobAccess (read with the ETag, write or delete only that version)
 │   └── Common/            small extensions
 ├── Program.cs
 └── ServiceCollectionExtensions.cs   composes the app from all features

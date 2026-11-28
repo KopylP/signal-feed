@@ -43,3 +43,5 @@ Revisit when the vectors are wanted for search in the chat, or the volume outgro
 ## Updates
 
 <!-- Append dated notes only (YYYY-MM-DD: note). Never rewrite the sections above after acceptance. -->
+
+2026-11-28: The race named in Consequences is closed. The duplicate check and the save of the vectors run under a blob lease, `settings/locks/embedding.lock` (`Embedding/Infrastructure/BlobEmbeddingLock`, waiting up to 2 minutes, retrying every 2 seconds), one queue message at a time; the embedding call stays outside the lock and in parallel. A vector in the table therefore always comes with its decision. The lock is the stage's own and is not shared with the session lock of the collector and `/login`. Splitting the stage into two functions was rejected: it needs a queue and a post status between them, and a post with a vector but no decision would break the rule that a stored vector marks an original.

@@ -9,7 +9,7 @@ public static class DuplicateFinder
     // Marks every post of the batch that repeats a post handled before it: DuplicateOf is the most similar such post, and the status
     // Scored keeps it out of scoring. known holds the batch itself too. A stored post outside the batch already has its vector, so it is the
     // original whatever its time (sources are collected one by one, so a repost can be handled first); inside the batch the earlier one wins.
-    // shortcut: two queue messages handled at the same moment do not see each other's vectors; rare at this volume, fix with a lease if it shows.
+    // The caller holds IEmbeddingLock, so no other message changes the table meanwhile.
     public static IReadOnlyList<PostEntity> Mark(IReadOnlyList<PostEntity> batch, IReadOnlyList<PostEntity> known, double threshold)
     {
         var inBatch = batch.ToHashSet();

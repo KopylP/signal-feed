@@ -12,6 +12,7 @@ public class PostEmbedderTests
 {
     private readonly FakeEmbeddingGenerator _embeddings = new();
     private readonly FakePostQueue _scoring = new();
+    private readonly FakeEmbeddingLock _lock = new();
 
     private static PostEntity New(string key, string text, double hoursAgo = 1)
     {
@@ -20,8 +21,8 @@ public class PostEmbedderTests
         return post;
     }
 
-    private PostEmbedder Embedder(InMemoryPostRepository repo) =>
-        new(repo, _embeddings, _scoring, new FakeEffectiveOptions(Options(o => o.ScoringBatchSize = 3)), new FakeTimeProvider(Now), NullLogger<PostEmbedder>.Instance);
+    private PostEmbedder Embedder(IPostRepository repo) =>
+        new(repo, _embeddings, _scoring, _lock, new FakeEffectiveOptions(Options(o => o.ScoringBatchSize = 3)), new FakeTimeProvider(Now), NullLogger<PostEmbedder>.Instance);
 
     [Fact]
     public async Task Saves_the_vectors_of_new_posts_and_queues_them_for_scoring()
@@ -58,6 +59,34 @@ public class PostEmbedderTests
     }
 
     [Fact]
+    public async Task Calls_the_model_outside_the_lock_and_checks_and_saves_inside_it()
+    {
+        var a = New("a", "text");
+        var repo = new InMemoryPostRepository(a);
+        int? callsWhenTaken = null, savedWhenReleased = null;
+        _lock.OnAcquire = () => callsWhenTaken = _embeddings.Calls.Count;
+        _lock.OnRelease = () => savedWhenReleased = repo.EmbeddingsSaved.Count;
+
+        await Embedder(repo).EmbedAsync([a.ToRef()], CancellationToken.None);
+
+        Assert.Equal(1, callsWhenTaken);
+        Assert.Equal(1, savedWhenReleased);
+        Assert.Equal((1, 1), (_lock.Acquired, _lock.Released));
+        Assert.Equal([a.ToRef()], _scoring.Enqueued);
+    }
+
+    [Fact]
+    public async Task Releases_the_lock_when_the_save_fails()
+    {
+        var a = New("a", "text");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Embedder(new FailingSaveRepository(a)).EmbedAsync([a.ToRef()], CancellationToken.None));
+
+        Assert.Equal((1, 1), (_lock.Acquired, _lock.Released));
+        Assert.Empty(_scoring.Enqueued);
+    }
+
+    [Fact]
     public async Task Queues_the_posts_without_vectors_when_the_embedding_call_fails()
     {
         _embeddings.Failure = new InvalidOperationException("OpenAI is down");
@@ -67,6 +96,7 @@ public class PostEmbedderTests
         await Embedder(repo).EmbedAsync([a.ToRef()], CancellationToken.None);
 
         Assert.Empty(repo.EmbeddingsSaved);
+        Assert.Equal(0, _lock.Acquired);
         Assert.Equal([a.ToRef()], _scoring.Enqueued);
     }
 
@@ -127,5 +157,24 @@ public class PostEmbedderTests
         await new EmbeddingFunction(Embedder(repo)).Run(JsonSerializer.Serialize(new[] { a.ToRef() }), CancellationToken.None);
 
         Assert.Equal([a.ToRef()], _scoring.Enqueued);
+    }
+
+    private sealed class FailingSaveRepository(params PostEntity[] posts) : IPostRepository
+    {
+        private readonly InMemoryPostRepository _inner = new(posts);
+
+        public Task SaveEmbeddingsAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => throw new InvalidOperationException("storage is down");
+
+        public Task AddIfMissingAsync(PostEntity post, CancellationToken ct) => _inner.AddIfMissingAsync(post, ct);
+
+        public Task<IReadOnlyList<PostEntity>> GetAsync(IEnumerable<PostRef> refs, CancellationToken ct) => _inner.GetAsync(refs, ct);
+
+        public Task<IReadOnlyList<PostEntity>> GetSinceAsync(DateTimeOffset since, DateTimeOffset now, CancellationToken ct) => _inner.GetSinceAsync(since, now, ct);
+
+        public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => _inner.SaveScoresAsync(posts, ct);
+
+        public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) => _inner.MarkSentAsync(posts, alertedAt, ct);
+
+        public Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct) => _inner.DeleteOlderThanAsync(cutoff, ct);
     }
 }
