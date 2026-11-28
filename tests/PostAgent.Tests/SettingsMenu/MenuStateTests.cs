@@ -16,7 +16,7 @@ public class MenuStateTests
     {
         var options = Options.Create(OverridesApplierTests.ValidApp());
         var effective = new EffectiveOptions(_store, options, new FakeTimeProvider(TestData.Now), NullLogger<EffectiveOptions>.Instance);
-        return new MenuState(new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance));
+        return new MenuState(new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), new FakeTopicsToFollowQueue(), NullLogger<SettingsEditor>.Instance));
     }
 
     [Fact]

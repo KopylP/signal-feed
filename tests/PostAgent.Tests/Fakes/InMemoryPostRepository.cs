@@ -54,6 +54,14 @@ internal sealed class InMemoryPostRepository(params PostEntity[] posts) : IPostR
         return Task.CompletedTask;
     }
 
+    public List<PostEntity> AlertsDecided { get; } = [];
+
+    public Task MarkAlertDecidedAsync(IEnumerable<PostEntity> posts, CancellationToken ct)
+    {
+        AlertsDecided.AddRange(posts);
+        return Task.CompletedTask;
+    }
+
     public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct)
     {
         SentMarks.Add((posts.ToList(), alertedAt));

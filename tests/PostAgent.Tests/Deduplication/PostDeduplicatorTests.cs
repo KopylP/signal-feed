@@ -1,18 +1,18 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
-using PostAgent.Embedding;
+using PostAgent.Deduplication;
 using PostAgent.Shared.Posts;
 using PostAgent.Tests.Fakes;
 using static PostAgent.Tests.TestData;
 
 namespace PostAgent.Tests.Embedding;
 
-public class PostEmbedderTests
+public class PostDeduplicatorTests
 {
     private readonly FakeEmbeddingGenerator _embeddings = new();
     private readonly FakePostQueue _scoring = new();
-    private readonly FakeEmbeddingLock _lock = new();
+    private readonly FakeDeduplicationLock _lock = new();
 
     private static PostEntity New(string key, string text, double hoursAgo = 1)
     {
@@ -21,8 +21,8 @@ public class PostEmbedderTests
         return post;
     }
 
-    private PostEmbedder Embedder(IPostRepository repo) =>
-        new(repo, _embeddings, _scoring, _lock, new FakeEffectiveOptions(Options(o => o.ScoringBatchSize = 3)), new FakeTimeProvider(Now), NullLogger<PostEmbedder>.Instance);
+    private PostDeduplicator Deduplicator(IPostRepository repo) =>
+        new(repo, _embeddings, _scoring, _lock, new FakeEffectiveOptions(Options(o => o.ScoringBatchSize = 3)), new FakeTimeProvider(Now), NullLogger<PostDeduplicator>.Instance);
 
     [Fact]
     public async Task Saves_the_vectors_of_new_posts_and_queues_them_for_scoring()
@@ -31,7 +31,7 @@ public class PostEmbedderTests
         var b = New("b", "Bing adds AI answers");
         var repo = new InMemoryPostRepository(a, b);
 
-        await Embedder(repo).EmbedAsync([a.ToRef(), b.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([a.ToRef(), b.ToRef()], CancellationToken.None);
 
         Assert.Equal(["a", "b"], repo.EmbeddingsSaved.Select(p => p.RowKey));
         Assert.All(repo.EmbeddingsSaved, p => Assert.Equal(512 * sizeof(float), p.Embedding?.Length));
@@ -50,7 +50,7 @@ public class PostEmbedderTests
         var repeat = New("second", "Google started the core update of November");
         var repo = new InMemoryPostRepository(earlier, repeat);
 
-        await Embedder(repo).EmbedAsync([repeat.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([repeat.ToRef()], CancellationToken.None);
 
         Assert.Empty(_scoring.Enqueued);
         var saved = Assert.Single(repo.EmbeddingsSaved);
@@ -67,7 +67,7 @@ public class PostEmbedderTests
         _lock.OnAcquire = () => callsWhenTaken = _embeddings.Calls.Count;
         _lock.OnRelease = () => savedWhenReleased = repo.EmbeddingsSaved.Count;
 
-        await Embedder(repo).EmbedAsync([a.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([a.ToRef()], CancellationToken.None);
 
         Assert.Equal(1, callsWhenTaken);
         Assert.Equal(1, savedWhenReleased);
@@ -80,7 +80,7 @@ public class PostEmbedderTests
     {
         var a = New("a", "text");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Embedder(new FailingSaveRepository(a)).EmbedAsync([a.ToRef()], CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Deduplicator(new FailingSaveRepository(a)).DeduplicateAsync([a.ToRef()], CancellationToken.None));
 
         Assert.Equal((1, 1), (_lock.Acquired, _lock.Released));
         Assert.Empty(_scoring.Enqueued);
@@ -93,7 +93,7 @@ public class PostEmbedderTests
         var a = New("a", "text");
         var repo = new InMemoryPostRepository(a);
 
-        await Embedder(repo).EmbedAsync([a.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([a.ToRef()], CancellationToken.None);
 
         Assert.Empty(repo.EmbeddingsSaved);
         Assert.Equal(0, _lock.Acquired);
@@ -112,9 +112,9 @@ public class PostEmbedderTests
         var repo = new InMemoryPostRepository(earlier, repeat, other) { CopyOnRead = true };
         _scoring.Failure = new InvalidOperationException("queue down");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Embedder(repo).EmbedAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Deduplicator(repo).DeduplicateAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None));
         _scoring.Failure = null;
-        await Embedder(repo).EmbedAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([repeat.ToRef(), other.ToRef()], CancellationToken.None);
 
         Assert.Single(_embeddings.Calls);
         Assert.Equal([other.ToRef()], _scoring.Enqueued);
@@ -129,8 +129,8 @@ public class PostEmbedderTests
         var repost = New("b", "Repost: Google core update", hoursAgo: 1);
         var repo = new InMemoryPostRepository(original, repost) { CopyOnRead = true };
 
-        await Embedder(repo).EmbedAsync([repost.ToRef()], CancellationToken.None);
-        await Embedder(repo).EmbedAsync([original.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([repost.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([original.ToRef()], CancellationToken.None);
 
         Assert.Equal([repost.ToRef()], _scoring.Enqueued);
         Assert.Equal("b", original.DuplicateOf);
@@ -142,7 +142,7 @@ public class PostEmbedderTests
         var scored = Post("a", score: 8);
         var repo = new InMemoryPostRepository(scored);
 
-        await Embedder(repo).EmbedAsync([scored.ToRef()], CancellationToken.None);
+        await Deduplicator(repo).DeduplicateAsync([scored.ToRef()], CancellationToken.None);
 
         Assert.Empty(_embeddings.Calls);
         Assert.Empty(_scoring.Enqueued);
@@ -154,7 +154,7 @@ public class PostEmbedderTests
         var a = New("a", "text");
         var repo = new InMemoryPostRepository(a);
 
-        await new EmbeddingFunction(Embedder(repo)).Run(JsonSerializer.Serialize(new[] { a.ToRef() }), CancellationToken.None);
+        await new DeduplicationFunction(Deduplicator(repo)).Run(JsonSerializer.Serialize(new[] { a.ToRef() }), CancellationToken.None);
 
         Assert.Equal([a.ToRef()], _scoring.Enqueued);
     }
@@ -170,6 +170,8 @@ public class PostEmbedderTests
         public Task<IReadOnlyList<PostEntity>> GetAsync(IEnumerable<PostRef> refs, CancellationToken ct) => _inner.GetAsync(refs, ct);
 
         public Task<IReadOnlyList<PostEntity>> GetSinceAsync(DateTimeOffset since, DateTimeOffset now, CancellationToken ct) => _inner.GetSinceAsync(since, now, ct);
+
+        public Task MarkAlertDecidedAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => _inner.MarkAlertDecidedAsync(posts, ct);
 
         public Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct) => _inner.SaveScoresAsync(posts, ct);
 

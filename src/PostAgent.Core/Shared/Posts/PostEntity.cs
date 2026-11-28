@@ -27,7 +27,10 @@ public sealed class PostEntity : ITableEntity
     public string? Topic { get; set; }
     public string? Reason { get; set; }
     public string? DuplicateOf { get; set; }
+    // When an alert was decided for the post (ADR-0024): AlertedAt for a group alert, which also starts the group's cooldown,
+    // WatchAlertedAt for a followed topic. Either one keeps the post from being decided again.
     public DateTimeOffset? AlertedAt { get; set; }
+    public DateTimeOffset? WatchAlertedAt { get; set; }
 
     // PostVectors: written by the embedding stage, empty when the embedding call failed or the post is older than that stage.
     public byte[]? Embedding { get; set; }

@@ -74,7 +74,7 @@ internal sealed class MenuHarness
         App = OverridesApplierTests.ValidApp(configure);
         var options = Options.Create(App);
         Effective = new EffectiveOptions(Store, options, Time, NullLogger<EffectiveOptions>.Instance);
-        Editor = new SettingsEditor(Store, options, Effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance);
+        Editor = new SettingsEditor(Store, options, Effective, new OverridesChanges(options, DefaultPrompts.Library), new FakeTopicsToFollowQueue(), NullLogger<SettingsEditor>.Instance);
         Proposals = new SettingsProposals(Editor, new OverridesChanges(options, DefaultPrompts.Library), Store, ChatState, NullLogger<SettingsProposals>.Instance);
         Menu = new MenuState(Editor);
         Controller = new MenuController(Editor, Proposals, Menu, Effective, Store, options, Panel, Time, NullLogger<MenuController>.Instance);

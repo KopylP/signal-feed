@@ -10,6 +10,30 @@ public static class BlobLock
 {
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan RenewInterval = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+
+    // A holder of a waited-for lock needs well under a second; past this the caller fails and its queue retries later.
+    private static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(2);
+
+    // Waits while someone else holds it, for work that must not be skipped (a queue message).
+    public static async Task<IAsyncDisposable> AcquireAsync(BlobClient blob, TimeProvider time, ILogger log, CancellationToken ct)
+    {
+        var deadline = time.GetUtcNow() + MaxWait;
+        while (true)
+        {
+            if (await TryAcquireAsync(blob, time, log, ct) is { } held)
+            {
+                return held;
+            }
+
+            if (time.GetUtcNow() >= deadline)
+            {
+                throw new TimeoutException($"The lock {blob.Name} stayed busy for {MaxWait.TotalMinutes} minutes");
+            }
+
+            await Task.Delay(RetryDelay, time, ct);
+        }
+    }
 
     // Null when someone else holds it. Disposing the handle releases it.
     public static async Task<IAsyncDisposable?> TryAcquireAsync(BlobClient blob, TimeProvider time, ILogger log, CancellationToken ct)

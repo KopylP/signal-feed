@@ -9,7 +9,7 @@ public sealed class SourceCollector(
     ISourceReader reader,
     IPostRepository posts,
     ISourceCursors cursors,
-    [FromKeyedServices(StorageNames.CollectedQueue)] IPostQueue queue,
+    [FromKeyedServices(StorageNames.DeduplicationQueue)] IPostQueue queue,
     SettingsEditor editor,
     ILogger<SourceCollector> log)
 {

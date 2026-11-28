@@ -1,4 +1,4 @@
-using PostAgent.Embedding;
+using PostAgent.Deduplication;
 using PostAgent.Shared.Posts;
 using static PostAgent.Tests.TestData;
 
@@ -6,6 +6,8 @@ namespace PostAgent.Tests.Embedding;
 
 public class DuplicateFinderTests
 {
+    private static readonly TimeSpan Window = TimeSpan.FromHours(3);
+
     private static PostEntity WithVector(string key, double hoursAgo, float[] vector, int messages = 1, PostStatus status = PostStatus.New)
     {
         var post = Post(key, score: status == PostStatus.New ? null : 5, hoursAgo: hoursAgo, status: status, messages: messages);
@@ -16,10 +18,10 @@ public class DuplicateFinderTests
     [Fact]
     public void Marks_a_new_post_that_reads_like_an_earlier_one_and_takes_it_out_of_scoring()
     {
-        var earlier = WithVector("old", hoursAgo: 5, [1, 0], status: PostStatus.Scored);
+        var earlier = WithVector("old", hoursAgo: 3, [1, 0], status: PostStatus.Scored);
         var repeat = WithVector("new", hoursAgo: 1, [0.99f, 0.05f]);
 
-        var duplicates = DuplicateFinder.Mark([repeat], [earlier, repeat], threshold: 0.9);
+        var duplicates = DuplicateFinder.Mark([repeat], [earlier, repeat], threshold: 0.9, Window);
 
         Assert.Same(repeat, Assert.Single(duplicates));
         Assert.Equal("old", repeat.DuplicateOf);
@@ -32,9 +34,18 @@ public class DuplicateFinderTests
         var earlier = WithVector("old", hoursAgo: 5, [1, 0]);
         var related = WithVector("new", hoursAgo: 1, [0.7f, 0.7f]);
 
-        Assert.Empty(DuplicateFinder.Mark([related], [earlier, related], threshold: 0.9));
+        Assert.Empty(DuplicateFinder.Mark([related], [earlier, related], threshold: 0.9, Window));
         Assert.Null(related.DuplicateOf);
         Assert.Equal(PostStatus.New, related.Status);
+    }
+
+    [Fact]
+    public void Never_compares_posts_published_further_apart_than_the_window()
+    {
+        var earlier = WithVector("old", hoursAgo: 5, [1, 0], status: PostStatus.Scored);
+        var repeat = WithVector("new", hoursAgo: 1, [1, 0]);
+
+        Assert.Empty(DuplicateFinder.Mark([repeat], [earlier, repeat], threshold: 0.9, Window));
     }
 
     [Fact]
@@ -43,7 +54,7 @@ public class DuplicateFinderTests
         var earlier = WithVector("old", hoursAgo: 5, [1, 0], messages: 4);
         var bundle = WithVector("new", hoursAgo: 1, [1, 0], messages: 4);
 
-        Assert.Empty(DuplicateFinder.Mark([bundle], [earlier, bundle], threshold: 0.9));
+        Assert.Empty(DuplicateFinder.Mark([bundle], [earlier, bundle], threshold: 0.9, Window));
     }
 
     [Fact]
@@ -52,7 +63,7 @@ public class DuplicateFinderTests
         var repost = WithVector("repost", hoursAgo: 1, [1, 0]);
         var original = WithVector("original", hoursAgo: 2, [1, 0]);
 
-        var duplicates = DuplicateFinder.Mark([original], [repost, original], threshold: 0.9);
+        var duplicates = DuplicateFinder.Mark([original], [repost, original], threshold: 0.9, Window);
 
         Assert.Same(original, Assert.Single(duplicates));
         Assert.Equal("repost", original.DuplicateOf);
@@ -65,7 +76,7 @@ public class DuplicateFinderTests
         var second = WithVector("b", hoursAgo: 2, [1, 0]);
         var third = WithVector("c", hoursAgo: 1, [1, 0]);
 
-        var duplicates = DuplicateFinder.Mark([third, second, first], [first, second, third], threshold: 0.9);
+        var duplicates = DuplicateFinder.Mark([third, second, first], [first, second, third], threshold: 0.9, Window);
 
         Assert.Equal(["b", "c"], duplicates.Select(p => p.RowKey));
         Assert.All(duplicates, p => Assert.Equal("a", p.DuplicateOf));

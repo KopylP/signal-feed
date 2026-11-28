@@ -4,8 +4,8 @@ using PostAgent.Chat;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
 using PostAgent.DailySummary;
+using PostAgent.Deduplication;
 using PostAgent.Digest;
-using PostAgent.Embedding;
 using PostAgent.Login;
 using PostAgent.Pairing;
 using PostAgent.Scoring;
@@ -17,7 +17,9 @@ using PostAgent.Shared.Posts;
 using PostAgent.Shared.Settings;
 using PostAgent.Shared.Stats;
 using PostAgent.Shared.TelegramSession;
+using PostAgent.Shared.Topics;
 using PostAgent.Stats;
+using PostAgent.TopicFollowing;
 using PostAgent.Webhook;
 
 namespace PostAgent;
@@ -41,6 +43,7 @@ public static class ServiceCollectionExtensions
             .AddStatsStores()
             .AddAi()
             .AddPosts()
+            .AddTopics()
             .AddNotifications()
             .AddWebhook()
             .AddPairing()
@@ -49,11 +52,12 @@ public static class ServiceCollectionExtensions
             .AddSettingsMenu()
             .AddChat()
             .AddCollecting()
-            .AddEmbedding()
+            .AddDeduplication()
             .AddScoring()
             .AddDigest()
             .AddCleanup()
             .AddDailySummary()
-            .AddAlerts();
+            .AddAlerts()
+            .AddTopicFollowing();
     }
 }

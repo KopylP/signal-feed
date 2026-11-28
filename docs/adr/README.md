@@ -46,3 +46,4 @@ If a future maintainer would ask "why on earth is it done like this?", write it 
 | [0021](0021-let-the-chat-agent-do-non-invasive-actions-at-once.md) | Let the chat agent do non-invasive actions at once | Accepted |
 | [0022](0022-keep-a-reader-memory-the-chat-agent-manages-itself.md) | Keep a reader memory that the chat agent manages itself | Accepted |
 | [0023](0023-embed-posts-before-scoring-to-drop-duplicates-and-match-topics.md) | Embed posts before scoring to drop duplicates and match followed topics | Accepted |
+| [0024](0024-decide-alerts-where-posts-are-scored-and-send-them-from-a-queue.md) | Decide alerts where posts are scored and send them from a queue | Accepted |

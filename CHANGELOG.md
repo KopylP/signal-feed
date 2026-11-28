@@ -8,6 +8,45 @@ Each pull request adds one section named by a random word, `## [falcon] - 2026-1
 The structure, categories and templates are in the `write-changelog` skill (`.claude/skills/write-changelog/SKILL.md`).
 Categories, in order: Setup required, Contract changes, Added, Logic, Improved, Fixed, Security, Removed / Deprecated, Dependencies.
 
+## [lotus] - 2026-11-28
+
+### Setup required
+- **Queues `to-deduplicate`, `topics-to-follow`, `to-alert`**: required
+  - Where: Terraform (`infra/storage.tf`)
+  - Value: nothing to set; Terraform creates them
+  - Apply: run `infra` with apply **before** this code deploys (three queues are added, nothing else). The old `posts-collected` queue and the `AlertSchedule` setting are removed by a later `infra` run, after the deploy
+- **Followed topics from before this release**: optional
+  - Where: the bot
+  - Value: ask the agent to stop following each topic and follow it again («перестань стежити за X», then «стеж за X»)
+  - Apply: after the deploy; until then those topics match by words only, because their vectors were never stored
+
+### Contract changes
+- **Functions and queues: the alert timer is gone, alerts are decided by the scorer and sent from a queue** (breaking)
+  - Before: `AlertFunction` (timer `AlertSchedule`) chose and sent alerts every hour; the deduplication stage was `EmbeddingFunction` on `posts-collected`
+  - After: `ScorerFunction` decides and publishes to `to-alert`, `AlertSenderFunction` sends; `FollowTopicFunction` (queue `topics-to-follow`) embeds a newly followed topic; `DeduplicationFunction` reads `to-deduplicate`
+  - Affects: the `AlertSchedule` setting and the `alert` job of `run-now` no longer exist; messages left in `posts-collected` at the deploy are not processed (it is empty a few minutes after each hourly collection)
+  - Migration: deploy right after an hourly collection has finished; then run `infra` again to drop `posts-collected` and `AlertSchedule`
+- **`Posts`: a new column `WatchAlertedAt`; `AlertedAt` is now set when a group alert is decided** (compatible)
+  - Before: `AlertedAt` was set when the group alert was sent; a followed-topic post had no mark
+  - After: both marks are set at the decision, before the alert is queued; the post becomes `Sent` when the alert is sent
+  - Affects: nothing
+  - Migration: none
+- **Blobs: `settings/followed-topics.json`, `settings/locks/alert-decision.lock`, `settings/locks/deduplication.lock` (replaces `locks/embedding.lock`)** (compatible)
+  - Before: topics were embedded on every alert run and kept nowhere
+  - After: the vector of every followed topic is kept; the locks are empty blobs whose lease serializes the duplicate check and the alert decision
+  - Affects: nothing
+  - Migration: none; a topic followed before this release gets its vector when it is added again through the agent, and matches by words meanwhile
+
+### Logic
+- **Alerts: decided right after scoring, sent at once** (ADR-0024)
+  - Before: an hourly timer looked at the posts, so an alert came up to two hours after publication
+  - After: the decision runs when a batch is scored and the alert is sent within seconds, so it comes within about an hour of publication (the collection interval); one decision at a time keeps the cooldown of a group
+  - Effect: faster alerts; nothing is decided during quiet hours (those posts go to the digest, also later); a followed-topic match beyond 5 per decision goes to the digest
+- **Duplicates: only posts published within 3 hours of each other are compared** (`DuplicateWindowHours`)
+  - Before: a post was compared with the posts of the last 26 hours
+  - After: with the posts published within 3 hours of it
+  - Effect: a later development of the same story is less likely to be dropped as a repeat
+
 ## [v2026.11.28.132-fox] - 2026-11-28
 
 ### Fixed

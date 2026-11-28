@@ -8,11 +8,11 @@ namespace PostAgent.Chat.Agent.Tools;
 public sealed class AddWatchTool(SettingsEditor editor) : IChatTool
 {
     public AIFunction Build(ChatTurn turn) => AIFunctionFactory.Create(
-        ([Description("The topic to follow, a short phrase like: google core update. Every word of it must be in a post.")] string phrase, CancellationToken ct) => RunAsync(phrase, ct),
+        ([Description("The topic to follow, a short phrase like: google core update. A post matches when it is about it, or has every word of it.")] string phrase, CancellationToken ct) => RunAsync(phrase, ct),
         new AIFunctionFactoryOptions
         {
             Name = "add_watch",
-            Description = "Follow a topic now, no confirmation needed: from then on a new scored post from any source that has every word of the phrase is sent as its own alert, whatever its score (not during quiet hours). Use it when the reader asks to watch, follow or track a topic.",
+            Description = "Follow a topic now, no confirmation needed: from then on a new scored post from any source that is about the topic (by meaning, or with every word of the phrase) is sent as its own alert, whatever its score (not during quiet hours); matches of the last day are announced too. Use it when the reader asks to watch, follow or track a topic.",
         });
 
     private async Task<string> RunAsync(string phrase, CancellationToken ct)

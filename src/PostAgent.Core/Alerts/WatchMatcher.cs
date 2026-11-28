@@ -3,7 +3,7 @@ using PostAgent.Shared.Posts;
 
 namespace PostAgent.Alerts;
 
-// A post matches a followed topic when every word of the phrase is in its text or topic, in any order and any case.
+// The word match of a followed topic, the fallback of the match by meaning (ADR-0024): every word of the phrase is in the text or topic, in any order and any case.
 // A word must start a word of the text ("update" matches "updated", "core" does not match "score"); a short one (up to three letters, like "ai")
 // must stand alone, so "ai" does not match "said" or "aim".
 public static class WatchMatcher

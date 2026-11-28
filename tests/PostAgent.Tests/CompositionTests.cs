@@ -9,8 +9,8 @@ using PostAgent.Chat;
 using PostAgent.Chat.Agent;
 using PostAgent.Cleanup;
 using PostAgent.Collecting;
+using PostAgent.Deduplication;
 using PostAgent.Digest;
-using PostAgent.Embedding;
 using PostAgent.Pairing;
 using PostAgent.RunNow;
 using PostAgent.Scoring;
@@ -18,6 +18,7 @@ using PostAgent.Shared.Ai;
 using PostAgent.Shared.Infrastructure;
 using PostAgent.Shared.Jobs;
 using PostAgent.Shared.Settings;
+using PostAgent.TopicFollowing;
 using PostAgent.Webhook;
 
 namespace PostAgent.Tests;
@@ -73,9 +74,10 @@ public class CompositionTests
         var services = scope.ServiceProvider;
 
         Assert.NotNull(ActivatorUtilities.CreateInstance<CollectorFunction>(services));
-        Assert.NotNull(ActivatorUtilities.CreateInstance<EmbeddingFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<DeduplicationFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<ScorerFunction>(services));
-        Assert.NotNull(ActivatorUtilities.CreateInstance<AlertFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<AlertSenderFunction>(services));
+        Assert.NotNull(ActivatorUtilities.CreateInstance<FollowTopicFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<DigestFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<CleanupFunction>(services));
         Assert.NotNull(ActivatorUtilities.CreateInstance<PostAgent.DailySummary.DailySummaryFunction>(services));
@@ -204,7 +206,7 @@ public class CompositionTests
 
         var names = scope.ServiceProvider.GetServices<IJob>().Select(j => j.Name).Order().ToList();
 
-        Assert.Equal(["alert", "collect", "daily-summary", "digest"], names);
+        Assert.Equal(["collect", "daily-summary", "digest"], names);
     }
 
     [Fact]

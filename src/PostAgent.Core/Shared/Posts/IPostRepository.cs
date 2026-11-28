@@ -13,6 +13,9 @@ public interface IPostRepository
 
     Task SaveScoresAsync(IEnumerable<PostEntity> posts, CancellationToken ct);
 
+    // The marks of a decided alert (AlertedAt, WatchAlertedAt), saved before the alert is queued.
+    Task MarkAlertDecidedAsync(IEnumerable<PostEntity> posts, CancellationToken ct);
+
     Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct);
 
     Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct);

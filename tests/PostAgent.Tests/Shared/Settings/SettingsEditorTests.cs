@@ -10,12 +10,13 @@ public class SettingsEditorTests
 {
     private readonly InMemoryOverridesStore _store = new();
     private readonly FakeTimeProvider _time = new(TestData.Now);
+    private readonly FakeTopicsToFollowQueue _topics = new();
 
     private (SettingsEditor Editor, EffectiveOptions Effective) Create(AgentOptions? app = null)
     {
         var options = Options.Create(app ?? OverridesApplierTests.ValidApp());
         var effective = new EffectiveOptions(_store, options, _time, NullLogger<EffectiveOptions>.Instance);
-        return (new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), NullLogger<SettingsEditor>.Instance), effective);
+        return (new SettingsEditor(_store, options, effective, new OverridesChanges(options, DefaultPrompts.Library), _topics, NullLogger<SettingsEditor>.Instance), effective);
     }
 
     [Fact]
@@ -29,6 +30,30 @@ public class SettingsEditorTests
         Assert.True(result.Ok);
         Assert.Equal("9", _store.Current?.Values["DigestSize"]);
         Assert.Equal(9, (await effective.GetAsync(CancellationToken.None)).DigestSize);
+    }
+
+    [Fact]
+    public async Task Publishes_a_topic_new_to_the_list_once_so_it_is_embedded()
+    {
+        var (editor, _) = Create();
+
+        await editor.AddWatchAsync("google core update", CancellationToken.None);
+        await editor.AddWatchAsync("Google Core Update", CancellationToken.None);
+        await editor.SetValueAsync("DigestSize", "9", CancellationToken.None);
+
+        Assert.Equal(["google core update"], _topics.Enqueued);
+    }
+
+    [Fact]
+    public async Task Keeps_the_saved_topic_when_it_cannot_be_published()
+    {
+        var (editor, _) = Create();
+        _topics.Failure = new InvalidOperationException("queue down");
+
+        var result = await editor.AddWatchAsync("google core update", CancellationToken.None);
+
+        Assert.True(result.Ok);
+        Assert.Equal(["google core update"], _store.Current?.Watches);
     }
 
     [Fact]

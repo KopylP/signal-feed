@@ -8,10 +8,10 @@ Setting names (in `code`) are explained in [Configuration](configuration.md). Th
 ![The life of a post: Telegram, collect, score with AI, then an instant alert or the daily digest to you in Telegram](images/life-of-a-post.drawio.svg)
 
 1. **Collect.** Every hour the agent reads new messages from your sources. The first time it sees a source, it reads the last 24 hours.
-2. **Drop repeats.** Each post gets an embedding (a list of numbers that stands for its meaning). A single post that says almost the same as another post of the last day that was already handled,
-   from any channel, is marked as its duplicate and is not scored, so the model does not pay for it twice. Group bundles are never treated as duplicates. If the embedding fails, the posts go on to scoring as before.
+2. **Drop repeats.** Each post gets an embedding (a list of numbers that stands for its meaning). A single post that says almost the same as another post that was already handled,
+   from any channel and published within 3 hours of it (`DuplicateWindowHours`), is marked as its duplicate and is not scored, so the model does not pay for it twice. Group bundles are never treated as duplicates. If the embedding fails, the posts go on to scoring as before.
 3. **Score.** Each post gets a score, a topic and a short reason from the AI model, judged against your rules in [`prompts/scoring.md`](../../prompts/scoring.md). Near-duplicates are recognized.
-4. **Deliver.** Once a day the best posts become the digest. Alerts for groups go out sooner, within the hour.
+4. **Deliver.** Right after scoring the agent decides whether a post deserves an alert, and the alert goes out at once, so it comes within about an hour of publication (the collection interval). Once a day the best of the rest become the digest.
 
 A daily summary of the finished days is written first, and then a cleanup removes old posts, so storage stays small and nothing is deleted before its summary is saved.
 
@@ -29,10 +29,11 @@ A daily summary of the finished days is written first, and then a cleanup remove
 
 ## Alerts
 
+- The decision is made right after a post is scored, and the alert is sent at once ([ADR-0024](../adr/0024-decide-alerts-where-posts-are-scored-and-send-them-from-a-queue.md)).
 - Only for groups listed in `AlertSources`. Channels never trigger alerts.
 - An alert is sent when a message or bundle scores at least `AlertThreshold` (9), or a bundle has at least `BurstMinPosts` (8) messages.
-- One group triggers at most one alert per `AlertCooldownHours` (3), and one alert holds at most `AlertMaxPerRun` (3) entries.
-- During `AlertQuietHours` (for example `23:00-07:00`) nothing is sent, and those posts go into the digest instead.
+- One group triggers at most one alert per `AlertCooldownHours` (3), and one alert holds at most `AlertMaxPerRun` (3) entries (the posts scored together).
+- During `AlertQuietHours` (for example `23:00-07:00`) no alert is decided, and those posts go into the digest instead; they are not sent after the quiet hours either.
 - A post that already triggered an alert is not repeated in the digest.
 
 ### Followed topics
@@ -41,10 +42,10 @@ Tell the agent «стеж за google core update» (or «перестань с�
 A post is about the topic when its meaning is close enough to the phrase (`WatchSimilarityThreshold`), so «google core update» also finds «Google оновив основний алгоритм» and a Ukrainian phrase finds an English post,
 or when it has every word of the phrase (any order and case, each word must start a word of the post, «core» does not match «score», and a word of up to three letters such as «ai» must stand alone).
 
-- The meaning is compared with the embedding of the post and of the phrase (the phrase is embedded on every run, so a new topic works at once). A post without an embedding, or a run whose call failed, is matched by the words only.
-- The alert job runs every hour, so the message comes within about an hour after the post is scored; at most 5 posts per run, best first. Posts of the last 26 hours are looked at (not the shorter alert window of the groups), so a low-scored match is still announced after quiet hours; adding a topic also announces its matches from the last day.
+- The phrase is embedded once, when it is added, and its vector is kept; a post is compared with it right after the post is scored, and the message comes at once. A post without an embedding, or a topic whose vector is not there yet, is matched by the words only.
+- Adding a topic also announces its matches of the last 26 hours that nobody announced yet (within a minute).
+- At most 5 posts in one message, best first; a match beyond that, or one found during quiet hours, goes into the digest.
 - A post is announced once: it is marked as sent, so the digest does not repeat it. A duplicate of another post is skipped.
-- Quiet hours hold these messages back as well, and those posts go into the digest instead.
 - At most 20 topics of up to 100 characters. «Скинути все» in `/settings` returns the topics to the `Watches` App Setting; resetting only the Alerts group leaves them (remove a topic by asking the agent).
 
 ## The digest

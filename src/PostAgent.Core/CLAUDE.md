@@ -52,11 +52,12 @@ C# rules: root `CLAUDE.md`. Structure and the why behind each rule: `docs/develo
 ## Data and jobs
 
 - A small document blob (settings, reader memory note, votes, usage, conversation, sign-in) is read and written with `ConditionalBlobAccess` (ETag), never with hand-built request conditions.
-- `Posts` is partitioned by day; new `PostEntity` fields are optional. `posts-collected` and `to-score` are idempotent (only `New` posts are taken).
-- The embedding stage (ADR-0023) never holds scoring back: a failed embedding call passes the posts on without vectors. A duplicate it finds is `Scored` with no score. The check and the save of the vectors run under `IEmbeddingLock`, the model call outside it.
-- A lock across instances is `BlobLock` on its own blob, one per protected resource (the Telegram session, the duplicate check); never reuse another resource's lock blob. `run-now` works only with `ManualRunsEnabled` and is not retried.
+- A stage publishes to a queue only the messages its consumer will serve: the producer decides (the scorer chooses the alerts, `SettingsEditor` publishes only a new topic), the consumer acts; a consumer guard is a safety net for races, never the designed path (ADR-0024).
+- `Posts` is partitioned by day; new `PostEntity` fields are optional. `to-deduplicate` and `to-score` take only `New` posts. `run-now` works only with `ManualRunsEnabled` and is not retried.
+- Deduplication (ADR-0023) never holds scoring back: a failed embedding call passes the posts on without vectors. A duplicate is `Scored` with no score. The check and the save run under `IDeduplicationLock`, the model call outside it.
+- A lock across instances is `BlobLock` on its own blob, one per protected resource (the Telegram session, the duplicate check, the alert decision); never reuse another resource's lock blob.
+- Alerts (ADR-0024): `AlertDecider` marks (`AlertedAt`, `WatchAlertedAt`) before it publishes, under `IAlertDecisionLock`; `AlertSender` only sends and marks `Sent`. Topics are embedded only by `TopicFollower`.
 - Cleanup runs only from the request `DailySummaryJob` queues after a successful summary; a task never deletes a day after `SummarizedThrough`.
 - The digest marks posts sent after its last message (ADR-0009). `/digest` (`OnDemandDigest`) answers only the asking chat, marks nothing, never touches the conversation and never rethrows.
 - Votes go only through `IFeedbackStore`; `rate_post` is refused while `FeedbackEnabled` is off. A feedback read error never fails scoring; a usage-record failure never touches the model call.
-- A watched post is alerted once (status `Scored`, `MarkSentAsync(alertedAt: null)`), held by quiet hours.
 - A behavior change needs a test in `tests/PostAgent.Tests/`, in the matching folder.

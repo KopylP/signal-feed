@@ -21,20 +21,20 @@ public class AlertSelectorTests
     [Fact]
     public void High_score_in_a_selected_group_triggers_an_alert()
     {
-        var result = AlertSelector.Select([ChatPost("a", score: 9)], Options(), Now);
+        var result = AlertSelector.SelectGroup([ChatPost("a", score: 9)], [], Options(), Now);
         Assert.Equal(["a"], result.Select(p => p.RowKey));
     }
 
     [Fact]
     public void Score_below_threshold_and_small_bundle_do_not_trigger()
     {
-        Assert.Empty(AlertSelector.Select([ChatPost("a", score: 8, messages: 7)], Options(), Now));
+        Assert.Empty(AlertSelector.SelectGroup([ChatPost("a", score: 8, messages: 7)], [], Options(), Now));
     }
 
     [Fact]
     public void Large_bundle_triggers_even_with_a_low_score()
     {
-        var result = AlertSelector.Select([ChatPost("a", score: 2, messages: 8)], Options(), Now);
+        var result = AlertSelector.SelectGroup([ChatPost("a", score: 2, messages: 8)], [], Options(), Now);
         Assert.Single(result);
     }
 
@@ -42,13 +42,13 @@ public class AlertSelectorTests
     public void Channels_never_trigger_alerts()
     {
         var channelPost = Post("a", score: 10, type: SourceType.Channel, source: "chat");
-        Assert.Empty(AlertSelector.Select([channelPost], Options(), Now));
+        Assert.Empty(AlertSelector.SelectGroup([channelPost], [], Options(), Now));
     }
 
     [Fact]
     public void Groups_outside_AlertSources_do_not_trigger()
     {
-        Assert.Empty(AlertSelector.Select([ChatPost("a", score: 10, source: "other")], Options(), Now));
+        Assert.Empty(AlertSelector.SelectGroup([ChatPost("a", score: 10, source: "other")], [], Options(), Now));
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class AlertSelectorTests
             ChatPost("old", score: 10, hoursAgo: 5),
             ChatPost("sent", score: 10, status: PostStatus.Sent),
         };
-        Assert.Empty(AlertSelector.Select(posts, Options(o => o.AlertWindowHours = 3), Now));
+        Assert.Empty(AlertSelector.SelectGroup(posts, posts, Options(o => o.AlertWindowHours = 3), Now));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class AlertSelectorTests
             ChatPost("new", score: 10),
         };
 
-        Assert.Empty(AlertSelector.Select(posts, Options(o => o.AlertCooldownHours = 3), Now));
+        Assert.Empty(AlertSelector.SelectGroup(posts, posts, Options(o => o.AlertCooldownHours = 3), Now));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class AlertSelectorTests
             ChatPost("new", score: 10),
         };
 
-        var result = AlertSelector.Select(posts, Options(o => o.AlertCooldownHours = 3), Now);
+        var result = AlertSelector.SelectGroup(posts, posts, Options(o => o.AlertCooldownHours = 3), Now);
         Assert.Equal(["new"], result.Select(p => p.RowKey));
     }
 
@@ -91,7 +91,7 @@ public class AlertSelectorTests
     public void Only_the_best_post_per_source_is_alerted()
     {
         var posts = new[] { ChatPost("a", score: 9), ChatPost("b", score: 10) };
-        var result = AlertSelector.Select(posts, Options(), Now);
+        var result = AlertSelector.SelectGroup(posts, posts, Options(), Now);
         Assert.Equal(["b"], result.Select(p => p.RowKey));
     }
 
@@ -106,7 +106,7 @@ public class AlertSelectorTests
             ChatPost("d", score: 9, source: "g4"),
         };
 
-        var result = AlertSelector.Select(posts,
+        var result = AlertSelector.SelectGroup(posts, posts,
             Options(o =>
             {
                 o.AlertSources = "g1,g2,g3,g4";
@@ -114,5 +114,29 @@ public class AlertSelectorTests
             }), Now);
 
         Assert.Equal(["b", "c"], result.Select(p => p.RowKey));
+    }
+
+    [Fact]
+    public void A_post_whose_alert_was_already_decided_is_not_chosen_again()
+    {
+        var decided = ChatPost("a", score: 10);
+        decided.WatchAlertedAt = Now.AddMinutes(-5);
+
+        Assert.Empty(AlertSelector.SelectGroup([decided], [], Options(), Now));
+    }
+
+    [Fact]
+    public void A_decision_announces_at_most_a_few_topic_posts_best_first()
+    {
+        var posts = Enumerable.Range(1, 9).Select(i =>
+        {
+            var post = Post("w" + i, score: i, source: "s" + i);
+            post.Text = "Google core update is out";
+            return post;
+        }).ToList();
+
+        var hits = AlertSelector.SelectWatched(posts, ["google core update"], new Dictionary<string, float[]>(), Options(), Now);
+
+        Assert.Equal(["w9", "w8", "w7", "w6", "w5"], hits.Select(h => h.Post.RowKey));
     }
 }

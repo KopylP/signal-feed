@@ -6,7 +6,7 @@
 
 // Starts a job now instead of waiting for its schedule, by putting its name into the run-now queue.
 //
-//   dotnet run tools/run-now.cs -- <collect|digest|alert|cleanup> [--storage <account | connection string>] [--yes]
+//   dotnet run tools/run-now.cs -- <collect|digest|daily-summary> [--storage <account | connection string>] [--yes]
 //
 // --storage defaults to the AzureWebJobsStorage environment variable, then to Azurite. A bare account
 // name signs in with the Azure CLI (az login) or Azure PowerShell, which needs "Storage Queue Data Contributor" on the account;
@@ -20,9 +20,9 @@ using Azure.Identity;
 using Azure.Storage.Queues;
 
 const string queueName = "run-now";
-string[] jobs = ["collect", "digest", "alert", "daily-summary"];
+string[] jobs = ["collect", "digest", "daily-summary"];
 // Jobs that send a Telegram message every time. collect only does it when a source fails, but it moves read cursors.
-string[] sendsToTelegram = ["digest", "alert"];
+string[] sendsToTelegram = ["digest"];
 
 var storageIndex = Array.IndexOf(args, "--storage");
 var valueOfStorage = storageIndex >= 0 ? storageIndex + 1 : -1; // not a job name

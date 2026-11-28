@@ -36,6 +36,8 @@ public sealed class AgentOptions
     // Embeddings (ADR-0023), cosine similarity from 0 to 1: how alike two single posts must be to count as one news (the later one is not scored),
     // and how alike a post and a followed topic must be to match it (the word match of WatchMatcher counts too). 1 turns a check almost off.
     [Range(0.0, 1.0)] public double DuplicateSimilarityThreshold { get; set; } = 0.9;
+    // A repeat of the same news comes within a few hours; posts published further apart are never compared.
+    [Range(1, 48)] public int DuplicateWindowHours { get; set; } = 3;
     [Range(0.0, 1.0)] public double WatchSimilarityThreshold { get; set; } = 0.45;
 
     // Групи: не більше стільки постів на групу за запуск, решта стискається в пачки

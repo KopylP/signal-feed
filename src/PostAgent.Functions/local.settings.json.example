@@ -15,7 +15,6 @@
 
     "MaxItemsPerGroup": "5",
     "MaxBundleChars": "3000",
-    "AlertSchedule": "0 30 * * * *",
     "DailySummarySchedule": "0 0 3 * * *",
     "RetentionDays": "2",
     "AlertSources": "some_group",
@@ -29,6 +28,7 @@
     "Watches": "",
     "WatchSimilarityThreshold": "0.45",
     "DuplicateSimilarityThreshold": "0.9",
+    "DuplicateWindowHours": "3",
     "TimeZone": "Europe/Kyiv",
 
     "ManualRunsEnabled": "true",

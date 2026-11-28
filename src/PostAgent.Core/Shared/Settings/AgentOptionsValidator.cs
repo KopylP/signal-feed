@@ -29,7 +29,7 @@ public sealed class AgentOptionsValidator : IValidateOptions<AgentOptions>
             !TimeZoneInfo.TryFindSystemTimeZoneById(options.TimeZone, out _),
             $"TimeZone '{options.TimeZone}' was not found on this system. Use an IANA id such as Europe/Kyiv.");
 
-        // AlertFunction шукає пости за вікно плюс cooldown, а Cleanup зберігає лише RetentionDays.
+        // The alert decision reads posts of the window and the cooldown, and the cleanup keeps only RetentionDays.
         errors.AddIf(
             options.AlertWindowHours + options.AlertCooldownHours > options.RetentionDays * 24,
             "AlertWindowHours + AlertCooldownHours must not exceed RetentionDays * 24: older posts are already deleted.");

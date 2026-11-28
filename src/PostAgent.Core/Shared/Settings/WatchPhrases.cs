@@ -3,7 +3,7 @@ using System.Text;
 
 namespace PostAgent.Shared.Settings;
 
-// The topics the owner asked to follow ("google core update"): short phrases, every word of one must be in a post for it to match.
+// The topics the owner asked to follow ("google core update"): short phrases; a post matches one by meaning (its stored vector) or when it has every word of it.
 // Stored as one App Setting string, so a phrase never holds the separator.
 public static class WatchPhrases
 {

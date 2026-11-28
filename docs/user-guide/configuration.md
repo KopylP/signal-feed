@@ -10,7 +10,6 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `Sources` | six SEO channels (`infra/variables.tf`) | comma-separated usernames of channels and groups |
 | `CollectorSchedule` | `0 0 * * * *` | collection CRON |
 | `DigestSchedule` | `0 0 8 * * *` | digest CRON |
-| `AlertSchedule` | `0 30 * * * *` | alert check CRON |
 | `DigestSize` | 7 | posts the model sees for the digest (1-12); a long digest is split into several Telegram messages |
 | `InterestingThreshold` | 7 | score from which a post is marked "🔥 Цікаве" (interesting) |
 | `ScoringBatchSize` | 10 | posts per queue message |
@@ -20,6 +19,7 @@ New to the behavior behind these names? Read [How it works](how-it-works.md) fir
 | `AlertSources` | | groups that can trigger an alert |
 | `Watches` | empty | topics to follow, separated by `;` (for example `google core update;ai overviews`): a new scored post from any source that is about one by meaning, or has every word of it, is sent as its own alert. Normally set by asking the agent, not by hand |
 | `WatchSimilarityThreshold` | 0.45 | how close in meaning (cosine similarity of the embeddings, 0 to 1) a post must be to a followed topic to match it; higher: fewer, surer matches; `1`: words only. Only an App Setting |
+| `DuplicateWindowHours` | 3 | posts published further apart than this are never compared for duplicates (the same news usually comes within a few hours). Only an App Setting |
 | `DuplicateSimilarityThreshold` | 0.9 | how close in meaning two single posts must be to count as one news; the later one is not scored and not in the digest. Lower: more posts dropped, with a risk of dropping different news; `1`: only exact copies. Only an App Setting |
 | `AlertThreshold` / `BurstMinPosts` | 9 / 8 | alert thresholds |
 | `AlertWindowHours` / `AlertCooldownHours` | 3 / 3 | window of scored posts and pause between alerts for one group |

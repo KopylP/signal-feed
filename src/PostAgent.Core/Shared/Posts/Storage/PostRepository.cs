@@ -93,6 +93,23 @@ public sealed class PostRepository(TableServiceClient tables) : IPostRepository
             }
         }, ct);
 
+    public Task MarkAlertDecidedAsync(IEnumerable<PostEntity> posts, CancellationToken ct) =>
+        WriteAllAsync(posts, async (post, token) =>
+        {
+            var columns = new TableEntity(post.PartitionKey, post.RowKey);
+            if (post.AlertedAt is not null)
+            {
+                columns[nameof(PostEntity.AlertedAt)] = post.AlertedAt;
+            }
+
+            if (post.WatchAlertedAt is not null)
+            {
+                columns[nameof(PostEntity.WatchAlertedAt)] = post.WatchAlertedAt;
+            }
+
+            await _posts.UpdateEntityAsync(columns, ETag.All, TableUpdateMode.Merge, token);
+        }, ct);
+
     public Task MarkSentAsync(IEnumerable<PostEntity> posts, DateTimeOffset? alertedAt, CancellationToken ct) =>
         WriteAllAsync(posts, async (post, token) =>
         {

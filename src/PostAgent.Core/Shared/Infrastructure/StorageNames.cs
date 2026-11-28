@@ -8,9 +8,12 @@ public static class StorageNames
     public const string PostsTable = "Posts";
     public const string CursorsTable = "ChannelState";
     public const string ChatBindingTable = "ChatBinding";
-    // Collected posts on their way to the embedding stage, which drops near-duplicates and passes the rest to ScoringQueue (ADR-0023).
-    public const string CollectedQueue = "posts-collected";
+    // Collected posts on their way to the deduplication stage, which drops near-duplicates and passes the rest to ScoringQueue (ADR-0023, ADR-0024).
+    public const string DeduplicationQueue = "to-deduplicate";
     public const string ScoringQueue = "to-score";
+    // A topic that just started to be followed, and the alerts the scorer decided to send (ADR-0024). Made by Terraform.
+    public const string TopicsToFollowQueue = "topics-to-follow";
+    public const string AlertQueue = "to-alert";
     public const string RunNowQueue = "run-now";
     public const string ChatQueue = "chat-messages";
     // /digest: a request for a digest of a period, answered to the chat that asked. Made by Terraform (the scale controller needs it to exist).
@@ -26,8 +29,14 @@ public static class StorageNames
     // The reader's likes and dislikes of posts (recorded by the chat agent), shared by every chat; the scoring reads it.
     public const string FeedbackBlob = "feedback.json";
 
-    // The lock of the embedding stage's duplicate check (ADR-0023), in the settings container: one queue message at a time.
-    public const string EmbeddingLockBlob = "locks/embedding.lock";
+    // The vectors of the followed topics (ADR-0024), written by FollowTopicFunction, read by the alert decision.
+    public const string FollowedTopicsBlob = "followed-topics.json";
+
+    // The lock of the alert decision: one decision at a time, so the cooldown of a group holds across parallel batches.
+    public const string AlertDecisionLockBlob = "locks/alert-decision.lock";
+
+    // The lock of the duplicate check (ADR-0023), in the settings container: one queue message at a time.
+    public const string DeduplicationLockBlob = "locks/deduplication.lock";
 
     // Long memory (ADR-0018): one small summary per day, and the tokens the models used. In the settings container, under a prefix.
     public static string DailyStatsBlobName(string day) => $"stats/daily/{day}.json";

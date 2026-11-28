@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using PostAgent.Shared.Topics;
 
 namespace PostAgent.Shared.Settings;
 
@@ -9,6 +10,7 @@ public sealed class SettingsEditor(
     IOptions<AgentOptions> app,
     IEffectiveOptions effective,
     OverridesChanges changes,
+    ITopicsToFollowQueue topicsToFollow,
     ILogger<SettingsEditor> log)
 {
     public const string UnreadableMessage = "Збережені налаштування не вдалося прочитати. Скинь їх у головному меню.";
@@ -121,6 +123,7 @@ public sealed class SettingsEditor(
             if (await store.TrySaveAsync(handle, updated, ct))
             {
                 effective.Invalidate();
+                await PublishNewTopicsAsync(current, updated, ct);
                 return EditResult.Success;
             }
 
@@ -128,5 +131,23 @@ public sealed class SettingsEditor(
         }
 
         return EditResult.Fail("Не вдалося зберегти, спробуй ще раз.");
+    }
+
+    // A topic new to the list (added by the agent, or back after a reset) is published once, so FollowTopicFunction embeds it and announces
+    // its recent matches. The settings are saved already: a failure here only leaves the topic matching by words.
+    private async Task PublishNewTopicsAsync(SettingsOverrides before, SettingsOverrides after, CancellationToken ct)
+    {
+        var old = before.EffectiveWatches(app.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var phrase in after.EffectiveWatches(app.Value).Where(p => !old.Contains(p)))
+        {
+            try
+            {
+                await topicsToFollow.EnqueueAsync(phrase, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                log.LogError(ex, "A new followed topic was not queued for embedding, it matches by words only");
+            }
+        }
     }
 }
