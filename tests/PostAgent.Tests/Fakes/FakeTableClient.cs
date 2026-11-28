@@ -8,9 +8,26 @@ namespace PostAgent.Tests.Fakes;
 // Value throws (Azure.NoValueResponse), it does not give null.
 public sealed class FakeTableClient : TableClient
 {
-    private readonly Dictionary<(string Partition, string Row), TableEntity> _rows = [];
+    private readonly Dictionary<(string Partition, string Row), ITableEntity> _rows = [];
 
-    public void Add(TableEntity entity) => _rows[(entity.PartitionKey, entity.RowKey)] = entity;
+    public void Add(ITableEntity entity) => _rows[(entity.PartitionKey, entity.RowKey)] = entity;
+
+    // The HTTP status an update of a row fails with, by row key.
+    public Dictionary<string, int> UpdateFailures { get; } = [];
+
+    public List<(string RowKey, ETag IfMatch)> Updates { get; } = [];
+
+    public override Task<Response> UpdateEntityAsync<T>(
+        T entity, ETag ifMatch, TableUpdateMode mode = TableUpdateMode.Merge, CancellationToken cancellationToken = default)
+    {
+        if (UpdateFailures.TryGetValue(entity.RowKey, out var status))
+        {
+            throw new RequestFailedException(status, "Update failed");
+        }
+
+        Updates.Add((entity.RowKey, ifMatch));
+        return Task.FromResult<Response>(new EmptyResponse());
+    }
 
     public IReadOnlyList<string> RowKeys => _rows.Keys.Select(k => k.Row).ToList();
 
@@ -21,7 +38,7 @@ public sealed class FakeTableClient : TableClient
 
     public override Task<Response> AddEntityAsync<T>(T entity, CancellationToken cancellationToken = default)
     {
-        var row = (TableEntity)(object)entity;
+        ITableEntity row = entity;
         if (!_rows.TryAdd((row.PartitionKey, row.RowKey), row))
         {
             throw new RequestFailedException(409, "Entity already exists", "EntityAlreadyExists", null);

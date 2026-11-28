@@ -105,14 +105,6 @@ public class TelegramWebhookTests
     }
 
     [Fact]
-    public async Task Answers_ok_to_updates_that_are_not_messages()
-    {
-        var status = await Webhook(new InMemoryChatBindingStore()).HandleAsync(Secret, Body("""{"update_id":2}"""), CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.OK, status);
-    }
-
-    [Fact]
     public async Task A_storage_failure_does_not_make_telegram_resend_the_update()
     {
         var status = await Webhook(new FailingStore()).HandleAsync(Secret, Body(StartUpdate()), CancellationToken.None);

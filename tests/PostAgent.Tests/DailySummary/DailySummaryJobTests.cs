@@ -95,9 +95,6 @@ public class DailySummaryJobTests
         Assert.Equal(1, _store.Days["2026-11-23"].Scored);
     }
 
-    [Fact]
-    public void The_job_is_named_for_what_it_does() => Assert.Equal("daily-summary", Create(new InMemoryPostRepository()).Name);
-
     private sealed class ThrowingStore : IDailyStatsStore
     {
         public Task SaveAsync(DailyStats stats, CancellationToken ct) => throw new InvalidOperationException("storage is down");

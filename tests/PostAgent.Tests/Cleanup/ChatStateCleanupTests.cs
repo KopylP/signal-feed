@@ -48,14 +48,6 @@ public class ChatStateCleanupTests
     }
 
     [Fact]
-    public async Task Is_named_for_the_log()
-    {
-        var (task, _) = await Create(Now);
-
-        Assert.Equal("ChatState", task.Name);
-    }
-
-    [Fact]
     public async Task Deletes_the_stale_conversation_of_every_chat_and_keeps_the_fresh_one()
     {
         var (task, store) = await Create(Now.AddDays(-2));

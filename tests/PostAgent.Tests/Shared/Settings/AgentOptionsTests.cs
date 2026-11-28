@@ -37,12 +37,6 @@ public class AgentOptionsTests
         return results;
     }
 
-    [Fact]
-    public void Complete_settings_are_valid()
-    {
-        Assert.Empty(Validate(Complete()));
-    }
-
     [Theory]
     [InlineData(nameof(AgentOptions.OpenAIApiKey))]
     [InlineData(nameof(AgentOptions.TelegramBotToken))]

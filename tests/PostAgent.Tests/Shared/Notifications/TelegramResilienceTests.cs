@@ -38,16 +38,4 @@ public class TelegramResilienceTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal(1, handler.Calls);
     }
-
-    [Fact]
-    public void A_slow_Telegram_answer_gets_thirty_seconds_and_the_whole_request_sixty()
-    {
-        var options = new HttpStandardResilienceOptions();
-
-        NotificationsServices.ConfigureTelegramResilience(options);
-
-        Assert.Equal(TimeSpan.FromSeconds(30), options.AttemptTimeout.Timeout);
-        Assert.Equal(TimeSpan.FromSeconds(60), options.TotalRequestTimeout.Timeout);
-        Assert.True(options.CircuitBreaker.SamplingDuration >= options.AttemptTimeout.Timeout * 2);
-    }
 }

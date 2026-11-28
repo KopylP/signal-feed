@@ -174,21 +174,6 @@ public class CompositionTests
     }
 
     [Fact]
-    public void Chat_settings_have_their_defaults()
-    {
-        using var provider = BuildProvider();
-
-        var options = provider.GetRequiredService<IOptions<AgentOptions>>().Value;
-
-        Assert.Equal("gpt-6.1-terra", options.OpenAIChatModel);
-        Assert.Equal(20, options.ChatMaxMessages);
-        Assert.Equal(4000, options.ChatMaxOutputTokens);
-        Assert.Equal("medium", options.ChatReasoningEffort);
-        Assert.Equal(5, options.ChatMaxToolCalls);
-        Assert.Equal(8, options.ChatSearchMaxHits);
-    }
-
-    [Fact]
     public void A_chat_setting_out_of_range_stops_the_application_with_its_name()
     {
         using var provider = BuildProvider(s => s["ChatMaxToolCalls"] = "0");

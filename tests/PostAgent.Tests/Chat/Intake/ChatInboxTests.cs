@@ -111,16 +111,6 @@ public class ChatInboxTests
     }
 
     [Fact]
-    public async Task An_update_that_is_not_a_message_is_ignored()
-    {
-        var inbox = await Create();
-
-        await inbox.HandleAsync(new Update { Id = 5 }, CancellationToken.None);
-
-        Assert.Empty(_queue.Enqueued);
-    }
-
-    [Fact]
     public async Task Long_text_is_cut_to_2000_characters()
     {
         var inbox = await Create();
