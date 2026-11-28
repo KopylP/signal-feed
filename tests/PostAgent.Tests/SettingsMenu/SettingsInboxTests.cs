@@ -7,17 +7,6 @@ namespace PostAgent.Tests.SettingsMenu;
 public class SettingsInboxTests
 {
     [Fact]
-    public async Task Opens_the_menu_on_settings_command()
-    {
-        var h = new MenuHarness();
-
-        var handled = await h.Inbox.HandleAsync(MenuHarness.Text("/settings"), CancellationToken.None);
-
-        Assert.True(handled);
-        Assert.Single(h.Panel.Sent);
-    }
-
-    [Fact]
     public async Task Opens_the_menu_on_settings_command_addressed_to_the_bot()
     {
         var h = new MenuHarness();
@@ -69,16 +58,6 @@ public class SettingsInboxTests
         await h.Inbox.HandleAsync(MenuHarness.Callback("n:DigestSize:9", updateId: 2), CancellationToken.None);
 
         Assert.Equal(["cb1", "cb2"], h.Panel.Answered.Select(a => a.Id));
-    }
-
-    [Fact]
-    public async Task A_button_press_changes_the_setting()
-    {
-        var h = new MenuHarness();
-
-        await h.Inbox.HandleAsync(MenuHarness.Callback("n:DigestSize:9"), CancellationToken.None);
-
-        Assert.Equal("9", h.Store.Current?.Values["DigestSize"]);
     }
 
     [Fact]

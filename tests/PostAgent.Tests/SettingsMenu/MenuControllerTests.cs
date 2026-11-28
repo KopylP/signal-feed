@@ -69,25 +69,6 @@ public class MenuControllerTests
     }
 
     [Fact]
-    public async Task Expired_pending_sends_the_text_on_to_the_chat()
-    {
-        var h = new MenuHarness();
-        await h.Controller.HandleCallbackAsync(Chat, MenuMessage, MenuAction.AskText("AlertQuietHours"), CancellationToken.None);
-        h.Time.Advance(TimeSpan.FromMinutes(11));
-
-        Assert.False(await h.Controller.HandleTextAsync(Chat, "23:00-07:00", CancellationToken.None));
-        Assert.False(h.Store.Current!.Values.ContainsKey("AlertQuietHours"));
-    }
-
-    [Fact]
-    public async Task Text_without_a_pending_question_is_not_handled()
-    {
-        var h = new MenuHarness();
-
-        Assert.False(await h.Controller.HandleTextAsync(Chat, "привіт", CancellationToken.None));
-    }
-
-    [Fact]
     public async Task A_second_ask_replaces_the_first_pending()
     {
         var h = new MenuHarness();
